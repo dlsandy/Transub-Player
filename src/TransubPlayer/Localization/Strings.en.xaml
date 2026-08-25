@@ -1,0 +1,576 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Common -->
+    <sys:String x:Key="Str.Common.Cancel">Cancel</sys:String>
+    <sys:String x:Key="Str.Common.Save">Save</sys:String>
+    <sys:String x:Key="Str.Common.Browse">Browse</sys:String>
+    <sys:String x:Key="Str.Common.Close">Close</sys:String>
+    <sys:String x:Key="Str.Common.Minimize">Minimize</sys:String>
+    <sys:String x:Key="Str.Common.Maximize">Maximize</sys:String>
+    <sys:String x:Key="Str.Common.Restore">Restore</sys:String>
+    <sys:String x:Key="Str.Common.AutoFollowSystem">System default</sys:String>
+    <sys:String x:Key="Str.Common.AllFiles">All files</sys:String>
+
+    <!-- Main chrome -->
+    <sys:String x:Key="Str.Main.Tagline">Subtitle player</sys:String>
+    <sys:String x:Key="Str.Main.Open">Open</sys:String>
+    <sys:String x:Key="Str.Main.Settings">Settings</sys:String>
+    <sys:String x:Key="Str.Main.Transub">Generate with Transub</sys:String>
+    <sys:String x:Key="Str.Main.Transub.Tip">Generate production subtitles in Transub (adds the current video to the task list)</sys:String>
+    <sys:String x:Key="Str.Main.Transub.Opened">Opened Transub and added the current video to the task list</sys:String>
+    <sys:String x:Key="Str.Main.Transub.OpenedEmpty">Opened Transub</sys:String>
+    <sys:String x:Key="Str.Main.Transub.NotFound">Transub was not found. Download and install it, or set the install folder under Settings → Advanced.</sys:String>
+    <sys:String x:Key="Str.Main.Transub.OpenSitePrompt">Open the website to download and install Transub?</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.Transub">For production Chinese, use 「Generate with Transub」 at the top right</sys:String>
+    <sys:String x:Key="Str.Main.RetryPreview">Retry transcription</sys:String>
+    <sys:String x:Key="Str.Main.RetryPreview.Tip">Restart transcription</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend">Gray = source · Yellow = translation</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh">ZH</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src">Src</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual">Dual</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub">Subs</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.Toggle">Show / hide subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip">Chinese · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src.Tip">Source · 2</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip">Dual · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.PendingTip">Generating (showing source) · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.PendingTip">Generating (showing source) · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.ShowTip">Show subtitles · 0 / V</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.HideTip">Hide subtitles · 0 / V</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Off">Off</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Online">Online</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Local">Local file</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LocalNone">Local file (none)</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LocalOnlyNone">Local only · no sidecar · no auto ASR/MT/online search</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.OnlineNone">Online search found nothing · no auto ASR</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.OffOpen">Subtitles off · no auto ASR/MT/online search</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Live">Live subtitles</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Tip">Subtitle source: off / online / local file / live ASR</sys:String>
+    <sys:String x:Key="Str.Main.NeedsInstall">Install needed</sys:String>
+    <sys:String x:Key="Str.Main.Recent">Recent</sys:String>
+    <sys:String x:Key="Str.Main.RecentEmpty">(None)</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClearRecent">Clear recent</sys:String>
+    <sys:String x:Key="Str.Main.Status.RecentCleared">Recent files cleared</sys:String>
+    <sys:String x:Key="Str.Main.Status.Ready">Drop or open a video to play; subtitles will catch up</sys:String>
+    <sys:String x:Key="Str.Main.Status.ViewLogTip">Click to view engine log</sys:String>
+    <sys:String x:Key="Str.Main.Status.Opening">Opening video…</sys:String>
+    <sys:String x:Key="Str.Main.Opening.Title">Opening video</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.ConnectingEngine">Connecting recognition engine</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.CheckingModels">Checking speech model</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.DownloadingModel">Downloading whisper-tiny (~75 MB)</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.PreparingTranslate">Preparing translation model</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.LoadingCache">Loading subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.StartingAsr">Starting recognition</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.GeneratingSource">Generating source subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.SourceProgress">Ready through {0}</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.PleaseWait">Please wait…</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Title">Generating Chinese subtitles</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Progress">Now {0} / target {1}</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.ProgressFirst">Translation at {0} · waiting for first batch</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Hint">Playback starts automatically when ready · press Space to start now</sys:String>
+    <sys:String x:Key="Str.Main.Status.MpvMissing">mpv not found. The install package should include it; for development run tools\fetch-mpv.ps1.</sys:String>
+    <sys:String x:Key="Str.Main.Status.EngineMissing">Recognition engine not found · open Settings → Advanced</sys:String>
+    <sys:String x:Key="Str.Main.Status.MtMissing">Chinese translation not ready · install under Settings → Advanced, or run the setup wizard again</sys:String>
+    <sys:String x:Key="Str.Main.EngineMissing.Dialog" xml:space="preserve">Recognition engine not found.
+
+Choose the Transub install folder under Settings → Advanced, or run tools\stage-engine-lite.ps1 first.
+Open Settings now?</sys:String>
+
+    <!-- Context menu -->
+    <sys:String x:Key="Str.Main.Menu.OpenFile">Open file…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenUrl">Open stream URL…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ScreenCapture">Play screen capture</sys:String>
+    <sys:String x:Key="Str.Main.OpenDialog.Title">Open media</sys:String>
+    <sys:String x:Key="Str.Main.Status.StreamPlaybackOnly">Streaming playback · live transcription unavailable</sys:String>
+    <sys:String x:Key="Str.Main.Status.ScreenCapture">Screen capture · live transcription unavailable</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Title">Open stream URL</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Prompt">Enter a network address (HTTP / HTTPS / RTMP / RTSP, etc.)</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Hint">Supports HLS (.m3u8), direct video links, and common live streams. Drag or paste a URL.</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Open">Open</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Invalid">Unrecognized address. Check the format and try again.</sys:String>
+    <sys:String x:Key="Str.MediaSource.Screen.Desktop">Screen capture (desktop)</sys:String>
+    <sys:String x:Key="Str.MediaSource.Screen.Capture">Screen capture</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Recent">Recent</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Playlist">Playlist</sys:String>
+    <sys:String x:Key="Str.Main.Menu.PlayPause">Play / Pause</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Stop">Stop</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Fullscreen">Video fullscreen</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SameFolderAdded">{0} file(s) from the same folder added</sys:String>
+    <sys:String x:Key="Str.Main.Fullscreen.EnterTip">Video fullscreen · Enter / F / Alt+Enter</sys:String>
+    <sys:String x:Key="Str.Main.Fullscreen.ExitTip">Exit fullscreen · Esc</sys:String>
+    <sys:String x:Key="Str.Main.Menu.AlwaysOnTop">Always on top</sys:String>
+    <sys:String x:Key="Str.Main.Menu.FindOnlineSubtitles">Find online subtitles…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Settings">Settings…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Transub">Generate high-quality subtitles with Transub…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.FileAssociation">File associations…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.About">About</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Exit">Exit</sys:String>
+    <sys:String x:Key="Str.Main.AppMenu.Tip">Open menu</sys:String>
+    <sys:String x:Key="Str.Main.About.Body" xml:space="preserve">Transub Player {0}
+
+Open local videos and get subtitles as you watch.
+For production-grade Chinese / bilingual / QA, use Transub.</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="Str.Settings.Title">Settings</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.General">General</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Playback">Playback</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Subtitle">Subtitles</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Advanced">Advanced</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Association">File types</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Presets">Presets</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Hint">See dependencies per playback preset; auto-download, manual install, or remove ASR/translation models (default whisper-tiny is kept).</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Download">Download</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Manual">Manual install</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Delete">Remove</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Ready">Ready</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.DeleteConfirm" xml:space="preserve">Remove local components for preset "{0}":
+
+{1}
+
+Default whisper-tiny is not removed. Shared models (e.g. turbo) affect other presets too.
+
+Continue?</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.DeleteDone">Removed local components for preset "{0}"</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.InstallDone">Dependencies installed for preset "{0}"</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.AlreadyReady">Preset "{0}" is already ready</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.CannotAuto">Cannot auto-install preset "{0}": {1}</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.NothingToDelete">No removable local components for preset "{0}"</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.InstallIncomplete">Install for preset "{0}" is incomplete: {1}</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.PartialAsr">ASR model {0} (download incomplete)</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.PartialAsrDetail">The previous download did not finish. Please download again.</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Starting">Downloading {0} ({1})…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Progress">Downloading {0} · {1}% · {2} / {3}</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.ProgressUnknown">Downloading {0} · {1}…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Verifying">Verifying {0}…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Done">{0} download complete</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.AllDone">Model download complete</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Incomplete">{0} download incomplete ({1} downloaded; need about {2}). Please retry.</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.InstallingPreset">Installing preset "{0}"…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Cancelled">Cancelled</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.ConnectingEngine">Connecting to ASR engine…</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyReady">Light ASR ready</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyMissing">Light ASR not installed</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyPartial">Light ASR download incomplete</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboReady">turbo ready</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboMissing">turbo not installed</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboPartial">turbo download incomplete</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.LlamaReady">Translation runtime ready</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.LlamaMissing">Translation runtime not installed</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.GgufReady">Translation model ready</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.GgufMissing">Translation model not installed</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.Title">Manual install</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.Intro">Preset "{0}" is missing the following. Place complete files in the paths below, or copy from an existing Transub install.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrPath">ASR model folder: {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrPageHint">Opened a reference model page when available; use the same CT2 layout as Transub Engine (e.g. model.bin).</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrCopyHint">Copy from Transub models\asr on this PC, or use Download for automatic fetch.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.GgufPath">Translation model file: {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.LlamaPath">Translation runtime folder: {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.LlamaHint">Use Install translation runtime here, or extract llama-server.exe from a llama.cpp release.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.FullEngineHint">Install full Transub Engine, or set engine source to transub in Settings.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.GpuHint">GPU packs are usually installed by the engine; you can also click Install GPU runtime under Advanced.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AfterPlace">After placing files, close this note and check status again in Settings.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.StillMissing">Still missing: {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.PickFolder">Choose a folder containing a complete ASR model</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportMissingFolder">The selected folder does not exist.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportUnrecognized">Could not recognize a complete ASR model in that folder. Check model.bin and total size.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportIncomplete">{0} failed verification after copy. Check that files are complete.</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportDone">Imported {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.OpenedAsrRoot">Opened {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.OpenAsrRoot">Open ASR models folder</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">Import ASR model from folder</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">Manual install (current preset)</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage">Interface language</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">Applies on save. Untranslated strings still show Chinese until more packs are filled in.</sys:String>
+    <sys:String x:Key="Str.Settings.General.Hint">Subtitle and window options. Engine paths and large packs are under Advanced.</sys:String>
+    <sys:String x:Key="Str.Settings.SubtitleCat.Fetch">When no local subtitle, search SubtitleCat and pick a download</sys:String>
+    <sys:String x:Key="Str.Settings.SubtitleCat.Fetch.Hint">Searches by title; JAV codes are auto-extracted. Falls back to Xunlei when SubtitleCat is unreachable. Failures are shown, then ASR continues.</sys:String>
+    <sys:String x:Key="Str.Settings.HideDelay.Current">Now {0} s</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.RunWizard">Run setup wizard again</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Hint">Check extensions to open with Transub Player on double-click, then click Apply. Writes per-user registry (no admin). Uncheck and apply to remove defaults set by this app.</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Video">Video</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Audio">Audio</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Subtitle">Subtitles</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Playlist">Playlists</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectVideo">All video</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectAll">Select all</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectNone">Select none</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Apply">Apply associations</sys:String>
+    <sys:String x:Key="Str.Settings.Association.FileTypeLabel">{0} file (Transub Player)</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Status">Active {0} / {1} · selected {2}</sys:String>
+    <sys:String x:Key="Str.Settings.Association.ApplyOk">Updated {0} extension(s)</sys:String>
+    <sys:String x:Key="Str.Settings.Association.ApplyPartial">Updated {0}, failed {1}{2}</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Error.NoExe">Cannot resolve app path; associations were not written.</sys:String>
+
+    <!-- SubtitleCat -->
+    <sys:String x:Key="Str.SubtitleCat.Searching">Searching online subtitles for "{0}"…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Downloading">Downloading subtitle…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Loaded">Online subtitle loaded</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.LoadedFrom">Loaded subtitle from {0}</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.NoResults">No online subtitle matches</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Failed">Online subtitle: {0}</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.FailedShort">Online subtitle fetch failed</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.FallbackAsr">Falling back to ASR</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Skipped">Skipped online subtitle</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Title">Choose subtitle</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Heading">Online subtitle results</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Query">Search: {0}</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.FallbackNote">SubtitleCat unreachable or empty — showing Xunlei results. You can switch sources manually.</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Hint">Switch SubtitleCat / Xunlei. Ranked by relevance (code match, Chinese hints, downloads). Double-click or Use to load.</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider">Source</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Cat">SubtitleCat</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Xunlei">Xunlei</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Searching">Searching selected source…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Skip">Skip</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Use">Use</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.NeedSelect">Select a subtitle first.</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Empty">No results to show.</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Source">Source</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Title">Title</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Downloads">DL</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Size">Size</sys:String>
+
+    <!-- Setup wizard -->
+    <sys:String x:Key="Str.Wizard.Title">First-time setup</sys:String>
+    <sys:String x:Key="Str.Wizard.Subtitle">Set up the engine, player, and Chinese translation. Then open a video to see Chinese subtitles.</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Engine">1 · Engine</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Mpv">2 · Playback</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Mt">3 · Chinese</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Done">4 · Done</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.UseTransub">Use installed Transub (recommended — reuse engine and models)</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.UseLite">Use bundled lite engine</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.Path">Transub install folder</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.Detected">Transub detected</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.NotFound">Transub not found. Install it and browse to its install folder (with Transub.exe), or use the lite engine.</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.LiteReady">Lite engine found — ready to use.</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.LiteMissing">Lite engine not found. Install Transub and pick its install folder, or (dev) run tools\stage-engine-lite.ps1.</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.InvalidPath">Invalid folder. Choose the Transub install folder (with Transub.exe); the bundled engine is detected automatically.</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.NeedPath">Please choose a valid Transub install folder.</sys:String>
+    <sys:String x:Key="Str.Wizard.OpenSite">Open Transub site</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Ready">Playback component mpv is ready.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Missing">mpv not found. Packages usually include it; you can download it here in a dev build.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Download">Download mpv</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Downloading">Downloading mpv…</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Done">mpv is ready.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Failed">Failed to download mpv: {0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.NoScript">tools\fetch-mpv.ps1 not found, and mpv is not bundled.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Intro">Chinese translation needs the local translation runtime (llama-server) and a model. Transub installs are reused when present; otherwise a general multilingual model downloads here (~1.1 GB, suited to English shows). JA-specialized models can be installed later in Settings.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.RuntimeReady">Translation runtime: ready</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.RuntimeMissing">Translation runtime: missing (~32 MB)</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.GgufReady">Translation model: ready</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.GgufMissing">Translation model: missing (~1.1 GB; general multilingual Qwen, suited to English shows)</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Install">Install translation</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.InstallAndNext">Install and continue</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.SkipHint">If you skip, source subtitles still work, but Chinese will not appear until you install under Settings → Advanced.</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Failed">Failed to install translation: {0}</sys:String>
+    <sys:String x:Key="Str.Wizard.CancelInstall">Cancel install</sys:String>
+    <sys:String x:Key="Str.Wizard.Cancelled">Cancelled</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Title">Settings saved</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.EngineOk">Engine: {0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.EngineMissing">Engine not ready yet — configure later under Settings → Advanced.</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MpvOk">Playback: ready</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MpvMissing">Playback: not ready (you can retry download when opening a video)</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Models">ASR models folder: {0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtRuntimeOk">Translation runtime: ready</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtRuntimeMissing">Translation runtime: missing (Chinese translation unavailable)</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtGgufOk">Translation model: ready</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtGgufMissing">Translation model: missing (Chinese translation unavailable)</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineSubtitles">Enable online subtitle search</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineSubtitles.Hint">When no local subtitle exists, search SubtitleCat / Xunlei by title and pick a download; failures fall back to ASR. Change later in Settings.</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineOn">Online subtitle search: on</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineOff">Online subtitle search: off</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Hint">ASR models can download on first open. Use Transub for production-quality subtitles.</sys:String>
+    <sys:String x:Key="Str.Wizard.Next">Next</sys:String>
+    <sys:String x:Key="Str.Wizard.Back">Back</sys:String>
+    <sys:String x:Key="Str.Wizard.Skip">Skip</sys:String>
+    <sys:String x:Key="Str.Wizard.Finish">Finish</sys:String>
+
+    <!-- UX improvements -->
+    <sys:String x:Key="Str.Main.DropHint.Open">Drop or open a video to play</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.PreviewAuto">Subtitles catch up automatically (whisper-tiny by default)</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.AutoPreviewOff">If auto transcription is off, start it from the status bar</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.SubSourceHelp">Subtitle source guide</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Title">Subtitles are still catching up</sys:String>
+    <sys:String x:Key="Str.Main.Lag.TitleWithReady">Subtitles are still catching up (ready through {0})</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Osd.Sub">Subtitles are still catching up</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Osd.Source">Source subtitles are still catching up</sys:String>
+    <sys:String x:Key="Str.Main.Lag.JumpReady">Jump to ready subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Lag.SwitchSource">Continue in source</sys:String>
+    <sys:String x:Key="Str.Main.Lag.ContinueWait">Keep waiting</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Subtitles">Subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubDelayLater">Delay subtitles 0.5s</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">Advance subtitles 0.5s</sys:String>
+    <sys:String x:Key="Str.Main.Menu.RePreview">Switch to ASR</sys:String>
+    <sys:String x:Key="Str.Main.Menu.StartPreview">Start ASR</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Presets">Presets</sys:String>
+    <sys:String x:Key="Str.Main.Menu.PresetsLoading">(Loading)</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Speed">Speed</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Screenshot">Screenshot</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenScreenshotFolder">Open screenshot folder</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Shortcuts">Keyboard shortcuts</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubSourceHelp">Subtitle source guide…</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Title">Playlist</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ShowHide">Show / hide list</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Prev">Previous</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Next">Next</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Clear">Clear list</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ClearKeep">Clear</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchRunning">Prefetching</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchReady">Ready</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchQueued">Queued</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchFailed">Failed</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.TitleCount">Playlist  {0}/{1}</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ShowTip">Hide list · L</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.HideTip">Playlist · L</sys:String>
+    <sys:String x:Key="Str.Main.Action.StartPreview">Start transcription</sys:String>
+    <sys:String x:Key="Str.Main.Action.StartPreview.Tip">Start transcription</sys:String>
+    <sys:String x:Key="Str.Main.Action.SwitchToPreview">Use transcription</sys:String>
+    <sys:String x:Key="Str.Main.Action.SwitchToPreview.Tip">Switch to AI ASR</sys:String>
+    <sys:String x:Key="Str.Main.Action.InstallPreset">Install</sys:String>
+    <sys:String x:Key="Str.Main.Action.InstallPreset.Tip">Install missing components for the current preset</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewNotAuto">Video opened · transcription did not start automatically</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetDowngrade">Matched 「{0}」· missing {1} · using fast transcription</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetDowngrade">「{0}」 missing components · using fast transcription</sys:String>
+    <sys:String x:Key="Str.Main.Osd.Resumed">Resumed from {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ExternalSub">Loaded sidecar subtitle</sys:String>
+    <sys:String x:Key="Str.Main.Status.ExternalSub">Using sidecar subtitle</sys:String>
+    <sys:String x:Key="Str.Main.Status.ExternalSubHint"> · switch to transcription</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel">Subtitles lag behind video · gray = source · yellow = translation</sys:String>
+    <sys:String x:Key="Str.Main.Status.QualityHandoff">Subtitles are for watching along · use Transub for production</sys:String>
+    <sys:String x:Key="Str.Main.Status.JumpReady">Jumped to ready subtitles · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.SwitchToSource">Showing source · translation continues in background</sys:String>
+    <sys:String x:Key="Str.Main.Status.WaitFirstZhEnabled">Enabled: wait ~1 minute of translation before play next time</sys:String>
+    <sys:String x:Key="Str.Main.Status.SubDelayHint">Out of sync? Use Z / X to nudge ±0.5s</sys:String>
+    <sys:String x:Key="Str.Main.Osd.StartPreview">Starting ASR</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetMatched">Preset: {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.UsingFastPreview">Using {0} fast transcription</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PrefetchLoaded">Loaded prefetched subtitles</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubSync">Subtitle sync {0}{1:0.0}s</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TopMostOn">Always on top: on</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TopMostOff">Always on top: off</sys:String>
+    <sys:String x:Key="Str.Main.Osd.Screenshot">Screenshot · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.ScreenshotSaved">Screenshot saved · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistAdded">Added {0} item(s)</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistAdded">Added {0} to playlist · {1} total</sys:String>
+    <sys:String x:Key="Str.Main.Status.NoMedia">No playable video found</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistEnd">End of playlist</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistEnd">Playlist finished</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaybackEnd">Playback finished</sys:String>
+    <sys:String x:Key="Str.Main.Status.PrefetchAfterEnd">Finished · prefetching next {0} item(s)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.NextEpisode">Next</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PrevEpisode">Previous</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistFirst">Already at the first item</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistLast">Already at the last item</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistCleared">List cleared (current video kept)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ShiftAppend">Shift+drop to append to playlist</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend">Gray = recognized source · Yellow = translated Chinese</sys:String>
+    <sys:String x:Key="Str.Main.Seek.NoFrontier">Subtitles not ready yet</sys:String>
+    <sys:String x:Key="Str.Main.Seek.SourceOnly">Source through {0}&#10;Translation not ready</sys:String>
+    <sys:String x:Key="Str.Main.Seek.Both">Source through {0}&#10;Translation through {1}</sys:String>
+    <sys:String x:Key="Str.Main.Health.Ready">Components ready</sys:String>
+    <sys:String x:Key="Str.Main.Health.Warning">Some components missing</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing">Required components missing</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Mpv">mpv playback component missing</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Engine">Recognition engine missing</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Mt">Translation stack missing (Chinese translation unavailable)</sys:String>
+    <sys:String x:Key="Str.Main.Health.Fix">Click to fix</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.MtMissing">Translation model missing · showing source · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.MtStarting">Starting translation model · showing source · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.Queue">Translation queued · showing source · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.MtMissing">Translation model missing · showing source · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.MtStarting">Starting translation model · showing source · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.Queue">Translation queued · showing source · 3</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.SkipButton">Play now</sys:String>
+    <sys:String x:Key="Str.Main.Transport.SeekBack">Seek back {0}s · ←</sys:String>
+    <sys:String x:Key="Str.Main.Transport.SeekFwd">Seek forward {0}s · →</sys:String>
+    <sys:String x:Key="Str.Main.Transport.PlayPause">Play/Pause · Space</sys:String>
+    <sys:String x:Key="Str.Main.Transport.Mute">Mute · M</sys:String>
+    <sys:String x:Key="Str.Main.Transport.Speed">Cycle speed · [  reset · ]</sys:String>
+    <sys:String x:Key="Str.Main.Preset.Tip">Pick ASR and translation strategy by content</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubVisibleOn">Subtitles: on</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubVisibleOff">Subtitles: off</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubDelayHint">Z / X nudge subtitles ±0.5s</sys:String>
+    <sys:String x:Key="Str.Main.Osd.WaitFirstZhOffer" xml:space="preserve">Subtitles lag behind the video.
+
+Wait for about 1 minute of translation before auto-play next time?
+(You can change this under Settings → General)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.OnlineSubOffer" xml:space="preserve">No local subtitle found.
+
+Try online subtitle search? (Change later under Settings → General)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ExternalSubTip">Sidecar loaded · tap 「Use transcription」 for ASR</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.OffExisting">Subtitles off · switch to transcription from menu</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.OffPreview">Subtitles off · still generating in background</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.PreviewJa">Generating · {0} · Chinese source</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtNotReady">Showing source · translation not ready · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">Generating subtitles (lags behind) · showing source · gray/yellow bars</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.PreviewMt">Generating · {0} · translated {1}/{2}</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.StartingMt">Generating subtitles (lags behind) · starting translation model</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">Generating · {0} · source only</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewFailed">Generation failed · video still playing</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">Playing · generation failed: {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.MtStartFailed">Showing source · translation model failed to start</sys:String>
+    <sys:String x:Key="Str.Main.Status.CheckingAsr">Checking speech model…</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreparingMt">Preparing local translation model…</sys:String>
+    <sys:String x:Key="Str.Main.Status.StartingAsrMt">Recognizing source · then translation…</sys:String>
+    <sys:String x:Key="Str.Main.Status.StartingAsr">Starting recognition…</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrDone"> · recognition done</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewCancelled">Transcription cancelled</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrStartedMt">Recognition started · preparing translation…</sys:String>
+    <sys:String x:Key="Str.Main.Status.PrefetchApplied"> · using prefetched list item</sys:String>
+    <sys:String x:Key="Str.Main.Status.EngineSaved">Engine settings saved · applies on next transcription</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetCancelled">Preset transcription cancelled · video still playing</sys:String>
+    <sys:String x:Key="Str.Main.ManualInstall.Prompt" xml:space="preserve">Download page / folder opened.
+
+Place files as instructed, then click Yes to re-check;
+No to use fast transcription; Cancel to abort this transcription.</sys:String>
+    <sys:String x:Key="Str.Main.ManualInstall.Title">Manual install</sys:String>
+    <sys:String x:Key="Str.Main.Close.WhileDownloading.Title">Model download in progress</sys:String>
+    <sys:String x:Key="Str.Main.Close.WhileDownloading.Message" xml:space="preserve">A model is still downloading or installing. Closing now will interrupt progress; you may need to download again.
+
+Close anyway?</sys:String>
+    <sys:String x:Key="Str.Errors.Generic">Operation failed — check logs or retry</sys:String>
+    <sys:String x:Key="Str.Errors.NoMedia">No video opened</sys:String>
+    <sys:String x:Key="Str.Errors.OpenFolder">Cannot open folder: {0}</sys:String>
+    <sys:String x:Key="Str.EngineLog.Title">Engine log</sys:String>
+    <sys:String x:Key="Str.EngineLog.Hint">Recognition engine and transcription session output (data/logs/engine.log).</sys:String>
+    <sys:String x:Key="Str.EngineLog.Refresh">Refresh</sys:String>
+    <sys:String x:Key="Str.EngineLog.OpenFolder">Open logs folder</sys:String>
+    <sys:String x:Key="Str.EngineLog.Empty">No engine log yet. Open a video and start transcription.</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Title">Keyboard shortcuts</sys:String>
+    <sys:String x:Key="Str.Help.SubSource.Title">Subtitle sources</sys:String>
+    <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">Off: play only — no ASR, MT, or online search.
+Online: search SubtitleCat / Xunlei by title; no auto ASR on failure.
+Local: sidecar .srt / .ass only; no auto transcription if missing.
+Live subtitles: optional sidecar first, otherwise auto ASR (default path).</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">Open Ctrl+O · stream Ctrl+Shift+O · Play/Pause Space · Seek ← →
+Fine Shift+←→ · Large Ctrl+←→ · ±60s PageUp/Down
+Start/End Home/End · Frame , .
+Volume ↑↓ · wheel · fine seek Shift+wheel
+ZH/Src/Dual 1/2/3 · toggle subs V/0 · sync Z/X ±0.5s
+Playlist L · prev/next P/N · mute M · screenshot S
+speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Header">Recommended first setup</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.UiLang">UI language chosen</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.AutoPreview">Auto transcription on</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Translate">Translation on</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Engine">Engine / mpv ready</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Pending">Pending</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZh.HintLong">For viewers who prefer not to start with source only; long files may wait longer. Use 「Play now」 or Space during wait. English shows usually play immediately without waiting for Chinese.</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewLabel">Display sample</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewSample">Sample subtitle 示例字幕</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewHint">Approximate look while adjusting size, outline, and margin (mpv renders the real output).</sys:String>
+    <sys:String x:Key="Str.Settings.PreferExternal">Prefer sidecar subtitles (.srt / .ass); skip auto ASR</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPreview">Auto-start ASR when no sidecar exists</sys:String>
+    <sys:String x:Key="Str.Settings.Translate">Translation: use local model when available; otherwise source first</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget">Translation language</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">Separate from UI language. English output uses the same optional Qwen model (~1.1 GB), not in the default pack.</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Zh">Chinese</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Zh">Translation</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Src">Source</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Dual">Dual</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.DualEn">EN + source</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Off">Off</sys:String>
+    <sys:String x:Key="Str.Settings.TextSanitize">Light JA fix-ups and post-MT cleanup (recommended)</sys:String>
+    <sys:String x:Key="Str.Settings.TextSanitize.Hint">Player-side light cleanup; production pipeline stays in Transub.</sys:String>
+    <sys:String x:Key="Str.Settings.WaitFirstZh">Wait until translation reaches target duration before play</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZhMinutes">Translation must reach (minutes)</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZh.DepHint">Requires translation, auto transcription, and auto-play on open. Example: 1 minute waits until ~1:00 translated.</sys:String>
+    <sys:String x:Key="Str.Settings.FullscreenQuietOsd">Fewer lag prompts in fullscreen</sys:String>
+    <sys:String x:Key="Str.Settings.RememberBounds">Remember window size and position</sys:String>
+    <sys:String x:Key="Str.Settings.AlwaysOnTop">Always on top</sys:String>
+    <sys:String x:Key="Str.Settings.AddSameFolderToPlaylist">Add other media in the same folder when opening one file</sys:String>
+    <sys:String x:Key="Str.Settings.AddSameFolderToPlaylist.Hint">Applies when you open or pick a single file only; multi-select, Shift+append, and playlist files are unchanged. Sorted by file name; current file first.</sys:String>
+    <sys:String x:Key="Str.Settings.HideChrome">Auto-hide controls in fullscreen (move mouse to bottom edge)</sys:String>
+    <sys:String x:Key="Str.Settings.RememberRecent">Remember recent files</sys:String>
+    <sys:String x:Key="Str.Settings.HideDelay">Fullscreen hide delay (seconds)</sys:String>
+    <sys:String x:Key="Str.Settings.RecentMax">Recent files count</sys:String>
+    <sys:String x:Key="Str.Settings.ScreenshotDir">Screenshot folder (empty = default)</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.Hint">Playback on open, seek steps, and video scaling.</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPlay">Auto-play after opening</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPlayNext">Auto-play next playlist item</sys:String>
+    <sys:String x:Key="Str.Settings.PrefetchPlaylist">Prefetch subtitles for upcoming playlist items</sys:String>
+    <sys:String x:Key="Str.Settings.PrefetchPlaylist.Hint">When the playlist has multiple files, prefetch runs after the current item; opening next may reuse cached subtitles.</sys:String>
+    <sys:String x:Key="Str.Settings.RememberPos">Remember playback position (resume next open)</sys:String>
+    <sys:String x:Key="Str.Settings.DefaultVolume">Default volume</sys:String>
+    <sys:String x:Key="Str.Settings.DefaultSpeed">Default speed</sys:String>
+    <sys:String x:Key="Str.Settings.SeekStep">Seek step (← →)</sys:String>
+    <sys:String x:Key="Str.Settings.SeekFine">Fine step (Shift + ← →)</sys:String>
+    <sys:String x:Key="Str.Settings.SeekLarge">Large step (Ctrl + ← →)</sys:String>
+    <sys:String x:Key="Str.Settings.HwDec">Hardware decode</sys:String>
+    <sys:String x:Key="Str.Settings.VideoFit">Video scaling</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">Hardware decode writes to mpv immediately; reopen the file if the picture does not switch. 「Fit window to video」 resizes on open (1:1 pixels, clamped to screen; skipped when maximized/fullscreen).</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.Hint">Subtitle appearance and sync. Transcription toggles are under General.</sys:String>
+    <sys:String x:Key="Str.Settings.SubDefaultMode">Default display</sys:String>
+    <sys:String x:Key="Str.Settings.SubFont">Font (editable)</sys:String>
+    <sys:String x:Key="Str.Settings.SubDelay">Subtitle delay (seconds)</sys:String>
+    <sys:String x:Key="Str.Settings.SubDelayHint">Positive = later. Nudge during playback with Z / X ±0.5s.</sys:String>
+    <sys:String x:Key="Str.Settings.SubVisible">Show subtitles on open</sys:String>
+    <sys:String x:Key="Str.Settings.SubBold">Bold</sys:String>
+    <sys:String x:Key="Str.Settings.Glossary">Glossary path (empty = data/glossary.json or local Transub)</sys:String>
+    <sys:String x:Key="Str.Settings.SubFontSize">Font size</sys:String>
+    <sys:String x:Key="Str.Settings.SubBorder">Outline</sys:String>
+    <sys:String x:Key="Str.Settings.SubMargin">Bottom margin</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.Hint">Player ships with a lite engine and tiny ASR. Full engine comes with Transub — point to its install folder.</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.EngineSource">Engine source</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.EngineUrl">Engine URL</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.HfMirror">Model mirror</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TranslateUrl">Translation URL</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TransubDir">Transub install folder (empty = auto)</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OpenSite">Open website</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TransubDirHint">Pick the folder containing Transub.exe; engine and export paths resolve from there.</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.ModelsDir">Models folder (empty = Transub models)</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OnDemand">On-demand packs (not in default install)</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadTurbo">Download turbo (~1.6 GB)</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallGpu">Install GPU runtime</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadAnime">Download Anime Whisper</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadSense">Download SenseVoice</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.Cancel">Cancel</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.MtModels">Local translation models</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallLlama">Install translation runtime</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadGguf">Download translation model</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OpenMtDir">Open model folder</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallPreset">Install for current preset</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.EnMtHint">English series/film: EN→ZH needs the general Qwen model (~1.1 GB), not the Sakura Japanese model.</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.EnOutHint">EN translation (JA/KO/ZH…): needs the general Qwen model (~1.1 GB), not Sakura.</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.PackHint">Missing preset deps prompt on switch; auto-install or fall back to fast transcription. Large packs are never in the default install.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend.En">Gray = English ASR · Yellow = Chinese translation</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend.En">Gray = English · Yellow = Chinese</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel.En">Subtitles lag behind video · gray = English ASR · yellow = Chinese translation</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip.En">Chinese translation · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src.Tip.En">English ASR · 2</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip.En">Chinese + English · 3</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetDowngrade.EnMt">Matched 「{0}」· missing Chinese translation (Qwen ~1.1 GB) · using fast transcription (English ASR only)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetDowngrade.EnMt">「{0}」 missing EN→ZH model · using fast transcription (English ASR only)</sys:String>
+    <sys:String x:Key="Str.Main.EnSource.Offer" xml:space="preserve">This is English content. Show English ASR only, or install translation for Chinese translation?
+
+Yes = install Chinese translation (Qwen)
+No = English ASR only
+Cancel = keep current settings</sys:String>
+    <sys:String x:Key="Str.Main.EnSource.SourceOnly">Showing English ASR only · install Qwen in Settings for Chinese translation</sys:String>
+    <sys:String x:Key="Str.Main.Mode.En">EN</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.EnTarget">EN+SRC</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip.EnTarget">English translation · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip.EnTarget">English + source · 3</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend.ToEn">Gray = source · Yellow = English</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend.ToEn">Gray = source · Yellow = English translation</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel.ToEn">Subtitles lag behind video · gray = source · yellow = English translation</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetChanged">Translation language changed · retry transcription to re-translate</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetRetranslating">Translation language changed · re-translating…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetSourceOnly">Translation language changed · no translation needed for this source</sys:String>
+    <sys:String x:Key="Str.Main.Status.Retranslating">Re-translating with the new target language…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetRetranslating">Preset changed · re-translating…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetMtOff">Preset changed · translation not needed for this preset</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetEnTip">English translation uses the general Qwen model; JA presets no longer use Sakura. Install under Settings → Presets.</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Body.EnTarget" xml:space="preserve">Open Ctrl+O · stream Ctrl+Shift+O · Play/Pause Space · Seek ← →
+Fine Shift+←→ · Large Ctrl+←→ · ±60s PageUp/Down
+Start/End Home/End · Frame , .
+Volume ↑↓ · wheel · fine seek Shift+wheel
+EN / source / dual 1/2/3 (when translation target = English) · sub V/0 · sync Z/X ±0.5s
+Playlist L · prev/next P/N · mute M · screenshot S
+loop/reset speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
+
+</ResourceDictionary>

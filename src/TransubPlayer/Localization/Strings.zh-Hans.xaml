@@ -1,0 +1,576 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+    <!-- Common -->
+    <sys:String x:Key="Str.Common.Cancel">取消</sys:String>
+    <sys:String x:Key="Str.Common.Save">保存</sys:String>
+    <sys:String x:Key="Str.Common.Browse">浏览</sys:String>
+    <sys:String x:Key="Str.Common.Close">关闭</sys:String>
+    <sys:String x:Key="Str.Common.Minimize">最小化</sys:String>
+    <sys:String x:Key="Str.Common.Maximize">最大化</sys:String>
+    <sys:String x:Key="Str.Common.Restore">还原</sys:String>
+    <sys:String x:Key="Str.Common.AutoFollowSystem">跟随系统</sys:String>
+    <sys:String x:Key="Str.Common.AllFiles">所有文件</sys:String>
+
+    <!-- Main chrome -->
+    <sys:String x:Key="Str.Main.Tagline">字幕播放器</sys:String>
+    <sys:String x:Key="Str.Main.Open">打开</sys:String>
+    <sys:String x:Key="Str.Main.Settings">设置</sys:String>
+    <sys:String x:Key="Str.Main.Transub">用Transub生成字幕</sys:String>
+    <sys:String x:Key="Str.Main.Transub.Tip">用 Transub 生成成片级字幕（将当前视频加入任务）</sys:String>
+    <sys:String x:Key="Str.Main.Transub.Opened">已打开 Transub，当前视频已加入任务</sys:String>
+    <sys:String x:Key="Str.Main.Transub.OpenedEmpty">已打开 Transub</sys:String>
+    <sys:String x:Key="Str.Main.Transub.NotFound">未找到 Transub。请先下载安装，或在设置 · 高级中指定安装目录。</sys:String>
+    <sys:String x:Key="Str.Main.Transub.OpenSitePrompt">是否打开官网下载安装 Transub？</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.Transub">成片级中文可点右上角「用Transub生成字幕」</sys:String>
+    <sys:String x:Key="Str.Main.RetryPreview">重试转写</sys:String>
+    <sys:String x:Key="Str.Main.RetryPreview.Tip">重新开始转写</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend">灰条原文 · 黄条译文</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh">译文</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src">原文</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual">双语</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub">字幕</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.Toggle">显示 / 隐藏字幕</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip">译文 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src.Tip">原文 · 2</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip">双语 · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.PendingTip">生成中（暂显原文）· 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.PendingTip">生成中（暂显原文）· 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.ShowTip">显示字幕 · 0 / V</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Sub.HideTip">隐藏字幕 · 0 / V</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Off">关闭字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Online">在线字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Local">本地字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LocalNone">本地字幕 (无)</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LocalOnlyNone">仅本地字幕 · 同目录无成片 · 不自动转写/翻译/在线查找</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.OnlineNone">在线字幕无匹配 · 不自动转写</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.OffOpen">字幕已关闭 · 不自动转写/翻译/在线查找</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Live">实时字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.Tip">选择字幕来源：关闭 / 在线 / 本地 / 实时字幕</sys:String>
+    <sys:String x:Key="Str.Main.NeedsInstall">需安装</sys:String>
+    <sys:String x:Key="Str.Main.Recent">最近打开</sys:String>
+    <sys:String x:Key="Str.Main.RecentEmpty">（暂无）</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClearRecent">清空打开记录</sys:String>
+    <sys:String x:Key="Str.Main.Status.RecentCleared">已清空打开记录</sys:String>
+    <sys:String x:Key="Str.Main.Status.Ready">拖入或打开影片即可播放；字幕会陆续跟上</sys:String>
+    <sys:String x:Key="Str.Main.Status.ViewLogTip">点击查看引擎日志</sys:String>
+    <sys:String x:Key="Str.Main.Status.Opening">正在打开视频…</sys:String>
+    <sys:String x:Key="Str.Main.Opening.Title">正在打开视频</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.ConnectingEngine">正在连接识别引擎</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.CheckingModels">正在检查识别模型</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.DownloadingModel">正在下载轻量识别模型（约 75 MB）</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.PreparingTranslate">正在准备翻译模型</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.LoadingCache">正在加载字幕</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.StartingAsr">正在启动识别</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.GeneratingSource">正在生成原文字幕</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.SourceProgress">已生成到 {0}</sys:String>
+    <sys:String x:Key="Str.Main.Bootstrap.PleaseWait">请稍候…</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Title">正在生成译文字幕</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Progress">当前 {0} / 目标 {1}</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.ProgressFirst">当前译文 {0} · 等待首批</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.Hint">完成后将自动播放 · 也可按空格立即开始</sys:String>
+    <sys:String x:Key="Str.Main.Status.MpvMissing">未找到播放组件 mpv。安装包应自带；开发环境可运行 tools\fetch-mpv.ps1。</sys:String>
+    <sys:String x:Key="Str.Main.Status.EngineMissing">未找到识别引擎 · 请打开设置 · 高级</sys:String>
+    <sys:String x:Key="Str.Main.Status.MtMissing">译中组件未就绪 · 可打开设置 · 高级安装，或再次运行配置向导</sys:String>
+    <sys:String x:Key="Str.Main.EngineMissing.Dialog" xml:space="preserve">未找到识别引擎。
+
+可打开设置 · 高级选择 Transub 安装目录，或先运行 tools\stage-engine-lite.ps1。
+是否现在打开设置？</sys:String>
+
+    <!-- Context menu (sample set; migrate remaining gradually) -->
+    <sys:String x:Key="Str.Main.Menu.OpenFile">打开文件…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenUrl">打开流媒体地址…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ScreenCapture">播放屏幕捕获</sys:String>
+    <sys:String x:Key="Str.Main.OpenDialog.Title">打开媒体</sys:String>
+    <sys:String x:Key="Str.Main.Status.StreamPlaybackOnly">流媒体播放 · 自动转写不可用</sys:String>
+    <sys:String x:Key="Str.Main.Status.ScreenCapture">屏幕捕获 · 自动转写不可用</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Title">打开流媒体地址</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Prompt">输入网络地址（HTTP / HTTPS / RTMP / RTSP 等）</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Hint">支持 HLS（.m3u8）、直链视频与常见直播流。可拖入或粘贴地址。</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Open">打开</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Invalid">无法识别该地址，请检查格式后重试。</sys:String>
+    <sys:String x:Key="Str.MediaSource.Screen.Desktop">屏幕捕获（桌面）</sys:String>
+    <sys:String x:Key="Str.MediaSource.Screen.Capture">屏幕捕获</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Recent">最近打开</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Playlist">播放列表</sys:String>
+    <sys:String x:Key="Str.Main.Menu.PlayPause">播放 / 暂停</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Stop">停止</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Fullscreen">视频全屏</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SameFolderAdded">同文件夹 {0} 个文件已加入列表</sys:String>
+    <sys:String x:Key="Str.Main.Fullscreen.EnterTip">视频全屏 · Enter / F / Alt+Enter</sys:String>
+    <sys:String x:Key="Str.Main.Fullscreen.ExitTip">退出全屏 · Esc</sys:String>
+    <sys:String x:Key="Str.Main.Menu.AlwaysOnTop">置顶</sys:String>
+    <sys:String x:Key="Str.Main.Menu.FindOnlineSubtitles">查找在线字幕…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Settings">设置…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Transub">用 Transub 生成高质量字幕…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.FileAssociation">文件关联…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.About">关于</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Exit">退出</sys:String>
+    <sys:String x:Key="Str.Main.AppMenu.Tip">打开菜单</sys:String>
+    <sys:String x:Key="Str.Main.About.Body" xml:space="preserve">Transub Player {0}
+
+本地影片边看边出字幕。
+成片级中文 / 双语 / 质检请使用 Transub。</sys:String>
+
+    <!-- Settings -->
+    <sys:String x:Key="Str.Settings.Title">设置</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.General">常用</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Playback">播放</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Subtitle">字幕</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Advanced">高级</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Association">关联</sys:String>
+    <sys:String x:Key="Str.Settings.Tab.Presets">预设</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Hint">按片源预设查看依赖状态；可自动下载、手动安装或删除识别/翻译模型（默认 whisper-tiny 不会删除）。</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Download">下载</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Manual">手动安装</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Delete">删除</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.Ready">已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.DeleteConfirm" xml:space="preserve">将删除预设「{0}」的以下组件：
+
+{1}
+
+默认识别 whisper-tiny 不会删除。若组件被多个预设共用，删除后其它预设也会受影响。
+
+是否继续？</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.DeleteDone">已删除预设「{0}」的本地组件</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.InstallDone">预设「{0}」依赖安装完成</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.AlreadyReady">预设「{0}」依赖已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.CannotAuto">预设「{0}」无法自动安装：{1}</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.NothingToDelete">预设「{0}」没有可删除的本地组件</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.InstallIncomplete">预设「{0}」安装未完成：{1}</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.PartialAsr">识别模型 {0}（下载未完成）</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.PartialAsrDetail">上次下载未完成，请重新下载。</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Starting">正在下载 {0}（{1}）…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Progress">正在下载 {0} · {1}% · {2} / {3}</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.ProgressUnknown">正在下载 {0} · {1}…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Verifying">正在校验 {0}…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Done">{0} 下载完成</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.AllDone">模型下载完成</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Incomplete">{0} 下载不完整（已下载 {1}，需要约 {2}）。请重试。</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.InstallingPreset">正在安装预设「{0}」…</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.Cancelled">已取消</sys:String>
+    <sys:String x:Key="Str.Settings.ModelDownload.ConnectingEngine">正在连接识别引擎…</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyReady">轻量识别 已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyMissing">轻量识别 未装</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTinyPartial">轻量识别 下载未完成</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboReady">turbo 已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboMissing">turbo 未装</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.AsrTurboPartial">turbo 下载未完成</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.LlamaReady">翻译运行时 已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.LlamaMissing">翻译运行时 未装</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.GgufReady">翻译模型 已就绪</sys:String>
+    <sys:String x:Key="Str.Settings.PackStatus.GgufMissing">翻译模型 未装</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.Title">手动安装</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.Intro">预设「{0}」缺少以下组件。请把完整文件放到对应目录，或从已有 Transub 安装复制。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrPath">识别模型目录：{0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrPageHint">已尝试打开模型参考页；请使用与 Transub Engine 相同的 CT2 格式（含 model.bin 等）。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AsrCopyHint">可从本机 Transub 的 models\asr 目录复制，或使用「下载」自动拉取。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.GgufPath">翻译模型文件：{0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.LlamaPath">翻译运行时目录：{0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.LlamaHint">可点「安装翻译运行时」自动下载，或从 llama.cpp 发行包解压 llama-server.exe。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.FullEngineHint">需安装 Transub 完整引擎，或在设置里把引擎来源改为 transub。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.GpuHint">GPU 包通常由引擎自动安装；也可在高级页点「安装 GPU 运行时」。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.AfterPlace">放好后请关闭此说明并重新检测；设置页会刷新状态。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.StillMissing">仍缺少：{0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.PickFolder">选择已下载完整的识别模型文件夹</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportMissingFolder">所选文件夹不存在。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportUnrecognized">无法识别所选文件夹中的完整识别模型。请确认含 model.bin 等权重且大小足够。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportIncomplete">{0} 复制后校验未通过，请检查文件是否完整。</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportDone">已导入 {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.OpenedAsrRoot">已打开 {0}</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.OpenAsrRoot">打开识别模型目录</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">从文件夹导入识别模型</sys:String>
+    <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">手动安装（当前预设）</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage">界面语言</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">保存后立即切换。界面文案已支持中/英；若发现遗漏请反馈。</sys:String>
+    <sys:String x:Key="Str.Settings.General.Hint">字幕与窗口常用选项。引擎路径与大包下载在「高级」。</sys:String>
+    <sys:String x:Key="Str.Settings.SubtitleCat.Fetch">无本地字幕时，从 SubtitleCat 搜索并选择下载</sys:String>
+    <sys:String x:Key="Str.Settings.SubtitleCat.Fetch.Hint">按影片名搜索；自动提取关键词。SubtitleCat 不可达时自动改用迅雷字幕库。失败会提示并回退转写。</sys:String>
+    <sys:String x:Key="Str.Settings.HideDelay.Current">当前 {0} 秒</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.RunWizard">再次运行配置向导</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Hint">勾选要在资源管理器中双击打开的扩展名，点「应用关联」写入本用户注册表（无需管理员）。取消勾选并应用可解除本程序设置的默认关联。</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Video">视频</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Audio">音频</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Subtitle">字幕</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Category.Playlist">播放列表</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectVideo">全选视频</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectAll">全选</sys:String>
+    <sys:String x:Key="Str.Settings.Association.SelectNone">全不选</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Apply">应用关联</sys:String>
+    <sys:String x:Key="Str.Settings.Association.FileTypeLabel">{0} 文件（Transub Player）</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Status">已生效 {0} / {1} 个 · 已选 {2} 个</sys:String>
+    <sys:String x:Key="Str.Settings.Association.ApplyOk">已更新 {0} 个扩展名</sys:String>
+    <sys:String x:Key="Str.Settings.Association.ApplyPartial">已更新 {0} 个，失败 {1} 个{2}</sys:String>
+    <sys:String x:Key="Str.Settings.Association.Error.NoExe">找不到程序路径，无法写入关联。</sys:String>
+
+    <!-- SubtitleCat -->
+    <sys:String x:Key="Str.SubtitleCat.Searching">正在搜索在线字幕「{0}」…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Downloading">正在下载字幕…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Loaded">已加载在线字幕</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.LoadedFrom">已加载 {0} 字幕</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.NoResults">在线字幕无匹配结果</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Failed">在线字幕：{0}</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.FailedShort">在线字幕获取失败</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.FallbackAsr">将改用转写</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Skipped">已跳过在线字幕</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Title">选择字幕</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Heading">在线字幕搜索结果</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Query">搜索：{0}</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.FallbackNote">SubtitleCat 不可达或无结果时，已改用迅雷字幕库。可手动切回来源。</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Hint">可切换 SubtitleCat / 迅雷。已按相关度排序（中文标识、下载量）。双击或点「使用」加载。</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider">来源</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Cat">SubtitleCat</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Xunlei">迅雷</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Provider.Searching">正在搜索所选来源…</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Skip">跳过</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Use">使用</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.NeedSelect">请先选择一条字幕。</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Empty">没有可显示的结果。</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Source">来源</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Title">标题</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Downloads">下载</sys:String>
+    <sys:String x:Key="Str.SubtitleCat.Picker.Col.Size">大小</sys:String>
+
+    <!-- Setup wizard -->
+    <sys:String x:Key="Str.Wizard.Title">初次配置</sys:String>
+    <sys:String x:Key="Str.Wizard.Subtitle">配置引擎、播放组件与译中组件。完成后打开影片即可看到中文字幕。</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Engine">1 · 引擎</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Mpv">2 · 播放</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Mt">3 · 译中</sys:String>
+    <sys:String x:Key="Str.Wizard.Step.Done">4 · 完成</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.UseTransub">使用已安装的 Transub（推荐，复用引擎与模型）</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.UseLite">使用精简引擎（随 Player 自带）</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.Path">Transub 安装目录</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.Detected">已检测到 Transub</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.NotFound">未检测到 Transub。可安装后浏览其安装目录（含 Transub.exe），或使用本机精简引擎。</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.LiteReady">已找到精简引擎，可直接使用。</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.LiteMissing">未找到精简引擎。请安装 Transub 并选择安装目录；开发环境可先运行 tools\stage-engine-lite.ps1。</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.InvalidPath">所选目录无效。请选择 Transub 安装文件夹（含 Transub.exe），程序会自动找到内部引擎。</sys:String>
+    <sys:String x:Key="Str.Wizard.Engine.NeedPath">请选择有效的 Transub 安装目录。</sys:String>
+    <sys:String x:Key="Str.Wizard.OpenSite">打开 Transub 官网</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Ready">播放组件 mpv 已就绪。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Missing">未找到 mpv。安装包通常自带；开发环境可在此下载。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Download">下载 mpv</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Downloading">正在下载 mpv…</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Done">mpv 已就绪。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.Failed">下载 mpv 失败：{0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Mpv.NoScript">未找到 tools\fetch-mpv.ps1，且安装包内没有 mpv。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Intro">显示中文需要本机翻译运行时（llama-server）与模型。若已安装 Transub，通常可直接复用；否则将下载通用多语翻译模型（约 1.1 GB，适合美剧等）。日语专项模型可稍后在设置中按需安装。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.RuntimeReady">翻译运行时：已就绪</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.RuntimeMissing">翻译运行时：未安装（约 32 MB）</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.GgufReady">翻译模型：已就绪</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.GgufMissing">翻译模型：未安装（约 1.1 GB，通用多语 Qwen，适合美剧等）</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Install">安装翻译组件</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.InstallAndNext">安装并继续</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.SkipHint">若跳过，打开影片后仍可看原文，但不会自动出中文，需再到设置 · 高级安装。</sys:String>
+    <sys:String x:Key="Str.Wizard.Mt.Failed">安装翻译组件失败：{0}</sys:String>
+    <sys:String x:Key="Str.Wizard.CancelInstall">取消安装</sys:String>
+    <sys:String x:Key="Str.Wizard.Cancelled">已取消</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Title">配置已保存</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.EngineOk">引擎：{0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.EngineMissing">引擎尚未就绪，可稍后在「设置 · 高级」中配置。</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MpvOk">播放组件：就绪</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MpvMissing">播放组件：未就绪（打开影片时仍可再试下载）</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Models">ASR 模型目录：{0}</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtRuntimeOk">翻译运行时：就绪</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtRuntimeMissing">翻译运行时：未就绪（中文翻译将不可用）</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtGgufOk">翻译模型：就绪</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.MtGgufMissing">翻译模型：未就绪（中文翻译将不可用）</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineSubtitles">开启在线字幕查找</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineSubtitles.Hint">无本地字幕时，按片名搜索 SubtitleCat / 迅雷字幕库并选择下载；失败则回退转写。可稍后在设置中更改。</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineOn">在线字幕查找：已开启</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.OnlineOff">在线字幕查找：未开启</sys:String>
+    <sys:String x:Key="Str.Wizard.Done.Hint">识别模型可在打开影片时按需下载。成片级字幕请用 Transub。</sys:String>
+    <sys:String x:Key="Str.Wizard.Next">下一步</sys:String>
+    <sys:String x:Key="Str.Wizard.Back">上一步</sys:String>
+    <sys:String x:Key="Str.Wizard.Skip">跳过</sys:String>
+    <sys:String x:Key="Str.Wizard.Finish">完成</sys:String>
+
+    <!-- UX improvements -->
+    <sys:String x:Key="Str.Main.DropHint.Open">拖入或打开影片即可播放</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.PreviewAuto">字幕会自动跟上（默认识别轻量模型）</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.AutoPreviewOff">若关闭自动转写，可在状态栏一键开始</sys:String>
+    <sys:String x:Key="Str.Main.DropHint.SubSourceHelp">字幕来源说明</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Title">字幕还在追赶画面</sys:String>
+    <sys:String x:Key="Str.Main.Lag.TitleWithReady">字幕还在追赶画面（已生成到 {0}）</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Osd.Sub">字幕还在追赶画面</sys:String>
+    <sys:String x:Key="Str.Main.Lag.Osd.Source">原文字幕还在追赶画面</sys:String>
+    <sys:String x:Key="Str.Main.Lag.JumpReady">跳到字幕已生成处</sys:String>
+    <sys:String x:Key="Str.Main.Lag.SwitchSource">切原文继续</sys:String>
+    <sys:String x:Key="Str.Main.Lag.ContinueWait">继续等待</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Subtitles">字幕显示</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubDelayLater">字幕延后 0.5 秒</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">字幕提前 0.5 秒</sys:String>
+    <sys:String x:Key="Str.Main.Menu.RePreview">改用转写</sys:String>
+    <sys:String x:Key="Str.Main.Menu.StartPreview">开始转写</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Presets">预设</sys:String>
+    <sys:String x:Key="Str.Main.Menu.PresetsLoading">（加载中）</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Speed">倍速</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Screenshot">截图</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenScreenshotFolder">打开截图文件夹</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Shortcuts">快捷键帮助</sys:String>
+    <sys:String x:Key="Str.Main.Menu.SubSourceHelp">字幕来源说明…</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Title">播放列表</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ShowHide">显示 / 隐藏列表</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Prev">上一个</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Next">下一个</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.Clear">清空列表</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ClearKeep">清空</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchRunning">预生成中</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchReady">已就绪</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchQueued">排队中</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.PrefetchFailed">失败</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.TitleCount">播放列表  {0}/{1}</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.ShowTip">隐藏列表 · L</sys:String>
+    <sys:String x:Key="Str.Main.Playlist.HideTip">播放列表 · L</sys:String>
+    <sys:String x:Key="Str.Main.Action.StartPreview">开始转写</sys:String>
+    <sys:String x:Key="Str.Main.Action.StartPreview.Tip">开始转写</sys:String>
+    <sys:String x:Key="Str.Main.Action.SwitchToPreview">改用转写</sys:String>
+    <sys:String x:Key="Str.Main.Action.SwitchToPreview.Tip">改用 AI 转写</sys:String>
+    <sys:String x:Key="Str.Main.Action.InstallPreset">去安装</sys:String>
+    <sys:String x:Key="Str.Main.Action.InstallPreset.Tip">安装当前预设缺少的组件</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewNotAuto">已打开影片 · 转写未自动开始</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetDowngrade">匹配「{0}」· 缺 {1} · 已用极速转写</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetDowngrade">「{0}」缺组件 · 已用极速转写</sys:String>
+    <sys:String x:Key="Str.Main.Osd.Resumed">已从 {0} 续播</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ExternalSub">已加载同目录成片字幕</sys:String>
+    <sys:String x:Key="Str.Main.Status.ExternalSub">已用同目录成片字幕</sys:String>
+    <sys:String x:Key="Str.Main.Status.ExternalSubHint"> · 可改用转写</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel">字幕会落后画面 · 灰条=原文 · 黄条=译文</sys:String>
+    <sys:String x:Key="Str.Main.Status.QualityHandoff">字幕仅供边看边懂 · 成片请用 Transub</sys:String>
+    <sys:String x:Key="Str.Main.Status.JumpReady">已跳到字幕已生成处 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.SwitchToSource">已切原文继续 · 译文仍在后台生成</sys:String>
+    <sys:String x:Key="Str.Main.Status.WaitFirstZhEnabled">已开启：下次打开先攒约 1 分钟译文再播</sys:String>
+    <sys:String x:Key="Str.Main.Status.SubDelayHint">字幕不同步时可用 Z / X 微调 ±0.5 秒</sys:String>
+    <sys:String x:Key="Str.Main.Osd.StartPreview">开始转写</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetMatched">片源预设：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.UsingFastPreview">当前使用 {0} 极速转写</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PrefetchLoaded">已加载预生成字幕</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubSync">字幕同步 {0}{1:0.0} 秒</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TopMostOn">置顶：开</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TopMostOff">置顶：关</sys:String>
+    <sys:String x:Key="Str.Main.Osd.Screenshot">已截图 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.ScreenshotSaved">截图已保存 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistAdded">已加入 {0} 个</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistAdded">已加入列表 {0} 个 · 共 {1} 个</sys:String>
+    <sys:String x:Key="Str.Main.Status.NoMedia">没有可播放的影片</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistEnd">列表结束</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistEnd">播放列表已结束</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaybackEnd">播放结束</sys:String>
+    <sys:String x:Key="Str.Main.Status.PrefetchAfterEnd">播放结束 · 开始预生成后续 {0} 个</sys:String>
+    <sys:String x:Key="Str.Main.Osd.NextEpisode">下一集</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PrevEpisode">上一集</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistFirst">已经是第一个</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PlaylistLast">已经是最后一个</sys:String>
+    <sys:String x:Key="Str.Main.Status.PlaylistCleared">已清空列表（保留当前影片）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ShiftAppend">Shift+拖入可追加到列表</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend">灰条=已识别原文 · 黄条=已译中文</sys:String>
+    <sys:String x:Key="Str.Main.Seek.NoFrontier">字幕尚未生成</sys:String>
+    <sys:String x:Key="Str.Main.Seek.SourceOnly">原文已到 {0}&#10;译文尚未生成</sys:String>
+    <sys:String x:Key="Str.Main.Seek.Both">原文已到 {0}&#10;译文已到 {1}</sys:String>
+    <sys:String x:Key="Str.Main.Health.Ready">组件就绪</sys:String>
+    <sys:String x:Key="Str.Main.Health.Warning">部分组件未就绪</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing">缺少必要组件</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Mpv">缺少 mpv 播放组件</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Engine">缺少识别引擎</sys:String>
+    <sys:String x:Key="Str.Main.Health.Missing.Mt">缺少翻译组件（中文翻译不可用）</sys:String>
+    <sys:String x:Key="Str.Main.Health.Fix">点击修复</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.MtMissing">翻译模型未安装 · 暂显原文 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.MtStarting">翻译模型启动中 · 暂显原文 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Pending.Queue">译文排队中 · 暂显原文 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.MtMissing">翻译模型未安装 · 暂显原文 · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.MtStarting">翻译模型启动中 · 暂显原文 · 3</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Pending.Queue">译文排队中 · 暂显原文 · 3</sys:String>
+    <sys:String x:Key="Str.Main.WaitZh.SkipButton">不等了，先播</sys:String>
+    <sys:String x:Key="Str.Main.Transport.SeekBack">快退 {0} 秒 · ←</sys:String>
+    <sys:String x:Key="Str.Main.Transport.SeekFwd">快进 {0} 秒 · →</sys:String>
+    <sys:String x:Key="Str.Main.Transport.PlayPause">播放/暂停 · Space</sys:String>
+    <sys:String x:Key="Str.Main.Transport.Mute">静音 · M</sys:String>
+    <sys:String x:Key="Str.Main.Transport.Speed">循环倍速 · [  重置 · ]</sys:String>
+    <sys:String x:Key="Str.Main.Preset.Tip">按片源选择识别模型与翻译策略</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubVisibleOn">字幕：开</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubVisibleOff">字幕：关</sys:String>
+    <sys:String x:Key="Str.Main.Osd.SubDelayHint">Z / X 可微调字幕 ±0.5 秒</sys:String>
+    <sys:String x:Key="Str.Main.Osd.WaitFirstZhOffer" xml:space="preserve">字幕会落后画面。
+
+下次打开影片时，要不要先攒约 1 分钟译文再自动播放？
+（也可随时在设置 · 常用里开关）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.OnlineSubOffer" xml:space="preserve">同目录没有字幕。
+
+要试试在线字幕搜索吗？（可在设置 · 常用中更改）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ExternalSubTip">已加载外挂字幕 · 可点「改用转写」转写</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.OffExisting">字幕已关闭 · 右键可改用转写</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.OffPreview">字幕已关闭 · 仍在后台生成</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.PreviewJa">生成中 · {0} · 中文片源</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtNotReady">暂显原文 · 翻译模型未就绪 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">字幕生成中（会落后画面）· 暂显原文 · 灰条原文 · 黄条译文</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.PreviewMt">生成中 · {0} · 译文 {1}/{2}</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.StartingMt">字幕生成中（会落后画面）· 正在启动翻译模型</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">生成中 · {0} · 仅原文</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewFailed">生成失败 · 影片仍可播放</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">影片已在播放 · 生成失败：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.MtStartFailed">暂显原文 · 翻译模型未能启动</sys:String>
+    <sys:String x:Key="Str.Main.Status.CheckingAsr">正在检查识别模型…</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreparingMt">正在准备本机翻译模型…</sys:String>
+    <sys:String x:Key="Str.Main.Status.StartingAsrMt">正在识别原文 · 随后准备翻译…</sys:String>
+    <sys:String x:Key="Str.Main.Status.StartingAsr">正在启动识别…</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrDone"> · 识别完成</sys:String>
+    <sys:String x:Key="Str.Main.Status.PreviewCancelled">转写已取消</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrStartedMt">识别已开始 · 正在准备翻译模型…</sys:String>
+    <sys:String x:Key="Str.Main.Status.PrefetchApplied"> · 已用列表预生成</sys:String>
+    <sys:String x:Key="Str.Main.Status.EngineSaved">引擎设置已保存 · 下次转写时生效</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetCancelled">已取消按此预设启动转写 · 影片仍可播放</sys:String>
+    <sys:String x:Key="Str.Main.ManualInstall.Prompt" xml:space="preserve">已打开下载页 / 存放目录。
+
+把文件放到提示目录后点「是」继续检测；
+点「否」先用极速转写；点「取消」中止本次转写。</sys:String>
+    <sys:String x:Key="Str.Main.ManualInstall.Title">手动安装</sys:String>
+    <sys:String x:Key="Str.Main.Close.WhileDownloading.Title">正在下载模型</sys:String>
+    <sys:String x:Key="Str.Main.Close.WhileDownloading.Message" xml:space="preserve">模型仍在下载或安装中。现在关闭将中断进度，下次可能需要重新下载。
+
+是否仍要关闭？</sys:String>
+    <sys:String x:Key="Str.Errors.Generic">操作失败，请查看日志或重试</sys:String>
+    <sys:String x:Key="Str.Errors.NoMedia">尚未打开影片</sys:String>
+    <sys:String x:Key="Str.Errors.OpenFolder">无法打开文件夹：{0}</sys:String>
+    <sys:String x:Key="Str.EngineLog.Title">引擎日志</sys:String>
+    <sys:String x:Key="Str.EngineLog.Hint">识别引擎与转写会话输出（保存于 data/logs/engine.log）。</sys:String>
+    <sys:String x:Key="Str.EngineLog.Refresh">刷新</sys:String>
+    <sys:String x:Key="Str.EngineLog.OpenFolder">打开日志文件夹</sys:String>
+    <sys:String x:Key="Str.EngineLog.Empty">暂无引擎日志。打开影片并开始转写后会有记录。</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Title">快捷键</sys:String>
+    <sys:String x:Key="Str.Help.SubSource.Title">字幕来源说明</sys:String>
+    <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">关闭：只播放，不识别、不翻译、不搜在线字幕。
+在线：按片名搜索 SubtitleCat / 迅雷并选择下载；失败不会自动转写。
+本地：仅加载同目录 .srt / .ass；没有则不自动转写。
+实时字幕：优先同目录成片（若开启），否则自动 ASR 转写（默认路径）。</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">打开 Ctrl+O · 流媒体 Ctrl+Shift+O · 播放/暂停 Space · 快退/快进 ← →
+精细 Shift+←→ · 大步 Ctrl+←→ · ±60 秒 PageUp/Down
+片头/片尾 Home/End · 逐帧 , .
+音量 ↑↓ · 滚轮 · 微调进度 Shift+滚轮
+译文/原文/双语 1/2/3 · 显隐字幕 V/0 · 同步 Z/X ±0.5s
+播放列表 L · 上/下集 P/N · 静音 M · 截图 S
+循环/重置倍速 [ / ] · 全屏 F/F11/Enter · 置顶 T · 帮助 F1</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Header">推荐首次配置</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.UiLang">界面语言已选</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.AutoPreview">自动转写已开</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Translate">翻译已开</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Engine">引擎 / mpv 就绪</sys:String>
+    <sys:String x:Key="Str.Settings.FirstRun.Pending">待完成</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZh.HintLong">适合不想先看原文的用户；长片可能多等几分钟。等待中可按「不等了，先播」或空格立即开始。欧美片（英文识别）通常可直接播放，不必等待中文译文。</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewLabel">显示效果</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewSample">示例字幕 Sample subtitle</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.PreviewHint">调整字号、描边与边距时的示意（实际以 mpv 渲染为准）。</sys:String>
+    <sys:String x:Key="Str.Settings.PreferExternal">优先加载同目录成片字幕（.srt / .ass），不自动转写</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPreview">无成片字幕时，打开后自动开始转写</sys:String>
+    <sys:String x:Key="Str.Settings.Translate">翻译：自动使用本机翻译模型；没有则先显示原文</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget">译文语言</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">与界面语言无关。译英使用同一 Qwen 通用模型（约 1.1 GB），不进默认包。</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Zh">中文</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Zh">译文</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Src">原文</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Dual">双语</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.DualEn">EN+原文</sys:String>
+    <sys:String x:Key="Str.Settings.SubMode.Off">关闭</sys:String>
+    <sys:String x:Key="Str.Settings.TextSanitize">改善日语错词与译后杂质（推荐开）</sys:String>
+    <sys:String x:Key="Str.Settings.TextSanitize.Hint">播放器侧轻量清洗；成片级清洗请用 Transub。</sys:String>
+    <sys:String x:Key="Str.Settings.WaitFirstZh">等待译文字幕覆盖到指定时长后再开始播放</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZhMinutes">译文至少覆盖到（分钟）</sys:String>
+    <sys:String x:Key="Str.Settings.WaitZh.DepHint">需开启翻译、自动转写与打开后自动播放。例如选 1 分钟：译文进度到约 1:00 后才自动播放。</sys:String>
+    <sys:String x:Key="Str.Settings.FullscreenQuietOsd">全屏时减少字幕追赶提示（少打扰）</sys:String>
+    <sys:String x:Key="Str.Settings.RememberBounds">记住窗口大小和位置</sys:String>
+    <sys:String x:Key="Str.Settings.AlwaysOnTop">窗口置顶</sys:String>
+    <sys:String x:Key="Str.Settings.AddSameFolderToPlaylist">打开单个文件时，同文件夹其它音视频加入列表</sys:String>
+    <sys:String x:Key="Str.Settings.AddSameFolderToPlaylist.Hint">仅在选择/打开一个文件时生效；多选、Shift 追加或播放列表文件不受影响。按文件名排序，当前文件在首位。</sys:String>
+    <sys:String x:Key="Str.Settings.HideChrome">全屏时自动隐藏控制栏（鼠标移到画面底部显示）</sys:String>
+    <sys:String x:Key="Str.Settings.RememberRecent">记录最近打开的文件</sys:String>
+    <sys:String x:Key="Str.Settings.HideDelay">全屏隐藏延迟（秒）</sys:String>
+    <sys:String x:Key="Str.Settings.RecentMax">最近打开文件数量</sys:String>
+    <sys:String x:Key="Str.Settings.ScreenshotDir">截图保存目录（留空使用默认）</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.Hint">打开文件后的播放行为、跳转步长与画面缩放。</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPlay">打开影片后自动播放</sys:String>
+    <sys:String x:Key="Str.Settings.AutoPlayNext">播完后自动播放列表中的下一个</sys:String>
+    <sys:String x:Key="Str.Settings.PrefetchPlaylist">当前播完后，预生成播放列表后续条目的字幕</sys:String>
+    <sys:String x:Key="Str.Settings.PrefetchPlaylist.Hint">列表有多个文件时，当前片结束后在后台预跑后续字幕；打开下一集时可直接复用。默认开启。</sys:String>
+    <sys:String x:Key="Str.Settings.RememberPos">记住播放进度（下次打开同一文件续播）</sys:String>
+    <sys:String x:Key="Str.Settings.DefaultVolume">默认音量</sys:String>
+    <sys:String x:Key="Str.Settings.DefaultSpeed">默认倍速</sys:String>
+    <sys:String x:Key="Str.Settings.SeekStep">快进 / 快退步长（← →）</sys:String>
+    <sys:String x:Key="Str.Settings.SeekFine">精细步长（Shift + ← →）</sys:String>
+    <sys:String x:Key="Str.Settings.SeekLarge">大步长（Ctrl + ← →）</sys:String>
+    <sys:String x:Key="Str.Settings.HwDec">硬件解码</sys:String>
+    <sys:String x:Key="Str.Settings.VideoFit">画面缩放</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">更改硬件解码后会立即写入 mpv；若画面未切换，请重新打开影片。可靠切换解码器时建议重开当前片。「窗口适应视频」会在打开影片后按片源分辨率调整窗口（1:1 像素，超出屏幕则缩小；全屏/最大化时不改）。</sys:String>
+    <sys:String x:Key="Str.Settings.Subtitle.Hint">字幕外观与同步。转写开关请到「常用」。</sys:String>
+    <sys:String x:Key="Str.Settings.SubDefaultMode">默认显示</sys:String>
+    <sys:String x:Key="Str.Settings.SubFont">字体（可输入）</sys:String>
+    <sys:String x:Key="Str.Settings.SubDelay">字幕同步（秒）</sys:String>
+    <sys:String x:Key="Str.Settings.SubDelayHint">正数 = 字幕延后显示。对白与字幕不同步时可微调；播放中也可用 Z / X ±0.5 秒。</sys:String>
+    <sys:String x:Key="Str.Settings.SubVisible">打开时显示字幕</sys:String>
+    <sys:String x:Key="Str.Settings.SubBold">粗体</sys:String>
+    <sys:String x:Key="Str.Settings.Glossary">术语表路径（留空自动：data/glossary.json 或本机 Transub）</sys:String>
+    <sys:String x:Key="Str.Settings.SubFontSize">字号</sys:String>
+    <sys:String x:Key="Str.Settings.SubBorder">描边粗细</sys:String>
+    <sys:String x:Key="Str.Settings.SubMargin">底部边距</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.Hint">Player 默认带精简引擎与轻量识别。完整引擎随 Transub 安装，只需选择 Transub 安装目录即可。</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.EngineSource">引擎来源</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.EngineUrl">引擎 URL</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.HfMirror">模型下载镜像</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TranslateUrl">翻译模型地址</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TransubDir">Transub 安装目录（留空则自动查找）</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OpenSite">打开官网</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.TransubDirHint">选择含 Transub.exe 的安装文件夹即可；内部引擎与成片出口均从此目录解析。</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.ModelsDir">模型目录（留空则自动使用 Transub 模型）</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OnDemand">按需包（不进安装包）</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadTurbo">下载 turbo（约 1.6 GB）</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallGpu">安装 GPU 运行时</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadAnime">下载 Anime Whisper</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadSense">下载 SenseVoice</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.Cancel">取消</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.MtModels">本机翻译模型</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallLlama">安装翻译运行时</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.DownloadGguf">下载翻译模型</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.OpenMtDir">打开模型目录</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.InstallPreset">按当前预设补齐</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.EnMtHint">欧美剧集/电影：英译中需 Qwen 通用模型（约 1.1 GB），不是 Sakura 日语模型。</sys:String>
+    <sys:String x:Key="Str.Settings.Presets.EnOutHint">译英（日/韩/华语等）：需 Qwen 通用模型（约 1.1 GB），不是 Sakura 日语模型。</sys:String>
+    <sys:String x:Key="Str.Settings.Advanced.PackHint">片源预设缺模型时会弹窗，可自动安装或先用极速转写。大包均不进默认安装。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend.En">灰条=英文识别 · 黄条=中文翻译</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend.En">灰条英文 · 黄条中文</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel.En">字幕会落后画面 · 灰条=英文识别 · 黄条=中文翻译</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip.En">中文翻译 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Src.Tip.En">英文识别 · 2</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip.En">中文+英文 · 3</sys:String>
+    <sys:String x:Key="Str.Main.Status.PresetDowngrade.EnMt">匹配「{0}」· 缺中文翻译（Qwen ~1.1 GB）· 已用极速转写（仅英文识别）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetDowngrade.EnMt">「{0}」缺英译中模型 · 已用极速转写（仅英文识别）</sys:String>
+    <sys:String x:Key="Str.Main.EnSource.Offer" xml:space="preserve">这是英文片源。要只看英文识别字幕，还是安装翻译模型以显示中文？
+
+「是」= 安装中文翻译（Qwen）
+「否」= 仅英文识别
+「取消」= 保持当前设置</sys:String>
+    <sys:String x:Key="Str.Main.EnSource.SourceOnly">本集仅显示英文识别 · 可在设置安装 Qwen 以显示中文</sys:String>
+    <sys:String x:Key="Str.Main.Mode.En">EN</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.EnTarget">EN+原文</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Zh.Tip.EnTarget">英语翻译 · 1</sys:String>
+    <sys:String x:Key="Str.Main.Mode.Dual.Tip.EnTarget">英语+原文 · 3</sys:String>
+    <sys:String x:Key="Str.Main.SubProgressLegend.ToEn">灰条原文 · 黄条英文</sys:String>
+    <sys:String x:Key="Str.Main.Osd.FrontierLegend.ToEn">灰条=原文 · 黄条=英文翻译</sys:String>
+    <sys:String x:Key="Str.Main.Status.LagMentalModel.ToEn">字幕会落后画面 · 灰条=原文 · 黄条=英文翻译</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetChanged">译文语言已更改 · 重试转写以重新翻译</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetRetranslating">译文语言已更改 · 正在重新翻译…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetSourceOnly">译文语言已更改 · 当前片源无需翻译</sys:String>
+    <sys:String x:Key="Str.Main.Status.Retranslating">正在按新译文语言重新翻译…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetRetranslating">片源预设已切换 · 正在重新翻译…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.PresetMtOff">片源预设已切换 · 当前预设无需翻译</sys:String>
+    <sys:String x:Key="Str.Main.Osd.TranslateTargetEnTip">译英使用 Qwen 通用模型；日语预设不再用 Sakura。可在设置 → 预设安装。</sys:String>
+    <sys:String x:Key="Str.Help.Shortcuts.Body.EnTarget" xml:space="preserve">打开 Ctrl+O · 流媒体 Ctrl+Shift+O · 播放/暂停 Space · 快退/快进 ← →
+精细 Shift+←→ · 大步 Ctrl+←→ · ±60 秒 PageUp/Down
+片头/片尾 Home/End · 逐帧 , .
+音量 ↑↓ · 滚轮 · 微调进度 Shift+滚轮
+EN/原文/双语 1/2/3（译文语言=English 时）· 显隐字幕 V/0 · 同步 Z/X ±0.5s
+播放列表 L · 上/下集 P/N · 静音 M · 截图 S
+循环/重置倍速 [ / ] · 全屏 F/F11/Enter · 置顶 T · 帮助 F1</sys:String>
+
+</ResourceDictionary>

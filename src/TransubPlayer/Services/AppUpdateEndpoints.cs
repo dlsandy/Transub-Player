@@ -1,11 +1,13 @@
 namespace TransubPlayer.Services;
 
 /// <summary>
-/// Release-check mirrors: GitHub (global) and GitCode (mainland). Same owner/repo on both.
+/// Release-check mirrors: GitHub (global) and GitCode (mainland).
+/// Repo name is shared; owners differ per host.
 /// </summary>
 internal static class AppUpdateEndpoints
 {
-    public const string Owner = "dlsandy";
+    public const string GitHubOwner = "dlsandy";
+    public const string GitCodeOwner = "AndyDai";
     public const string Repo = "Transub-Player";
 
     public const string Auto = "auto";
@@ -49,13 +51,13 @@ internal static class AppUpdateEndpoints
             ? new AppUpdateSource(
                 GitCode,
                 "GitCode",
-                $"https://api.gitcode.com/api/v5/repos/{Owner}/{Repo}/releases/latest",
-                $"https://gitcode.com/{Owner}/{Repo}/releases")
+                $"https://api.gitcode.com/api/v5/repos/{GitCodeOwner}/{Repo}/releases/latest",
+                $"https://gitcode.com/{GitCodeOwner}/{Repo}/releases")
             : new AppUpdateSource(
                 GitHub,
                 "GitHub",
-                $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest",
-                $"https://github.com/{Owner}/{Repo}/releases");
+                $"https://api.github.com/repos/{GitHubOwner}/{Repo}/releases/latest",
+                $"https://github.com/{GitHubOwner}/{Repo}/releases");
     }
 }
 

@@ -1,4 +1,4 @@
-# Transub Player
+﻿# Transub Player
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
@@ -9,7 +9,7 @@
 </p>
 
 > Windows 本地播放器 · 当前版本 1.5.1  
-> 从 [GitHub](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode](https://gitcode.com/dlsandy/Transub-Player/releases) 下载安装程序或便携包即可使用。软件内也可「检查更新」检查并升级至新版本。
+> 从 [GitHub](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) 下载安装程序或便携包即可使用。软件内也可「检查更新」检查并升级至新版本。
 
 > **GitCode 用户**：本页为中文说明。若仓库首页默认显示英文，请点上方「简体中文」，或在 GitCode 项目设置中将默认页面设为 `README.zh-CN.md`（若平台支持）。
 
@@ -47,7 +47,7 @@
 
 ## 下载与开始
 
-1. 在 [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode Releases](https://gitcode.com/dlsandy/Transub-Player/releases) 下载（也可用软件内「检查更新」）：
+1. 在 [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode Releases](https://gitcode.com/AndyDai/Transub-Player/releases) 下载（也可用软件内「检查更新」）：
    - **安装程序**（推荐）：`TransubPlayer-*-win-x64-setup.exe`，一路下一步即可
    - **便携包**：`TransubPlayer-*-win-x64.zip`，解压后运行 `TransubPlayer.exe`
 2. 若 SmartScreen 提示「已保护你的电脑」，点「更多信息」→「仍要运行」

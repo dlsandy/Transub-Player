@@ -1,4 +1,4 @@
-# Transub Player
+﻿# Transub Player
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
@@ -12,7 +12,7 @@ Open a video and the picture appears right away; readable subtitles catch up soo
 </p>
 
 > Windows desktop player · v1.5.1  
-> Download the installer or portable zip from [GitHub](https://github.com/dlsandy/Transub-Player/releases) or [GitCode](https://gitcode.com/dlsandy/Transub-Player/releases). You can also use **Check for updates** inside the app.
+> Download the installer or portable zip from [GitHub](https://github.com/dlsandy/Transub-Player/releases) or [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases). You can also use **Check for updates** inside the app.
 
 ---
 
@@ -48,7 +48,7 @@ For publish-ready Chinese subtitles, full cleanup, and QC, use the companion pro
 
 ## Download & start
 
-1. Get a release from [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) or [GitCode Releases](https://gitcode.com/dlsandy/Transub-Player/releases) (or use **Check for updates** in the app):
+1. Get a release from [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) or [GitCode Releases](https://gitcode.com/AndyDai/Transub-Player/releases) (or use **Check for updates** in the app):
    - **Installer** (recommended): `TransubPlayer-*-win-x64-setup.exe` — next, next, done
    - **Portable**: `TransubPlayer-*-win-x64.zip` — unzip and run `TransubPlayer.exe`
 2. If SmartScreen says Windows protected your PC, choose **More info** → **Run anyway**

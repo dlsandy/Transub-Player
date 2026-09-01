@@ -1,4 +1,4 @@
-# Transub Player
+﻿# Transub Player
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
@@ -12,7 +12,7 @@
 </p>
 
 > Windows 向けデスクトッププレーヤー · 現在のバージョン 1.5.1  
-> [GitHub](https://github.com/dlsandy/Transub-Player/releases) または [GitCode](https://gitcode.com/dlsandy/Transub-Player/releases) からインストーラーまたはポータブル版をダウンロードしてください。アプリ内の「更新を確認」からもアップグレードできます。
+> [GitHub](https://github.com/dlsandy/Transub-Player/releases) または [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) からインストーラーまたはポータブル版をダウンロードしてください。アプリ内の「更新を確認」からもアップグレードできます。
 
 ---
 
@@ -48,7 +48,7 @@ Transub で高品質字幕を生成すると、準備完了後にプレーヤー
 
 ## ダウンロードと開始
 
-1. [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) または [GitCode Releases](https://gitcode.com/dlsandy/Transub-Player/releases) から入手（アプリ内「更新を確認」も可）：
+1. [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) または [GitCode Releases](https://gitcode.com/AndyDai/Transub-Player/releases) から入手（アプリ内「更新を確認」も可）：
    - **インストーラー**（推奨）：`TransubPlayer-*-win-x64-setup.exe` — 次へで完了
    - **ポータブル**：`TransubPlayer-*-win-x64.zip` — 解凍して `TransubPlayer.exe` を実行
 2. SmartScreen で「PC が保護されました」と出たら、「詳細情報」→「実行」

@@ -1,4 +1,4 @@
-# Transub Player
+﻿# Transub Player
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
@@ -12,7 +12,7 @@
 </p>
 
 > Windows 데스크톱 플레이어 · 현재 버전 1.5.1  
-> [GitHub](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode](https://gitcode.com/dlsandy/Transub-Player/releases)에서 설치 프로그램이나 포터블 패키지를 받으세요. 앱 안의「업데이트 확인」으로도 업그레이드할 수 있습니다.
+> [GitHub](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases)에서 설치 프로그램이나 포터블 패키지를 받으세요. 앱 안의「업데이트 확인」으로도 업그레이드할 수 있습니다.
 
 ---
 
@@ -48,7 +48,7 @@ Transub로 고품질 자막을 만들면, 준비된 뒤 플레이어가 재생�
 
 ## 다운로드와 시작
 
-1. [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode Releases](https://gitcode.com/dlsandy/Transub-Player/releases)에서 받기 (앱 안 「업데이트 확인」도 가능):
+1. [GitHub Releases](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode Releases](https://gitcode.com/AndyDai/Transub-Player/releases)에서 받기 (앱 안 「업데이트 확인」도 가능):
    - **설치 프로그램** (권장): `TransubPlayer-*-win-x64-setup.exe` — 다음만 누르면 완료
    - **포터블**: `TransubPlayer-*-win-x64.zip` — 압축 해제 후 `TransubPlayer.exe` 실행
 2. SmartScreen이 「PC를 보호했습니다」라고 하면 「추가 정보」→「실행」

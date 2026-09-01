@@ -140,6 +140,7 @@ internal static class AppUpdateService
         var current = CurrentVersion;
         var errors = new List<string>();
         var tried = new List<string>();
+        AppUpdateRelease? newestWithoutAsset = null;
 
         foreach (var source in AppUpdateEndpoints.OrderedSources(settings.UpdateSource))
         {
@@ -161,12 +162,14 @@ internal static class AppUpdateService
                         string.Join(" → ", tried));
                 }
 
+                // GitCode may publish tags without portable zip attachments (size limits).
+                // Keep looking so GitHub (or the other mirror) can supply the download asset.
                 if (string.IsNullOrWhiteSpace(release.AssetUrl))
                 {
-                    settings.LastUpdateCheckUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
-                    settings.Save();
-                    return new AppUpdateCheckResult(AppUpdateCheckKind.NoAsset, current, release, null,
-                        string.Join(" → ", tried));
+                    errors.Add($"{source.DisplayName}: no zip asset");
+                    if (newestWithoutAsset is null || release.Version > newestWithoutAsset.Version)
+                        newestWithoutAsset = release;
+                    continue;
                 }
 
                 settings.LastUpdateCheckUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
@@ -183,6 +186,14 @@ internal static class AppUpdateService
                 errors.Add($"{source.DisplayName}: {ex.Message}");
                 PlayerLog.Write($"更新检查失败（{source.DisplayName}）：{ex.Message}");
             }
+        }
+
+        if (newestWithoutAsset is not null)
+        {
+            settings.LastUpdateCheckUtc = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            settings.Save();
+            return new AppUpdateCheckResult(AppUpdateCheckKind.NoAsset, current, newestWithoutAsset, null,
+                string.Join(" → ", tried));
         }
 
         return new AppUpdateCheckResult(
@@ -377,6 +388,8 @@ internal static class AppUpdateService
             var n = a.TryGetProperty("name", out var nEl) ? nEl.GetString() ?? "" : "";
             if (string.IsNullOrWhiteSpace(n)) continue;
             if (!n.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
+            // Require product name so GitCode/Gitee auto source archives (e.g. v1.5.1.zip) are ignored.
+            if (!n.Contains("TransubPlayer", StringComparison.OrdinalIgnoreCase)) continue;
             if (n.Contains("source", StringComparison.OrdinalIgnoreCase)) continue;
             if (n.Contains("symbols", StringComparison.OrdinalIgnoreCase)) continue;
             if (n.Contains("setup", StringComparison.OrdinalIgnoreCase)) continue;

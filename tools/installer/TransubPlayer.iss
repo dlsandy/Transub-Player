@@ -1,15 +1,15 @@
 ; Transub Player — Inno Setup 6 script
 ; Invoked by tools\pack-release.ps1 with:
-;   /DMyAppVersion=1.0.0
+;   /DMyAppVersion=1.5.1
 ;   /DMyStageDir=...\artifacts\pack\_stage
 ;   /DMyOutDir=...\artifacts\pack
-;   /DMySetupBaseName=TransubPlayer-1.0.0-win-x64-setup
+;   /DMySetupBaseName=TransubPlayer-1.5.1-win-x64-setup
 ;   /DMyAppIcon=...\src\TransubPlayer\Assets\app.ico
 ;
 ; Do NOT ship portable.txt in the install tree (data lives under LocalAppData).
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.5.1"
 #endif
 #ifndef MyStageDir
   #define MyStageDir "..\..\artifacts\pack\_stage"
@@ -61,7 +61,8 @@ RestartApplications=no
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+; Official Inno package has no ChineseSimplified.isl — vendor community translation.
+Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked

@@ -24,7 +24,7 @@ Set-Location $root
 $csproj = Join-Path $root "src\TransubPlayer\TransubPlayer.csproj"
 if (-not (Test-Path $csproj)) { throw "Project not found: $csproj" }
 
-$version = "1.0.0"
+$version = "1.5.1"
 Select-Xml -Path $csproj -XPath "//Version" -ErrorAction SilentlyContinue |
     ForEach-Object { if ($_.Node.InnerText) { $version = $_.Node.InnerText.Trim() } }
 

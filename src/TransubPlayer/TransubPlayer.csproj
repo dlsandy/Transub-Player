@@ -1,0 +1,68 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>TransubPlayer</AssemblyName>
+    <RootNamespace>TransubPlayer</RootNamespace>
+    <Product>Transub Player</Product>
+    <AssemblyTitle>Transub Player</AssemblyTitle>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+    <Authors>Transub</Authors>
+    <Description>本地影片边看边出字幕。成片级字幕请用 Transub。</Description>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PresetProbe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.png" />
+    <Resource Include="Assets\brand-wordmark.png" />
+    <Resource Include="Assets\app.ico" />
+    <None Include="Assets\ja-asr-domain-fixes.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\ja-asr-domain-fixes.json</Link>
+    </None>
+    <None Include="Assets\mt-trained-remaps.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\mt-trained-remaps.json</Link>
+    </None>
+    <None Include="Assets\av-domain-glossary.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\av-domain-glossary.json</Link>
+    </None>
+    <None Include="Assets\av-actor-glossary.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\av-actor-glossary.json</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\native\mpv\**\*" Condition="Exists('..\..\native\mpv\mpv.exe')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>mpv\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Whisper.net" Version="1.8.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
+    <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.8.1" />
+  </ItemGroup>
+
+</Project>

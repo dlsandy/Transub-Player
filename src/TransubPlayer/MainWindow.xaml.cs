@@ -37,12 +37,18 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _clickTimer;
     private bool _shutdownStarted;
     private bool _shutdownComplete;
+    private bool _closeForUpdate;
 
     public MainWindow()
     {
         InitializeComponent();
         WindowChrome.SetWindowChrome(this, WindowChromeUtil.Create(52, canResize: true));
-        SourceInitialized += (_, _) => WindowChromeUtil.ApplyHostClipChildren(this);
+        SourceInitialized += (_, _) =>
+        {
+            WindowChromeUtil.ApplyHostClipChildren(this);
+            WindowChromeUtil.AspectLockProvider = TryGetWindowAspectLock;
+        };
+        Closed += (_, _) => WindowChromeUtil.AspectLockProvider = null;
         Topmost = _settings.AlwaysOnTop;
         AlwaysOnTopMenu.IsChecked = _settings.AlwaysOnTop;
         VolumeBar.Value = Math.Clamp(_settings.Volume, 0, 130);
@@ -56,8 +62,9 @@ public partial class MainWindow : Window
         _hideTimer = new DispatcherTimer();
         _hideTimer.Tick += (_, _) =>
         {
-            if (_isFullscreen && _settings.HideChromeInFullscreen)
-                SetChromeVisible(false);
+            if (!_isFullscreen || !_settings.HideChromeInFullscreen) return;
+            // Keep chrome while the pointer is still on the bar / hit strip / bottom hot zone.
+            UpdateFullscreenChromeVisibility();
         };
         ApplyHideTimerInterval();
         _clickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(280) };
@@ -73,6 +80,8 @@ public partial class MainWindow : Window
             NudgeOpeningPopup();
             NudgeWaitZhPopup();
             NudgeLagActionPopup();
+            NudgeResumeOfferPopup();
+            NudgeFinishedSubPopup();
         };
         // WaitZh / LagAction 用 Popup（独立 HWND），失活时必须关掉，否则会挡住其它窗口
         Deactivated += (_, _) => HideFloatingPopups();
@@ -81,36 +90,44 @@ public partial class MainWindow : Window
             UpdateOpeningOverlay();
             UpdateWaitZhOverlay();
             MaybeShowSubtitleLagOsd();
+            UpdateResumeOffer();
+            _preview?.ProbeFinishedSubtitleOffer();
+            UpdateFinishedSubOffer();
         };
 
         Loaded += (_, _) =>
         {
             WireMpvHostInput();
             _preview = new PreviewController(_settings, PlayerHost, SetStatus, PlayerLog.Write);
+            _preview.IsFullscreenProvider = () => _isFullscreen;
             _preview.OfferPresetSetupAsync = OfferPresetSetupAsync;
             _preview.OfferSubtitleCatPickAsync = OfferSubtitleCatPickAsync;
-            _preview.OfferOnlineSubtitlePromptAsync = OfferOnlineSubtitlePromptAsync;
             _preview.OfferEnglishSourceChoiceAsync = OfferEnglishSourceChoiceAsync;
-            _preview.StateChanged += () => Dispatcher.BeginInvoke(RefreshChrome);
-            _preview.PacksChanged += () => Dispatcher.BeginInvoke(RefreshPresetUi);
-            _preview.MediaEnded += () => Dispatcher.BeginInvoke(OnMediaEnded);
+            // Use lambdas — BeginInvoke(methodGroup) reflects the raw CLR signature.
+            // Optional parameters (e.g. RefreshPresetUi(bool = true)) then throw
+            // TargetParameterCountException: "Parameter count mismatch."
+            _preview.StateChanged += () => Dispatcher.BeginInvoke(() => RefreshChrome());
+            _preview.PacksChanged += () => Dispatcher.BeginInvoke(() => RefreshPresetUi());
+            _preview.MediaEnded += () => Dispatcher.BeginInvoke(() => OnMediaEnded());
             _preview.VideoSizeChanged += (w, h) => Dispatcher.BeginInvoke(() => FitWindowToVideo(w, h));
-            _preview.PrefetchChanged += _ => Dispatcher.BeginInvoke(RefreshPlaylistUi);
+            _preview.PrefetchChanged += _ => Dispatcher.BeginInvoke(() => RefreshPlaylistUi());
             _presetReady = true;
             RefreshModeButtons();
             RefreshMaxButton();
             RefreshPlaybackEnabled();
             RefreshRecentMenu();
+            RefreshFavoritesMenu();
             RefreshRecentHint();
-            InitPresetBox();
             InitSubSourceBox();
             SeekBackButton.ToolTip = Loc.Format("Main.Transport.SeekBack", _settings.SeekStepSeconds);
             SeekFwdButton.ToolTip = Loc.Format("Main.Transport.SeekFwd", _settings.SeekStepSeconds);
             PlayButton.ToolTip = Loc.Get("Main.Transport.PlayPause");
             MuteButton.ToolTip = Loc.Get("Main.Transport.Mute");
             SpeedButton.ToolTip = Loc.Get("Main.Transport.Speed");
-            RefreshHealthIndicator();
-            _ = RunSetupWizardIfNeededAsync();
+
+            // Disk probes (mpv/engine/preset readiness) after first paint — keeps cold start snappy.
+            Dispatcher.BeginInvoke(new Action(() => _ = AfterFirstPaintAsync()), DispatcherPriority.ApplicationIdle);
+
             if (_pendingExternalOpen is { Length: > 0 } pending)
             {
                 _pendingExternalOpen = null;
@@ -148,11 +165,73 @@ public partial class MainWindow : Window
         _settings.Save();
     }
 
+    /// <summary>供 WM_SIZING：有片源时锁视频区比例；否则锁当前视频区/窗口比例。全屏与最大化时不锁。</summary>
+    private WindowChromeUtil.WindowAspectLock? TryGetWindowAspectLock()
+    {
+        if (!_settings.LockWindowAspectRatio)
+            return null;
+        if (_isFullscreen || WindowState != WindowState.Normal)
+            return null;
+        if (ResizeMode == ResizeMode.NoResize)
+            return null;
+
+        var dpi = VisualTreeHelper.GetDpi(this);
+        var scaleX = dpi.PixelsPerInchX / 96.0;
+        var scaleY = dpi.PixelsPerInchY / 96.0;
+
+        double contentAspect;
+        double chromeWDip;
+        double chromeHDip;
+
+        if (_preview is { VideoWidth: > 0, VideoHeight: > 0 })
+        {
+            contentAspect = (double)_preview.VideoWidth / _preview.VideoHeight;
+            if (VideoArea.ActualWidth > 1 && VideoArea.ActualHeight > 1 && ActualWidth > 1 && ActualHeight > 1)
+            {
+                chromeWDip = Math.Max(0, ActualWidth - VideoArea.ActualWidth);
+                chromeHDip = Math.Max(0, ActualHeight - VideoArea.ActualHeight);
+            }
+            else
+            {
+                // 布局未就绪时先按整窗比例，避免拖出畸形窗
+                chromeWDip = 0;
+                chromeHDip = 0;
+                if (ActualWidth > 1 && ActualHeight > 1)
+                    contentAspect = ActualWidth / ActualHeight;
+            }
+        }
+        else if (VideoArea.ActualWidth > 1 && VideoArea.ActualHeight > 1 && ActualWidth > 1 && ActualHeight > 1)
+        {
+            contentAspect = VideoArea.ActualWidth / VideoArea.ActualHeight;
+            chromeWDip = Math.Max(0, ActualWidth - VideoArea.ActualWidth);
+            chromeHDip = Math.Max(0, ActualHeight - VideoArea.ActualHeight);
+        }
+        else if (ActualWidth > 1 && ActualHeight > 1)
+        {
+            contentAspect = ActualWidth / ActualHeight;
+            chromeWDip = 0;
+            chromeHDip = 0;
+        }
+        else
+        {
+            return null;
+        }
+
+        return new WindowChromeUtil.WindowAspectLock(
+            contentAspect,
+            (int)Math.Round(chromeWDip * scaleX),
+            (int)Math.Round(chromeHDip * scaleY),
+            (int)Math.Round(MinWidth * scaleX),
+            (int)Math.Round(MinHeight * scaleY));
+    }
+
     private void ApplyHideTimerInterval()
         => _hideTimer.Interval = TimeSpan.FromSeconds(Math.Clamp(_settings.FullscreenHideDelaySec, 1, 8));
 
     private void ApplySettingsFromDisk()
     {
+        MpvLocator.Invalidate();
+        EngineLocator.Invalidate();
         Loc.Apply(_settings.UiLanguage);
         Topmost = _settings.AlwaysOnTop;
         AlwaysOnTopMenu.IsChecked = _settings.AlwaysOnTop;
@@ -162,11 +241,17 @@ public partial class MainWindow : Window
         ApplyHideTimerInterval();
         SeekBackButton.ToolTip = Loc.Format("Main.Transport.SeekBack", _settings.SeekStepSeconds);
         SeekFwdButton.ToolTip = Loc.Format("Main.Transport.SeekFwd", _settings.SeekStepSeconds);
+        PlayButton.ToolTip = Loc.Get("Main.Transport.PlayPause");
+        MuteButton.ToolTip = Loc.Get("Main.Transport.Mute");
+        SpeedButton.ToolTip = Loc.Get("Main.Transport.Speed");
         RefreshHealthIndicator();
         _preview?.ApplyPlayerSettings();
         _preview?.SetDisplayMode(SubtitleDisplayModeUtil.Parse(_settings.SubtitleMode));
         RefreshModeButtons();
+        RefreshMaxButton();
         RefreshRecentMenu();
+        RefreshFavoritesMenu();
+        RefreshRecentHint();
         RefreshPresetUi();
         if (!HasMedia)
         {
@@ -353,6 +438,8 @@ public partial class MainWindow : Window
 
         var dlg = new OpenUrlDialog(initial) { Owner = this };
         if (dlg.ShowDialog() != true || string.IsNullOrWhiteSpace(dlg.Url)) return;
+        if (dlg.AddToFavorites)
+            TryAddFavoriteFromOpenUrl(dlg.Url);
         await OpenFilesAsync([dlg.Url], append: Keyboard.Modifiers.HasFlag(ModifierKeys.Shift));
     }
 
@@ -391,13 +478,13 @@ public partial class MainWindow : Window
     private void SeekBack_Click(object sender, RoutedEventArgs e)
     {
         _preview?.SeekRelative(-SeekStep());
-        NoteSeekWhileLagging();
+        NotifySeekPastReady(_preview?.Position ?? 0);
     }
 
     private void SeekFwd_Click(object sender, RoutedEventArgs e)
     {
         _preview?.SeekRelative(SeekStep());
-        NoteSeekWhileLagging();
+        NotifySeekPastReady(_preview?.Position ?? 0);
     }
     private void ModeZh_Click(object sender, RoutedEventArgs e) => SetMode(SubtitleDisplayMode.Zh);
     private void ModeSrc_Click(object sender, RoutedEventArgs e) => SetMode(SubtitleDisplayMode.Source);
@@ -413,6 +500,12 @@ public partial class MainWindow : Window
     private void CycleSpeed_Click(object sender, RoutedEventArgs e)
     {
         _preview?.CycleSpeed();
+        RefreshSpeedButton();
+    }
+
+    private void ResetSpeed_Click(object sender, RoutedEventArgs e)
+    {
+        _preview?.ResetSpeed();
         RefreshSpeedButton();
     }
     private void Speed05_Click(object sender, RoutedEventArgs e) => SetSpeed(0.5);
@@ -441,8 +534,10 @@ public partial class MainWindow : Window
 
     private void SetMode(SubtitleDisplayMode mode)
     {
-        _preview?.SetDisplayMode(mode);
+        _preview?.SetDisplayMode(mode, announce: true);
         RefreshModeButtons();
+        // Mode wait overlay is driven by StateChanged → RefreshChrome; nudge immediately.
+        UpdateWaitZhOverlay();
     }
 
     private void SetSpeed(double speed)
@@ -459,13 +554,14 @@ public partial class MainWindow : Window
 
     private void OpenSettings(int selectedTab = 0)
     {
-        var prevEngineSource = _settings.EngineSource;
-        var prevEnginePath = _settings.EngineInstallPath;
-        var prevEngineUrl = _settings.EngineUrl;
+        var prevAsrBackend = _settings.AsrBackend;
         var prevModelsPath = _settings.ModelsPath;
+        var prevAdvancedLlmPath = _settings.AdvancedLlmPath;
         var prevTranslateUrl = _settings.TranslateUrl;
         var prevTranslateEnabled = _settings.TranslateEnabled;
         var prevTranslateTarget = _settings.TranslateTarget;
+        var prevAsrModel = _settings.AsrModel;
+        var prevTranslateModelId = _settings.TranslateModelId;
 
         var win = new SettingsWindow(_settings, selectedTab) { Owner = this };
         if (win.ShowDialog() != true)
@@ -473,37 +569,50 @@ public partial class MainWindow : Window
 
         ApplySettingsFromDisk();
         _ = ApplySettingsSideEffectsSafeAsync(
-            prevEngineSource,
-            prevEnginePath,
-            prevEngineUrl,
+            prevAsrBackend,
             prevModelsPath,
+            prevAdvancedLlmPath,
             prevTranslateUrl,
             prevTranslateEnabled,
-            prevTranslateTarget);
+            prevTranslateTarget,
+            prevAsrModel,
+            prevTranslateModelId);
     }
 
     private async Task ApplySettingsSideEffectsSafeAsync(
-        string prevEngineSource,
-        string prevEnginePath,
-        string prevEngineUrl,
+        string prevAsrBackend,
         string prevModelsPath,
+        string prevAdvancedLlmPath,
         string prevTranslateUrl,
         bool prevTranslateEnabled,
-        string prevTranslateTarget)
+        string prevTranslateTarget,
+        string? prevAsrModel = null,
+        string? prevTranslateModelId = null)
     {
         if (_preview is null) return;
         try
         {
-            // Off UI thread: engine StartGate must not freeze the dispatcher (status / dialogs).
-            await _preview.ApplySettingsSideEffectsAsync(
-                prevEngineSource,
-                prevEnginePath,
-                prevEngineUrl,
+            var osdParts = await _preview.ApplySettingsSideEffectsAsync(
+                prevAsrBackend,
                 prevModelsPath,
+                prevAdvancedLlmPath,
                 prevTranslateUrl,
                 prevTranslateEnabled,
-                prevTranslateTarget).ConfigureAwait(false);
-            await Dispatcher.InvokeAsync(RefreshChrome);
+                prevTranslateTarget,
+                prevAsrModel,
+                prevTranslateModelId).ConfigureAwait(false);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (_preview is null) return;
+                RefreshChrome();
+                if (osdParts.Count > 0)
+                {
+                    var msg = osdParts.Count == 1
+                        ? osdParts[0]
+                        : string.Join(" · ", osdParts.Distinct());
+                    _preview.ShowOsd(msg, 3200);
+                }
+            });
         }
         catch (Exception ex)
         {
@@ -548,53 +657,85 @@ public partial class MainWindow : Window
         SetStatus(Loc.Get("Main.Status.RecentCleared"));
     }
 
-    private void RefreshPresetMenu()
+    private void RefreshPresetMenu(bool probeDeps = true)
     {
+        _ = probeDeps;
         PresetMenu.Items.Clear();
         if (!_presetReady)
         {
             PresetMenu.IsEnabled = false;
-            PresetMenu.Items.Add(new MenuItem { Header = "（加载中）", IsEnabled = false });
+            PresetMenu.Header = Loc.Get("SourceLang.Auto");
+            PresetMenu.Items.Add(new MenuItem { Header = Loc.Get("Main.Menu.PresetsLoading"), IsEnabled = false });
             return;
         }
 
         PresetMenu.IsEnabled = true;
-        var current = PlaybackPresets.Get(_settings.PresetId).Id;
-        foreach (var preset in PlaybackPresets.All)
+        var current = SourceLanguages.Normalize(_settings.SourceLanguage);
+        PresetMenu.Header = Loc.Format("Main.Menu.SourceLangCurrent", SourceLanguages.DisplayName(current));
+        foreach (var lang in SourceLanguages.All)
         {
-            var report = PresetReadiness.AnalyzeDisk(preset, _settings);
-            var badge = report.HasGaps ? " · 需安装" : "";
-            var tip = report.HasGaps
-                ? report.SummaryLine() + "\n选择后可自动或手动安装"
-                : "依赖已就绪（磁盘探测）";
             var item = new MenuItem
             {
-                Header = preset.Name + badge,
+                Header = SourceLanguages.DisplayName(lang),
                 IsCheckable = true,
-                IsChecked = string.Equals(preset.Id, current, StringComparison.OrdinalIgnoreCase),
-                Tag = preset.Id,
-                ToolTip = tip,
+                IsChecked = string.Equals(lang, current, StringComparison.OrdinalIgnoreCase),
+                Tag = lang,
+                ToolTip = Loc.Get("Main.Preset.Tip"),
             };
-            item.Click += (_, _) => SelectPreset(preset.Id);
+            var captured = lang;
+            item.Click += (_, _) => _ = SelectSourceLanguageAsync(captured);
             PresetMenu.Items.Add(item);
         }
     }
 
-    private async void SelectPreset(string presetId)
+    private enum SourceLangSwitchChoice
+    {
+        Abort,
+        FullRestart,
+        FromPlayhead,
+    }
+
+    private async Task SelectSourceLanguageAsync(string lang)
     {
         if (!_presetReady || _preview is null) return;
-        if (string.Equals(_settings.PresetId, presetId, StringComparison.OrdinalIgnoreCase))
+        var normalized = SourceLanguages.Normalize(lang);
+        if (string.Equals(SourceLanguages.Normalize(_settings.SourceLanguage), normalized, StringComparison.OrdinalIgnoreCase))
             return;
 
-        if (HasMedia && _preview.ShowPreviewChrome && _settings.AutoStartPreview)
-            _preview.ShowOsd("将按新预设重新转写");
+        if (TryBlockSubtitlePipelineChange())
+        {
+            RevertSourceLangBoxSelection();
+            RefreshPresetMenu();
+            return;
+        }
+
+        var choice = ConfirmSourceLanguageSwitch(normalized);
+        if (choice == SourceLangSwitchChoice.Abort)
+        {
+            RevertSourceLangBoxSelection();
+            RefreshPresetMenu();
+            return;
+        }
+
+        var fromPlayhead = choice == SourceLangSwitchChoice.FromPlayhead;
+        if (fromPlayhead)
+        {
+            _preview.ShowOsd(Loc.Format("Main.Osd.SourceLangFromPlayhead", MediaTimeFormat.Format(_preview.Position)), 2200);
+            SetStatus(Loc.Format("Main.Status.SourceLangFromPlayhead", MediaTimeFormat.Format(_preview.Position)));
+        }
+        else if (HasMedia && _preview.ShowPreviewChrome && _settings.AutoStartPreview)
+        {
+            _preview.ShowOsd(Loc.Get("Main.Osd.PresetRestart"));
+            SetStatus(Loc.Get("Main.Status.PresetRestart"));
+        }
 
         try
         {
-            await _preview.SetPresetAsync(presetId, CancellationToken.None);
+            await _preview.SetSourceLanguageAsync(normalized, CancellationToken.None, fromPlayhead);
         }
         catch (Exception ex)
         {
+            RevertSourceLangBoxSelection();
             SetStatus(UserFacingErrors.Message(ex));
             UserFacingErrors.Show(this, ex);
         }
@@ -602,33 +743,167 @@ public partial class MainWindow : Window
         RefreshPresetUi();
     }
 
+    private SourceLangSwitchChoice ConfirmSourceLanguageSwitch(string normalized)
+    {
+        if (_preview is null || !ShouldConfirmSourceLanguageSwitch(normalized))
+            return SourceLangSwitchChoice.FullRestart;
+
+        var name = SourceLanguages.DisplayName(normalized);
+        if (_preview.CanRestartFromPlayhead)
+        {
+            var result = MessageBox.Show(
+                this,
+                Loc.Format(
+                    "Main.SourceLang.Confirm.Message.WithPlayhead",
+                    name,
+                    MediaTimeFormat.Format(_preview.Position)),
+                Loc.Get("Main.SourceLang.Confirm.Title"),
+                MessageBoxButton.YesNoCancel,
+                MessageBoxImage.Warning);
+            return result switch
+            {
+                MessageBoxResult.Yes => SourceLangSwitchChoice.FullRestart,
+                MessageBoxResult.Cancel => SourceLangSwitchChoice.FromPlayhead,
+                _ => SourceLangSwitchChoice.Abort,
+            };
+        }
+
+        var yesNo = MessageBox.Show(
+            this,
+            Loc.Format("Main.SourceLang.Confirm.Message", name),
+            Loc.Get("Main.SourceLang.Confirm.Title"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        return yesNo == MessageBoxResult.Yes
+            ? SourceLangSwitchChoice.FullRestart
+            : SourceLangSwitchChoice.Abort;
+    }
+
+    private bool ShouldConfirmSourceLanguageSwitch(string normalized)
+    {
+        if (_preview is null || !HasMedia || !_preview.ShowPreviewChrome) return false;
+        if (_preview.CueCount <= 0) return false;
+        return !string.Equals(
+            SourceLanguages.Normalize(_settings.SourceLanguage),
+            normalized,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool TryBlockSubtitlePipelineChange()
+    {
+        if (_preview?.IsRecording != true) return false;
+        MessageBox.Show(
+            this,
+            Loc.Get("Main.Recording.BlockSubtitleChange"),
+            Loc.Get("Main.Recording.BlockSubtitleChange.Title"),
+            MessageBoxButton.OK,
+            MessageBoxImage.Warning);
+        return true;
+    }
+
+    private bool ShouldConfirmTranslateTargetSwitch()
+    {
+        if (_preview is null || !HasMedia || !_preview.ShowPreviewChrome) return false;
+        if (_preview.Paused || _preview.CueCount <= 0) return false;
+        if (_preview.Position < 300) return false;
+        var ready = Math.Max(_preview.SubFrontier, _preview.ZhFrontier);
+        return _preview.Position - ready > 60;
+    }
+
+    private async Task SelectTranslateTargetAsync(string target)
+    {
+        if (!_presetReady || _preview is null) return;
+        var normalized = TranslateTargets.Normalize(target);
+        var prev = _settings.TranslateTarget;
+        if (string.Equals(TranslateTargets.Normalize(prev), normalized, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        if (TryBlockSubtitlePipelineChange())
+        {
+            RevertTranslateTargetBoxSelection(prev);
+            return;
+        }
+
+        if (ShouldConfirmTranslateTargetSwitch())
+        {
+            var name = TranslateTargetFull(normalized);
+            var result = MessageBox.Show(
+                this,
+                Loc.Format("Main.TranslateTarget.Confirm.Message", name),
+                Loc.Get("Main.TranslateTarget.Confirm.Title"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+            {
+                RevertTranslateTargetBoxSelection(prev);
+                return;
+            }
+        }
+
+        _settings.TranslateTarget = normalized;
+        _settings.Save();
+        RefreshPresetUi();
+        try
+        {
+            await _preview.ApplySettingsSideEffectsAsync(
+                _settings.AsrBackend,
+                _settings.ModelsPath,
+                _settings.AdvancedLlmPath,
+                _settings.TranslateUrl,
+                _settings.TranslateEnabled,
+                prev).ConfigureAwait(false);
+            await Dispatcher.InvokeAsync(RefreshChrome);
+        }
+        catch (Exception ex)
+        {
+            RevertTranslateTargetBoxSelection(prev);
+            SetStatus(UserFacingErrors.Message(ex));
+            UserFacingErrors.Show(this, ex);
+        }
+    }
+
     private async Task<SubtitleCatResult?> OfferSubtitleCatPickAsync(SubtitleCatPickRequest request)
         => await Dispatcher.InvokeAsync(() => SubtitleCatPickerWindow.Show(this, request));
 
     private async Task<PresetSetupChoice> OfferPresetSetupAsync(PresetGapReport report)
     {
-        var choice = await Dispatcher.InvokeAsync(() => PresetSetupDialog.Show(this, report));
-        if (choice != PresetSetupChoice.ManualInstall || _preview is null)
+        if (_preview is null)
+            return PresetSetupChoice.Cancel;
+
+        var choice = await Dispatcher.InvokeAsync(() => PresetSetupDialog.Show(
+            this,
+            report,
+            async (status, ct) =>
+            {
+                await _preview.InstallGapsAsync(report, status, ct).ConfigureAwait(true);
+            }));
+
+        if (choice == PresetSetupChoice.AutoInstall)
+        {
+            await _preview.RefreshGapsAfterInstallAsync(CancellationToken.None);
+            return choice;
+        }
+
+        if (choice != PresetSetupChoice.ManualInstall)
             return choice;
 
         MessageBox.Show(
             this,
-            ModelManualInstall.BuildInstructions(report, _settings, _preview.ActivePreset),
+            ModelManualInstall.BuildInstructions(report, _settings),
             Loc.Get("Settings.ManualInstall.Title"),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
         var installer = new PresetDependencyInstaller(_settings, SetStatus, PlayerLog.Write);
-        installer.OpenManualGuidance(report, _preview.ActivePreset);
+        installer.OpenManualGuidance(report);
         var go = MessageBox.Show(
             this,
             Loc.Get("Main.ManualInstall.Prompt"),
             Loc.Get("Main.ManualInstall.Title"),
-            MessageBoxButton.YesNoCancel,
+            MessageBoxButton.YesNo,
             MessageBoxImage.Information);
         return go switch
         {
             MessageBoxResult.Yes => PresetSetupChoice.ManualInstall,
-            MessageBoxResult.No => PresetSetupChoice.UseFallback,
             _ => PresetSetupChoice.Cancel,
         };
     }
@@ -659,6 +934,39 @@ public partial class MainWindow : Window
     private async void RetryPreview_Click(object sender, RoutedEventArgs e)
         => await RetryPreviewCoreAsync();
 
+    private async void RestartFromPlayhead_Click(object sender, RoutedEventArgs e)
+        => await RestartFromPlayheadCoreAsync();
+
+    private async Task RestartFromPlayheadCoreAsync()
+    {
+        if (_preview is null || !HasMedia || !_preview.CanRestartFromPlayhead)
+            return;
+
+        if (TryBlockSubtitlePipelineChange())
+            return;
+
+        var result = MessageBox.Show(
+            this,
+            Loc.Format("Main.RestartFromPlayhead.Confirm.Message", MediaTimeFormat.Format(_preview.Position)),
+            Loc.Get("Main.RestartFromPlayhead.Confirm.Title"),
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        try
+        {
+            await _preview.RestartPreviewFromPlayheadAsync(CancellationToken.None);
+            RefreshPlaybackEnabled();
+            RefreshChrome();
+        }
+        catch (Exception ex)
+        {
+            SetStatus(UserFacingErrors.Message(ex));
+            UserFacingErrors.Show(this, ex);
+        }
+    }
+
     private async Task RetryPreviewCoreAsync()
     {
         if (_preview is null || !HasMedia) return;
@@ -673,6 +981,15 @@ public partial class MainWindow : Window
             SetStatus(UserFacingErrors.Message(ex));
             UserFacingErrors.Show(this, ex);
         }
+    }
+
+    private async Task AfterFirstPaintAsync()
+    {
+        InitPresetBox();
+        await RunSetupWizardIfNeededAsync().ConfigureAwait(true);
+        RefreshHealthIndicator();
+        RefreshPresetUi(probeDeps: true);
+        await AppUpdateUi.StartupCheckAsync(this, _settings).ConfigureAwait(true);
     }
 
     private Task RunSetupWizardIfNeededAsync()
@@ -692,8 +1009,13 @@ public partial class MainWindow : Window
 
         SetupWizardWindow.Show(this, _settings);
         ApplySettingsFromDisk();
-        // Wizard may change engine / translate paths — rebind like Settings save.
-        _ = ApplySettingsSideEffectsSafeAsync("\0", "\0", "\0", "\0", "\0", !_settings.TranslateEnabled, _settings.TranslateTarget);
+        // Wizard may change engine paths — rebind. Do not fake a translate toggle:
+        // llama starts only when opening media that needs MT (ApplyTranslateEnabledAsync).
+        _ = ApplySettingsSideEffectsSafeAsync(
+            "\0", "\0", "\0",
+            _settings.TranslateUrl ?? "",
+            _settings.TranslateEnabled,
+            _settings.TranslateTarget);
         if (SetupWizard.IsReady(_settings))
             SetStatus(Loc.Get("Main.Status.Ready"));
         else if (MpvLocator.Find() is null)
@@ -725,20 +1047,52 @@ public partial class MainWindow : Window
         foreach (var path in recent)
         {
             var name = MediaSourceHelper.DisplayName(path);
-            var btn = new Button
+            var captured = path;
+
+            var row = new DockPanel
+            {
+                Margin = new Thickness(0, 0, 0, 4),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                MaxWidth = 400,
+            };
+
+            var remove = new Button
+            {
+                Content = "×",
+                ToolTip = Loc.Get("Main.Recent.RemoveTip"),
+                Padding = new Thickness(8, 2, 8, 2),
+                FontSize = 14,
+                Margin = new Thickness(4, 0, 0, 0),
+                MinWidth = 28,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            DockPanel.SetDock(remove, Dock.Right);
+            remove.Click += (_, _) => RemoveRecentEntry(captured);
+
+            var open = new Button
             {
                 Content = name,
                 ToolTip = path,
-                Margin = new Thickness(0, 0, 0, 4),
                 Padding = new Thickness(12, 4, 12, 4),
                 FontSize = 12,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                MaxWidth = 360,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
             };
-            var captured = path;
-            btn.Click += async (_, _) => await OpenPathAsync(captured);
-            RecentHintPanel.Children.Add(btn);
+            open.Click += async (_, _) => await OpenPathAsync(captured);
+
+            row.Children.Add(remove);
+            row.Children.Add(open);
+            RecentHintPanel.Children.Add(row);
         }
+    }
+
+    private void RemoveRecentEntry(string path)
+    {
+        RecentFiles.Remove(_settings, path);
+        PlaybackPositionStore.Remove(path);
+        _settings.Save();
+        RefreshRecentMenu();
+        SetStatus(Loc.Get("Main.Status.RecentRemoved"));
     }
 
     private void OpenScreenshotFolder_Click(object sender, RoutedEventArgs e)
@@ -758,51 +1112,40 @@ public partial class MainWindow : Window
     private int SeekFineStep() => Math.Max(1, _settings.SeekStepFineSeconds);
     private int SeekLargeStep() => Math.Max(1, _settings.SeekStepLargeSeconds);
 
-    private void Transub_Click(object sender, RoutedEventArgs e)
-    {
-        if (TransubHandoff.TryOpen(_settings, _preview?.MediaPath, out var message))
-        {
-            SetStatus(message);
-            return;
-        }
-
-        var go = MessageBox.Show(
-            this,
-            message + "\n\n" + Loc.Get("Main.Transub.OpenSitePrompt"),
-            "Transub Player",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Information);
-        if (go == MessageBoxResult.Yes)
-            FirstRunHelp.OpenTransubSite();
-    }
+    private void TransubSite_Click(object sender, RoutedEventArgs e)
+        => FirstRunHelp.OpenTransubSite();
 
     private async Task OfferFetchMpvAsync()
     {
         if (FirstRunHelp.FindFetchMpvScript() is null)
         {
-            MessageBox.Show(this, "未找到 mpv。安装包应自带；开发环境请运行 tools\\fetch-mpv.ps1。", "Transub Player", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show(this, Loc.Get("Wizard.Mpv.NoScript"), "Transub Player",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         var go = MessageBox.Show(
             this,
-            "未找到播放组件 mpv。是否现在下载？",
+            Loc.Get("Wizard.Mpv.Offer"),
             "Transub Player",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
         if (go != MessageBoxResult.Yes) return;
 
-        SetStatus("正在下载 mpv…");
+        SetStatus(Loc.Get("Wizard.Mpv.Downloading"));
         try
         {
             await FirstRunHelp.RunFetchMpvAsync(PlayerLog.Write, CancellationToken.None);
-            SetStatus("mpv 已就绪，请重新打开影片");
-            _preview?.ShowOsd("mpv 已就绪");
+            MpvLocator.Invalidate();
+            RefreshHealthIndicator();
+            SetStatus(Loc.Get("Wizard.Mpv.ReopenHint"));
+            _preview?.ShowOsd(Loc.Get("Wizard.Mpv.Done"));
         }
         catch (Exception ex)
         {
-            SetStatus("下载 mpv 失败：" + ex.Message);
-            MessageBox.Show(this, ex.Message, "Transub Player", MessageBoxButton.OK, MessageBoxImage.Warning);
+            SetStatus(Loc.Format("Wizard.Mpv.Failed", ex.Message));
+            MessageBox.Show(this, Loc.Format("Wizard.Mpv.Failed", ex.Message), "Transub Player",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
@@ -811,17 +1154,19 @@ public partial class MainWindow : Window
 
     private void AppMenu_Click(object sender, RoutedEventArgs e)
     {
-        var menu = ContextMenu;
+        var menu = AppMenu;
         if (menu is null) return;
 
+        if (PlayerContextMenu is { IsOpen: true })
+            PlayerContextMenu.IsOpen = false;
+
         // Toggle when already open under the title button.
-        if (menu.IsOpen && ReferenceEquals(menu.PlacementTarget, AppMenuButton))
+        if (menu.IsOpen)
         {
             menu.IsOpen = false;
             return;
         }
 
-        menu.IsOpen = false;
         menu.Placement = PlacementMode.Bottom;
         menu.PlacementTarget = AppMenuButton;
         menu.HorizontalOffset = 0;
@@ -830,14 +1175,28 @@ public partial class MainWindow : Window
     }
 
     private void About_Click(object sender, RoutedEventArgs e)
+        => AboutWindow.Show(this);
+
+    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        => await AppUpdateUi.CheckInteractiveAsync(this, _settings, quietIfCurrent: false);
+
+    /// <summary>Live settings instance for update checks (avoid reloading a stale disk copy).</summary>
+    internal AppSettings SettingsForUpdate => _settings;
+
+    /// <summary>Status line used while an interactive update check is in flight.</summary>
+    internal void SetUpdateStatus(string text) => SetStatus(text);
+
+    /// <summary>Current status label text (for restoring after a transient update-check status).</summary>
+    internal string StatusTextSnapshot =>
+        Dispatcher.CheckAccess()
+            ? StatusLabel.Text ?? ""
+            : Dispatcher.Invoke(() => StatusLabel.Text ?? "");
+
+    /// <summary>Exit after staging a portable update (apply script waits on this PID).</summary>
+    internal void RequestCloseForUpdate()
     {
-        var ver = typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
-        MessageBox.Show(
-            this,
-            Loc.Format("Main.About.Body", ver),
-            Loc.Get("Main.Menu.About"),
-            MessageBoxButton.OK,
-            MessageBoxImage.Information);
+        _closeForUpdate = true;
+        Close();
     }
 
     private void Min_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
@@ -870,7 +1229,7 @@ public partial class MainWindow : Window
     {
         if (_shutdownComplete) return;
 
-        if (!_shutdownStarted && ModelDownloadActivity.IsActive)
+        if (!_shutdownStarted && ModelDownloadActivity.IsActive && !_closeForUpdate)
         {
             var confirm = MessageBox.Show(
                 this,
@@ -902,6 +1261,9 @@ public partial class MainWindow : Window
         WaitZhPopup.IsOpen = false;
         OpeningPopup.IsOpen = false;
         LagActionPopup.IsOpen = false;
+        ResumeOfferPopup.IsOpen = false;
+        FinishedSubPopup.IsOpen = false;
+        StopResumeOfferTimer();
         SaveWindowBounds();
         IsEnabled = false;
         // Hide before await: ShutdownAsync may take up to HttpBudget (+ process waits).

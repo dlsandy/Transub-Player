@@ -21,99 +21,6 @@
         MouseLeave="Window_MouseLeave"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
-    <Window.Resources>
-        <DataTemplate x:Key="PresetItemTemplate">
-            <Grid Margin="0,1">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
-                <Border Grid.Column="1" Background="#332C10" CornerRadius="3" Padding="5,1" Margin="8,0,0,0"
-                        VerticalAlignment="Center">
-                    <Border.Style>
-                        <Style TargetType="Border">
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding NeedsInstall}" Value="True">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Border.Style>
-                    <TextBlock Text="{loc:Loc Main.NeedsInstall}" FontSize="10" Foreground="{StaticResource AccentBrush}"/>
-                </Border>
-            </Grid>
-        </DataTemplate>
-        <DataTemplate x:Key="PresetGroupHeader">
-            <TextBlock Text="{Binding Name}" FontSize="11" Foreground="{StaticResource MutedBrush}"
-                       Margin="8,8,8,4" FontWeight="SemiBold"/>
-        </DataTemplate>
-    </Window.Resources>
-    <Window.ContextMenu>
-        <ContextMenu>
-            <MenuItem Header="{loc:Loc Main.Menu.OpenFile}" Click="Open_Click" InputGestureText="Ctrl+O"/>
-            <MenuItem Header="{loc:Loc Main.Menu.OpenUrl}" Click="OpenUrl_Click" InputGestureText="Ctrl+Shift+O"/>
-            <MenuItem Header="{loc:Loc Main.Menu.ScreenCapture}" Click="ScreenCapture_Click"/>
-            <MenuItem x:Name="RecentMenu" Header="{loc:Loc Main.Menu.Recent}">
-                <MenuItem Header="{loc:Loc Main.RecentEmpty}" IsEnabled="False"/>
-            </MenuItem>
-            <MenuItem x:Name="PlaylistMenu" Header="{loc:Loc Main.Menu.Playlist}">
-                <MenuItem Header="{loc:Loc Main.Playlist.ShowHide}" Click="TogglePlaylist_Click" InputGestureText="L"/>
-                <MenuItem Header="{loc:Loc Main.Playlist.Prev}" Click="PlaylistPrev_Click" InputGestureText="P"/>
-                <MenuItem Header="{loc:Loc Main.Playlist.Next}" Click="PlaylistNext_Click" InputGestureText="N"/>
-                <Separator/>
-                <MenuItem Header="{loc:Loc Main.Playlist.Clear}" Click="PlaylistClear_Click"/>
-            </MenuItem>
-            <Separator/>
-            <MenuItem x:Name="PlayMenu" Header="{loc:Loc Main.Menu.PlayPause}" Click="Play_Click" InputGestureText="Space" IsEnabled="False"/>
-            <MenuItem x:Name="StopMenu" Header="{loc:Loc Main.Menu.Stop}" Click="Stop_Click" IsEnabled="False"/>
-            <Separator/>
-            <MenuItem x:Name="FullscreenMenu" Header="{loc:Loc Main.Menu.Fullscreen}" Click="Fullscreen_Click" InputGestureText="Enter / F" IsEnabled="False"/>
-            <MenuItem x:Name="AlwaysOnTopMenu" Header="{loc:Loc Main.Menu.AlwaysOnTop}" IsCheckable="True" Click="AlwaysOnTop_Click" InputGestureText="T"/>
-            <Separator/>
-            <MenuItem x:Name="SubMenu" Header="{loc:Loc Main.Menu.Subtitles}" IsEnabled="False">
-                <MenuItem x:Name="ModeZhMenu" Header="{loc:Loc Main.Mode.Zh}" Click="ModeZh_Click" InputGestureText="1"/>
-                <MenuItem x:Name="ModeSrcMenu" Header="{loc:Loc Main.Mode.Src}" Click="ModeSrc_Click" InputGestureText="2"/>
-                <MenuItem x:Name="ModeDualMenu" Header="{loc:Loc Main.Mode.Dual}" Click="ModeDual_Click" InputGestureText="3"/>
-                <Separator x:Name="SubLayoutMenuSep"/>
-                <MenuItem Header="{loc:Loc Main.Mode.Sub.Toggle}" Click="ToggleSub_Click" InputGestureText="0 / V"/>
-                <Separator/>
-                <MenuItem Header="{loc:Loc Main.Menu.SubDelayLater}" Click="SubDelayLater_Click" InputGestureText="Z"/>
-                <MenuItem Header="{loc:Loc Main.Menu.SubDelayEarlier}" Click="SubDelayEarlier_Click" InputGestureText="X"/>
-                <Separator/>
-                <MenuItem x:Name="FindOnlineSubMenu" Header="{loc:Loc Main.Menu.FindOnlineSubtitles}"
-                          Click="FindOnlineSubtitles_Click" IsEnabled="False"/>
-                <MenuItem x:Name="RePreviewMenu" Header="{loc:Loc Main.Menu.RePreview}" Click="RePreview_Click" IsEnabled="False"/>
-                <MenuItem x:Name="StartPreviewMenu" Header="{loc:Loc Main.Menu.StartPreview}" Click="RePreview_Click" IsEnabled="False" Visibility="Collapsed"/>
-            </MenuItem>
-            <MenuItem x:Name="PresetMenu" Header="{loc:Loc Main.Menu.Presets}" IsEnabled="False">
-                <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>
-            </MenuItem>
-            <MenuItem x:Name="SpeedMenu" Header="{loc:Loc Main.Menu.Speed}" IsEnabled="False">
-                <MenuItem Header="0.5x" Click="Speed05_Click"/>
-                <MenuItem Header="0.75x" Click="Speed075_Click"/>
-                <MenuItem Header="1.0x" Click="Speed10_Click"/>
-                <MenuItem Header="1.25x" Click="Speed125_Click"/>
-                <MenuItem Header="1.5x" Click="Speed15_Click"/>
-                <MenuItem Header="2.0x" Click="Speed20_Click"/>
-                <Separator/>
-                <MenuItem Header="循环倍速" Click="CycleSpeed_Click" InputGestureText="["/>
-            </MenuItem>
-            <MenuItem x:Name="ScreenshotMenu" Header="{loc:Loc Main.Menu.Screenshot}" Click="Screenshot_Click" InputGestureText="S" IsEnabled="False"/>
-            <MenuItem Header="{loc:Loc Main.Menu.OpenScreenshotFolder}" Click="OpenScreenshotFolder_Click"/>
-            <Separator/>
-            <MenuItem Header="{loc:Loc Main.Menu.Shortcuts}" Click="ShortcutsHelp_Click" InputGestureText="F1"/>
-            <MenuItem Header="{loc:Loc Main.Menu.SubSourceHelp}" Click="SubSourceHelp_Click"/>
-            <Separator/>
-            <MenuItem Header="{loc:Loc Main.Menu.FileAssociation}" Click="FileAssociation_Click"/>
-            <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
-            <MenuItem Header="{loc:Loc Main.Menu.Transub}" Click="Transub_Click"/>
-            <Separator/>
-            <MenuItem Header="{loc:Loc Main.Menu.About}" Click="About_Click"/>
-            <MenuItem Header="{loc:Loc Main.Menu.Exit}" Click="Close_Click" InputGestureText="Alt+F4"/>
-        </ContextMenu>
-    </Window.ContextMenu>
 
     <Border x:Name="RootBorder" Background="{StaticResource BgBrush}"
             BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
@@ -134,6 +41,39 @@
                             </Grid.ColumnDefinitions>
                             <Button x:Name="AppMenuButton" Style="{StaticResource AppMenuButton}"
                                     Click="AppMenu_Click" ToolTip="{loc:Loc Main.AppMenu.Tip}">
+                                <Button.ContextMenu>
+                                    <ContextMenu x:Name="AppMenu">
+                                        <MenuItem Header="{loc:Loc Main.Menu.OpenFile}" Click="Open_Click" InputGestureText="Ctrl+O"/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.OpenUrl}" Click="OpenUrl_Click" InputGestureText="Ctrl+Shift+O"/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.ScreenCapture}" Click="ScreenCapture_Click"/>
+                                        <MenuItem x:Name="RecentMenu" Header="{loc:Loc Main.Menu.Recent}">
+                                            <MenuItem Header="{loc:Loc Main.RecentEmpty}" IsEnabled="False"/>
+                                        </MenuItem>
+                                        <MenuItem x:Name="FavoritesMenu" Header="{loc:Loc Main.Menu.Favorites}">
+                                            <MenuItem Header="{loc:Loc Main.FavoritesEmpty}" IsEnabled="False"/>
+                                        </MenuItem>
+                                        <MenuItem x:Name="PlaylistMenu" Header="{loc:Loc Main.Menu.Playlist}">
+                                            <MenuItem Header="{loc:Loc Main.Playlist.ShowHide}" Click="TogglePlaylist_Click" InputGestureText="L"/>
+                                            <MenuItem Header="{loc:Loc Main.Playlist.Prev}" Click="PlaylistPrev_Click" InputGestureText="P"/>
+                                            <MenuItem Header="{loc:Loc Main.Playlist.Next}" Click="PlaylistNext_Click" InputGestureText="N"/>
+                                            <Separator/>
+                                            <MenuItem Header="{loc:Loc Main.Playlist.Clear}" Click="PlaylistClear_Click"/>
+                                        </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.FileAssociation}" Click="FileAssociation_Click"/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.TransubSite}" Click="TransubSite_Click"/>
+                                        <Separator/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.Help}">
+                                            <MenuItem Header="{loc:Loc Main.Menu.Shortcuts}" Click="ShortcutsHelp_Click" InputGestureText="F1"/>
+                                            <MenuItem Header="{loc:Loc Main.Menu.SubSourceHelp}" Click="SubSourceHelp_Click"/>
+                                            <MenuItem Header="{loc:Loc Main.Menu.CheckUpdate}" Click="CheckUpdate_Click"/>
+                                            <MenuItem Header="{loc:Loc Main.Menu.About}" Click="About_Click"/>
+                                        </MenuItem>
+                                        <Separator/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.Exit}" Click="Close_Click" InputGestureText="Alt+F4"/>
+                                    </ContextMenu>
+                                </Button.ContextMenu>
                                 <StackPanel Orientation="Horizontal">
                                     <Image Source="pack://application:,,,/Assets/app.png" Width="28" Height="28" Margin="0,0,8,0"
                                            RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -151,21 +91,13 @@
                                        Text="{loc:Loc Main.Tagline}" IsHitTestVisible="False"/>
                         </Grid>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
-                            <Button Style="{StaticResource CaptionActionButton}" Click="Transub_Click"
-                                    ToolTip="{loc:Loc Main.Transub.Tip}">
-                                <StackPanel Orientation="Horizontal">
-                                    <Image Source="pack://application:,,,/Assets/transub.png" Width="16" Height="16" Margin="0,0,6,0"
-                                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                                    <TextBlock Text="{loc:Loc Main.Transub}" FontSize="12" VerticalAlignment="Center"
-                                               Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
-                                </StackPanel>
-                            </Button>
                             <Button Style="{StaticResource CaptionButton}" Click="Open_Click" ToolTip="{loc:Loc Main.Open}">
                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                       StrokeThickness="1.4" Width="12" Height="10" Stretch="None"
                                       Data="M1,8.5 V3 H3.6 L4.6,4 H11 V8.5 Z"/>
                             </Button>
-                            <Button Style="{StaticResource CaptionButton}" Click="HealthDot_Click" ToolTip="{loc:Loc Main.Health.Fix}">
+                            <Button x:Name="HealthButton" Style="{StaticResource CaptionButton}" Click="HealthDot_Click"
+                                    ToolTip="{loc:Loc Main.Health.Fix}" Visibility="Collapsed">
                                 <Ellipse x:Name="HealthDot" Width="10" Height="10" Fill="#4CAF50"/>
                             </Button>
                             <Button Style="{StaticResource CaptionButton}" Click="Settings_Click" ToolTip="{loc:Loc Main.Settings}">
@@ -191,16 +123,24 @@
                     </Grid>
                 </Border>
 
+                <!-- 全屏藏栏时占住底边几像素，避免被 mpv HWND 盖住而收不到鼠标 -->
+                <Border x:Name="FullscreenHitZone" DockPanel.Dock="Bottom" Height="32"
+                        Background="#01000000" Visibility="Collapsed" Cursor="Arrow"
+                        MouseEnter="FullscreenHitZone_MouseEnter"
+                        PreviewMouseMove="FullscreenHitZone_MouseEnter"/>
+
                 <!-- 两行底栏：进度 + 控件（状态/字幕芯片并入控件行，少占画面） -->
                 <Border x:Name="BottomBar" DockPanel.Dock="Bottom" Background="#E0161616"
-                        BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="10,6">
+                        BorderBrush="{StaticResource LineBrush}" BorderThickness="0,1,0,0" Padding="10,6"
+                        MouseEnter="BottomBar_MouseEnter"
+                        PreviewMouseMove="BottomBar_MouseEnter">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <Grid Margin="0,0,0,4">
+                        <Grid x:Name="SeekRow" Margin="0,0,0,4">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="44"/>
                                 <ColumnDefinition Width="*"/>
@@ -221,12 +161,12 @@
                                         Minimum="0" Maximum="1" Value="0"
                                         IsEnabled="False"
                                         ValueChanged="SeekBar_ValueChanged"/>
-                                <!-- 叠在轨道下方：灰=原文前沿，黄=译文前沿（说明见 ToolTip） -->
+                                <!-- 叠在轨道下方：灰=原文前沿，蓝=译文前沿（勿用 Accent 黄，以免与播放进度混淆） -->
                                 <Canvas x:Name="FrontierCanvas" IsHitTestVisible="False" Height="16" VerticalAlignment="Center">
-                                    <Border x:Name="SourceFill" Height="2" Canvas.Top="10" CornerRadius="1"
-                                            Background="#99C8C8C8" Width="0" Visibility="Collapsed"/>
-                                    <Border x:Name="ZhFill" Height="2" Canvas.Top="12.5" CornerRadius="1"
-                                            Background="#E6FFC132" Width="0" Visibility="Collapsed"/>
+                                    <Border x:Name="SourceFill" Height="3" Canvas.Top="9" CornerRadius="1.5"
+                                            Background="#B3C8C8C8" Width="0" Visibility="Collapsed"/>
+                                    <Border x:Name="ZhFill" Height="3" Canvas.Top="12" CornerRadius="1.5"
+                                            Background="#F06CB6FF" Width="0" Visibility="Collapsed"/>
                                 </Canvas>
                             </Grid>
                             <TextBlock x:Name="DurLabel" Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right"
@@ -258,10 +198,10 @@
                                 <Button x:Name="MuteButton" Content="🔊" Width="32" Height="28" Padding="0" FontSize="12"
                                         Click="Mute_Click" ToolTip="静音 · M" Margin="0,0,4,0" IsEnabled="False"/>
                                 <Slider x:Name="VolumeBar" Style="{StaticResource VolumeSlider}"
-                                        Width="72" Minimum="0" Maximum="130" Value="100"
+                                        Width="72" Minimum="0" Maximum="130" Value="50"
                                         IsEnabled="False"
                                         ValueChanged="VolumeBar_ValueChanged"/>
-                                <TextBlock x:Name="VolumeLabel" Text="100" Width="28" Margin="4,0,0,0" FontSize="11"
+                                <TextBlock x:Name="VolumeLabel" Text="50" Width="28" Margin="4,0,0,0" FontSize="11"
                                            VerticalAlignment="Center" Foreground="{StaticResource MutedBrush}"/>
                                 <Button x:Name="SpeedButton" Content="1.0x" MinWidth="44" Padding="8,4" Margin="8,0,0,0"
                                         FontSize="12" Click="CycleSpeed_Click"
@@ -300,16 +240,40 @@
                             </DockPanel>
 
                             <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
-                                <!-- 转写路径：选 ASR/翻译策略；外挂/在线成片时与译文版式芯片一并隐藏 -->
+                                <!-- 片源语言 → 译文语言 -->
                                 <Border x:Name="PresetBoxBorder" Background="#111111" BorderBrush="{StaticResource LineBrush}"
-                                        BorderThickness="1" CornerRadius="6" Padding="8,2,6,2" Margin="0,0,4,0"
-                                        VerticalAlignment="Center" MinWidth="96" MaxWidth="150"
+                                        BorderThickness="1" CornerRadius="6" Padding="2" Margin="0,0,4,0"
+                                        VerticalAlignment="Center"
                                         ToolTip="{loc:Loc Main.Preset.Tip}">
-                                    <ComboBox x:Name="PresetBox" Style="{StaticResource ControlBarComboBox}"
-                                              ItemTemplate="{StaticResource PresetItemTemplate}"
-                                              MaxDropDownHeight="320" FontSize="12"
-                                              SelectionChanged="PresetBox_SelectionChanged"
-                                              ToolTip="{loc:Loc Main.Preset.Tip}"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <ComboBox x:Name="SourceLangBox" Style="{StaticResource LangBarComboBox}"
+                                                  ItemContainerStyle="{StaticResource LangBarComboItem}"
+                                                  Width="68" MaxDropDownHeight="240"
+                                                  SelectionChanged="SourceLangBox_SelectionChanged"
+                                                  ToolTip="{loc:Loc Main.Preset.Tip}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding FullName}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBlock Text="→" FontSize="11" Margin="1,0"
+                                                   Foreground="{StaticResource MutedBrush}" Opacity="0.75"
+                                                   VerticalAlignment="Center" IsHitTestVisible="False"/>
+                                        <ComboBox x:Name="TranslateTargetBarBox" Style="{StaticResource LangBarComboBox}"
+                                                  ItemContainerStyle="{StaticResource LangBarComboItem}"
+                                                  Width="68" MaxDropDownHeight="240"
+                                                  SelectionChanged="TranslateTargetBarBox_SelectionChanged"
+                                                  ToolTip="{loc:Loc Settings.TranslateTarget}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding FullName}"
+                                                               HorizontalAlignment="Center"/>
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                    </StackPanel>
                                 </Border>
 
                                 <!-- 字幕：译文/原文/双语版式（外挂成片仅显隐，不显示此组） -->
@@ -355,6 +319,34 @@
                                 <Button x:Name="ScreenshotButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xE722;" FontFamily="Segoe MDL2 Assets"
                                         Click="Screenshot_Click" ToolTip="截图 · S" Margin="0,0,2,0" IsEnabled="False"/>
+                                <ComboBox x:Name="StreamQualityBox" Style="{StaticResource ControlBarComboBox}"
+                                          DisplayMemberPath="Label"
+                                          SelectedValuePath="Id"
+                                          MinWidth="72" MaxWidth="110" MaxDropDownHeight="280"
+                                          Margin="0,0,2,0" FontSize="12"
+                                          Visibility="Collapsed" IsEnabled="False"
+                                          SelectionChanged="StreamQualityBox_SelectionChanged"
+                                          ToolTip="{loc:Loc Main.StreamQuality.Tip}"/>
+                                <Button x:Name="RecordButton" Style="{StaticResource TransportIconButton}"
+                                        Content="&#xE7C8;" FontFamily="Segoe MDL2 Assets"
+                                        Click="ToggleStreamRecord_Click" ToolTip="{loc:Loc Main.StreamRecord.StartTip}"
+                                        Margin="0,0,2,0" IsEnabled="False" Visibility="Collapsed"/>
+                                <Border x:Name="RecordActivePanel" Background="#2A1212" BorderBrush="#C62828"
+                                        BorderThickness="1" CornerRadius="6" Padding="6,2,4,2" Margin="0,0,2,0"
+                                        VerticalAlignment="Center" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="#E53935" FontSize="11"
+                                                   VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="RecordElapsedLabel" Text="00:00"
+                                                   Foreground="#FFCDD2" FontSize="12" FontFamily="Consolas, Cascadia Mono, Segoe UI"
+                                                   VerticalAlignment="Center" MinWidth="42" Margin="0,0,6,0"/>
+                                        <Button x:Name="RecordStopButton" Style="{StaticResource TransportIconButton}"
+                                                Content="&#xE71A;" FontFamily="Segoe MDL2 Assets"
+                                                Width="28" Height="26" FontSize="12"
+                                                Click="ToggleStreamRecord_Click"
+                                                ToolTip="{loc:Loc Main.StreamRecord.StopTip}"/>
+                                    </StackPanel>
+                                </Border>
                                 <Button x:Name="FullscreenButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xE740;" FontFamily="Segoe MDL2 Assets"
                                         Click="Fullscreen_Click" ToolTip="{loc:Loc Main.Fullscreen.EnterTip}" IsEnabled="False"/>
@@ -374,27 +366,75 @@
                           MouseWheel="Video_MouseWheel"
                           SizeChanged="VideoArea_SizeChanged"
                           Background="Black">
+                        <Grid.ContextMenu>
+                            <ContextMenu x:Name="PlayerContextMenu">
+                                <MenuItem Header="{loc:Loc Main.Menu.OpenFile}" Click="Open_Click" InputGestureText="Ctrl+O"/>
+                                <MenuItem Header="{loc:Loc Main.Menu.OpenUrl}" Click="OpenUrl_Click" InputGestureText="Ctrl+Shift+O"/>
+                                <Separator/>
+                                <MenuItem x:Name="PlayMenu" Header="{loc:Loc Main.Menu.PlayPause}" Click="Play_Click" InputGestureText="Space" IsEnabled="False"/>
+                                <MenuItem x:Name="StopMenu" Header="{loc:Loc Main.Menu.Stop}" Click="Stop_Click" IsEnabled="False"/>
+                                <MenuItem x:Name="MuteMenu" Header="{loc:Loc Main.Menu.Mute}" IsCheckable="True" Click="Mute_Click" InputGestureText="M" IsEnabled="False"/>
+                                <MenuItem x:Name="FullscreenMenu" Header="{loc:Loc Main.Menu.Fullscreen}" Click="Fullscreen_Click" InputGestureText="Enter / F" IsEnabled="False"/>
+                                <MenuItem x:Name="AlwaysOnTopMenu" Header="{loc:Loc Main.Menu.AlwaysOnTop}" IsCheckable="True" Click="AlwaysOnTop_Click" InputGestureText="T"/>
+                                <Separator/>
+                                <MenuItem x:Name="SubMenu" Header="{loc:Loc Main.Menu.Subtitles}" IsEnabled="False">
+                                    <MenuItem x:Name="ModeZhMenu" Header="{loc:Loc Main.Mode.Zh}" Click="ModeZh_Click" InputGestureText="1"/>
+                                    <MenuItem x:Name="ModeSrcMenu" Header="{loc:Loc Main.Mode.Src}" Click="ModeSrc_Click" InputGestureText="2"/>
+                                    <MenuItem x:Name="ModeDualMenu" Header="{loc:Loc Main.Mode.Dual}" Click="ModeDual_Click" InputGestureText="3"/>
+                                    <Separator x:Name="SubLayoutMenuSep"/>
+                                    <MenuItem Header="{loc:Loc Main.Mode.Sub.Toggle}" Click="ToggleSub_Click" InputGestureText="0 / V"/>
+                                    <Separator/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.SubDelayLater}" Click="SubDelayLater_Click" InputGestureText="Z"/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.SubDelayEarlier}" Click="SubDelayEarlier_Click" InputGestureText="X"/>
+                                    <Separator/>
+                                    <MenuItem x:Name="FindOnlineSubMenu" Header="{loc:Loc Main.Menu.FindOnlineSubtitles}"
+                                              Click="FindOnlineSubtitles_Click" IsEnabled="False"/>
+                                    <MenuItem x:Name="RePreviewMenu" Header="{loc:Loc Main.Menu.RePreview}" Click="RePreview_Click" IsEnabled="False"/>
+                                    <MenuItem x:Name="RestartFromPlayheadMenu" Header="{loc:Loc Main.Menu.RestartFromPlayhead}"
+                                              Click="RestartFromPlayhead_Click" IsEnabled="False"/>
+                                    <MenuItem x:Name="StartPreviewMenu" Header="{loc:Loc Main.Menu.StartPreview}" Click="RePreview_Click" IsEnabled="False" Visibility="Collapsed"/>
+                                </MenuItem>
+                                <MenuItem x:Name="PresetMenu" Header="{loc:Loc SourceLang.Auto}" IsEnabled="False">
+                                    <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>
+                                </MenuItem>
+                                <MenuItem x:Name="AsrModelMenu" Header="{loc:Loc Main.Menu.AsrModel}" IsEnabled="False">
+                                    <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>
+                                </MenuItem>
+                                <MenuItem x:Name="TranslateModelMenu" Header="{loc:Loc Main.Menu.TranslateModel}" IsEnabled="False">
+                                    <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>
+                                </MenuItem>
+                                <MenuItem x:Name="SpeedMenu" Header="{loc:Loc Main.Menu.Speed}" IsEnabled="False">
+                                    <MenuItem Header="0.5x" Click="Speed05_Click"/>
+                                    <MenuItem Header="0.75x" Click="Speed075_Click"/>
+                                    <MenuItem Header="1.0x" Click="Speed10_Click"/>
+                                    <MenuItem Header="1.25x" Click="Speed125_Click"/>
+                                    <MenuItem Header="1.5x" Click="Speed15_Click"/>
+                                    <MenuItem Header="2.0x" Click="Speed20_Click"/>
+                                    <Separator/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.CycleSpeed}" Click="CycleSpeed_Click" InputGestureText="["/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.ResetSpeed}" Click="ResetSpeed_Click" InputGestureText="]"/>
+                                </MenuItem>
+                                <Separator/>
+                                <MenuItem x:Name="ScreenshotMenu" Header="{loc:Loc Main.Menu.Screenshot}" Click="Screenshot_Click" InputGestureText="S" IsEnabled="False"/>
+                                <MenuItem x:Name="RecordMenu" Header="{loc:Loc Main.Menu.StreamRecord}" Click="ToggleStreamRecord_Click"
+                                          InputGestureText="Ctrl+Shift+R" IsEnabled="False"/>
+                                <MenuItem Header="{loc:Loc Main.Menu.Folders}">
+                                    <MenuItem Header="{loc:Loc Main.Menu.OpenScreenshotFolder}" Click="OpenScreenshotFolder_Click"/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.OpenRecordingsFolder}" Click="OpenRecordingsFolder_Click"/>
+                                </MenuItem>
+                                <MenuItem x:Name="PlaylistToggleMenu" Header="{loc:Loc Main.Playlist.ShowHide}" Click="TogglePlaylist_Click" InputGestureText="L"/>
+                                <Separator/>
+                                <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
+                            </ContextMenu>
+                        </Grid.ContextMenu>
                         <controls:MpvHost x:Name="PlayerHost" Visibility="Collapsed"/>
                         <Border x:Name="DropHint" Background="#CC0A0A0A">
                             <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="24">
-                                <Image Source="pack://application:,,,/Assets/app.png" Width="88" Height="88"
-                                       RenderOptions.BitmapScalingMode="HighQuality" Margin="0,0,0,16"
+                                <Image Source="pack://application:,,,/Assets/brand-wordmark.png" Width="280"
+                                       Stretch="Uniform" RenderOptions.BitmapScalingMode="HighQuality" Margin="0,0,0,10"
                                        IsHitTestVisible="False"/>
-                                <TextBlock Text="Transub Player" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center"
-                                           IsHitTestVisible="False"/>
                                 <TextBlock Text="{loc:Loc Main.DropHint.Open}"
-                                           Foreground="{StaticResource MutedBrush}" Margin="0,8,0,0" HorizontalAlignment="Center"
-                                           IsHitTestVisible="False"/>
-                                <TextBlock Text="{loc:Loc Main.DropHint.PreviewAuto}"
-                                           Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" HorizontalAlignment="Center" FontSize="12"
-                                           IsHitTestVisible="False"/>
-                                <TextBlock Text="{loc:Loc Main.DropHint.AutoPreviewOff}"
-                                           Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" HorizontalAlignment="Center" FontSize="12"
-                                           IsHitTestVisible="False"/>
-                                <Button Content="{loc:Loc Main.DropHint.SubSourceHelp}" Click="DropHintSubSourceHelp_Click"
-                                        Margin="0,10,0,0" Padding="12,4" FontSize="12" HorizontalAlignment="Center"/>
-                                <TextBlock Text="{loc:Loc Main.DropHint.Transub}"
-                                           Foreground="{StaticResource MutedBrush}" Margin="0,6,0,0" HorizontalAlignment="Center" FontSize="12"
+                                           Foreground="{StaticResource MutedBrush}" Margin="0,10,0,0" HorizontalAlignment="Center"
                                            IsHitTestVisible="False"/>
                                 <StackPanel x:Name="RecentHintPanel" Margin="0,18,0,0" HorizontalAlignment="Center"/>
                             </StackPanel>
@@ -409,9 +449,41 @@
                                     <TextBlock x:Name="LagActionTitle" Text="{loc:Loc Main.Lag.Title}" FontSize="13"
                                                Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                        <Button Content="{loc:Loc Main.Lag.JumpReady}" Click="LagJumpReady_Click" Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
+                                        <Button Content="{loc:Loc Main.Lag.ContinueWait}" Click="LagDismiss_Click" Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
                                         <Button Content="{loc:Loc Main.Lag.SwitchSource}" Click="LagSwitchSource_Click" Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
-                                        <Button Content="{loc:Loc Main.Lag.ContinueWait}" Click="LagDismiss_Click" Padding="10,4" FontSize="12"/>
+                                        <Button Content="{loc:Loc Main.Lag.JumpReady}" Click="LagJumpReady_Click" Padding="10,4" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                        <Popup x:Name="ResumeOfferPopup" PlacementTarget="{Binding ElementName=VideoArea}"
+                               Placement="Relative" HorizontalOffset="0" VerticalOffset="0"
+                               AllowsTransparency="True" StaysOpen="True">
+                            <Border x:Name="ResumeOfferBar" Background="#EE1A1A1A" BorderBrush="{StaticResource LineBrush}"
+                                    BorderThickness="1" CornerRadius="8" Padding="12,10" MaxWidth="560">
+                                <StackPanel>
+                                    <TextBlock x:Name="ResumeOfferTitle" FontSize="13"
+                                               Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button x:Name="ResumeOfferJumpButton" Content="{loc:Loc Main.Resume.Jump}"
+                                                Click="ResumeOfferJump_Click" Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
+                                        <Button x:Name="ResumeOfferCloseButton" Content="{loc:Loc Main.Resume.Close}"
+                                                Click="ResumeOfferClose_Click" Padding="10,4" FontSize="12"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                        <Popup x:Name="FinishedSubPopup" PlacementTarget="{Binding ElementName=VideoArea}"
+                               Placement="Relative" HorizontalOffset="0" VerticalOffset="0"
+                               AllowsTransparency="True" StaysOpen="True">
+                            <Border x:Name="FinishedSubBar" Background="#EE1A1A1A" BorderBrush="{StaticResource LineBrush}"
+                                    BorderThickness="1" CornerRadius="8" Padding="12,10" MaxWidth="520">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Main.FinishedSub.Title}" FontSize="13"
+                                               Foreground="{StaticResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button Content="{loc:Loc Main.FinishedSub.Load}" Click="FinishedSubLoad_Click" Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
+                                        <Button Content="{loc:Loc Main.FinishedSub.Later}" Click="FinishedSubLater_Click" Padding="10,4" FontSize="12"/>
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -448,9 +520,19 @@
                                                    HorizontalAlignment="Center" Foreground="{StaticResource AccentBrush}"
                                                    Text="{loc:Loc Main.Bootstrap.PleaseWait}"/>
                                         <TextBlock Text="{loc:Loc Main.WaitZh.Hint}"
+                                                   x:Name="WaitZhHintLabel"
                                                    FontSize="12" Margin="0,12,0,0" HorizontalAlignment="Center"
                                                    Foreground="{StaticResource MutedBrush}"/>
-                                        <Button Content="{loc:Loc Main.WaitZh.SkipButton}" Click="WaitZhSkip_Click"
+                                        <StackPanel x:Name="WaitCoverageActionsPanel" Orientation="Horizontal"
+                                                    HorizontalAlignment="Center" Margin="0,14,0,0" Visibility="Collapsed">
+                                            <Button Content="{loc:Loc Main.Lag.SwitchSource}" Click="WaitSwitchSource_Click"
+                                                    Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
+                                            <Button Content="{loc:Loc Main.Lag.JumpReady}" Click="WaitJumpReady_Click"
+                                                    Margin="0,0,8,0" Padding="10,4" FontSize="12"/>
+                                            <Button Content="{loc:Loc Main.WaitZh.SkipButton}" Click="WaitZhSkip_Click"
+                                                    Padding="10,4" FontSize="12"/>
+                                        </StackPanel>
+                                        <Button x:Name="WaitZhSkipOnlyButton" Content="{loc:Loc Main.WaitZh.SkipButton}" Click="WaitZhSkip_Click"
                                                 HorizontalAlignment="Center" Margin="0,14,0,0" Padding="14,6"/>
                                     </StackPanel>
                                 </Border>
@@ -473,10 +555,72 @@
                                     <DataTemplate>
                                         <DockPanel Margin="4,6">
                                             <TextBlock DockPanel.Dock="Right" Text="{Binding Badge}" FontSize="11"
-                                                       Foreground="{StaticResource AccentBrush}" Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"/>
+                                                       Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="ready">
+                                                                <Setter Property="Foreground" Value="#FF5BCF7A"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="external">
+                                                                <Setter Property="Foreground" Value="#FF6CB6FF"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="running">
+                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="generating">
+                                                                <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="queued">
+                                                                <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="failed">
+                                                                <Setter Property="Foreground" Value="#FFE07070"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="none">
+                                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                            <Ellipse DockPanel.Dock="Left" Width="7" Height="7" Margin="0,0,8,0" VerticalAlignment="Center">
+                                                <Ellipse.Style>
+                                                    <Style TargetType="Ellipse">
+                                                        <Setter Property="Fill" Value="#FF555555"/>
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="ready">
+                                                                <Setter Property="Fill" Value="#FF5BCF7A"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="external">
+                                                                <Setter Property="Fill" Value="#FF6CB6FF"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="running">
+                                                                <Setter Property="Fill" Value="{StaticResource AccentBrush}"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="generating">
+                                                                <Setter Property="Fill" Value="{StaticResource AccentBrush}"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="queued">
+                                                                <Setter Property="Fill" Value="#FF888888"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Kind}" Value="failed">
+                                                                <Setter Property="Fill" Value="#FFE07070"/>
+                                                                <Setter Property="Visibility" Value="Visible"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Ellipse.Style>
+                                            </Ellipse>
                                             <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis"
-                                                       Foreground="{StaticResource TextBrush}"/>
+                                                       Foreground="{StaticResource TextBrush}" VerticalAlignment="Center"/>
                                         </DockPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

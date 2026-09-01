@@ -7,6 +7,7 @@ namespace TransubPlayer;
 public partial class OpenUrlDialog : Window
 {
     public string? Url { get; private set; }
+    public bool AddToFavorites { get; private set; }
 
     public OpenUrlDialog(string? initial = null)
     {
@@ -27,6 +28,7 @@ public partial class OpenUrlDialog : Window
         }
 
         Url = url;
+        AddToFavorites = AddFavoriteBox.IsChecked == true;
         DialogResult = true;
     }
 

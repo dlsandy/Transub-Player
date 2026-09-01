@@ -129,7 +129,9 @@ public partial class MainWindow
         _openedUtc = DateTime.UtcNow;
         RefreshPlaylistUi();
         ShowOpeningOverlay(path);
-        SetStatus(Loc.Get("Main.Status.Opening"));
+        SetStatus(StreamMediaResolver.MayNeedResolve(path)
+            ? Loc.Get("Main.Status.ResolvingStream")
+            : Loc.Get("Main.Status.Opening"));
         await Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Render);
         try
         {
@@ -155,6 +157,12 @@ public partial class MainWindow
             if (gen != Volatile.Read(ref _openGen)) return;
             SetStatus(UserFacingErrors.Message(ex));
             await OfferFetchMpvAsync();
+        }
+        catch (StreamResolveException ex)
+        {
+            if (gen != Volatile.Read(ref _openGen)) return;
+            SetStatus(ex.Message);
+            UserFacingErrors.Show(this, ex);
         }
         catch (Exception ex)
         {
@@ -299,45 +307,104 @@ public partial class MainWindow
             UpdateFullscreenChromeVisibility();
     }
 
+    private string _playlistReadySig = "";
+
     private void RefreshPlaylistUi()
     {
+        var stream = _preview?.IsStreamPlayback == true;
+        if (stream && PlaylistPanel.Visibility == Visibility.Visible)
+            ShowPlaylist(false);
+
+        PlaylistButton.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
+        PlaylistButton.IsEnabled = !stream;
+
         PlaylistTitle.Text = _queue.Count == 0
             ? Loc.Get("Main.Playlist.Title")
             : Loc.Format("Main.Playlist.TitleCount", _queue.Index + 1, _queue.Count);
-        var multi = _queue.Count > 1;
+        var multi = !stream && _queue.Count > 1;
         PlaylistPrevButton.Visibility = multi ? Visibility.Visible : Visibility.Collapsed;
         PlaylistNextButton.Visibility = multi ? Visibility.Visible : Visibility.Collapsed;
-        PlaylistPrevButton.IsEnabled = _queue.HasPrev;
-        PlaylistNextButton.IsEnabled = _queue.HasNext;
+        PlaylistPrevButton.IsEnabled = multi && _queue.HasPrev;
+        PlaylistNextButton.IsEnabled = multi && _queue.HasNext;
 
         var rows = new List<PlaylistRow>(_queue.Count);
+        var sigParts = new List<string>(_queue.Count);
+        var currentGenerating = _preview is not null
+                                && _preview.ShowPreviewChrome
+                                && !_preview.UsingExistingSub
+                                && _settings.AutoStartPreview;
+        var currentExternal = _preview?.UsingExistingSub == true;
+
         for (var i = 0; i < _queue.Count; i++)
         {
             var path = _queue.Items[i];
             var name = MediaSourceHelper.DisplayName(path);
-            var display = i == _queue.Index ? $"▶  {name}" : $"    {name}";
-            var badge = "";
-            if (_preview is not null && i != _queue.Index)
-            {
-                if (_preview.IsPrefetchRunning(path))
-                    badge = Loc.Get("Main.Playlist.PrefetchRunning");
-                else if (PreviewPaths.HasReadyAsr(path))
-                    badge = Loc.Get("Main.Playlist.PrefetchReady");
-                else if (_preview.IsPrefetchFailed(path))
-                    badge = Loc.Get("Main.Playlist.PrefetchFailed");
-                else if (_preview.IsPrefetchQueued(path))
-                    badge = Loc.Get("Main.Playlist.PrefetchQueued");
-            }
+            var isCurrent = i == _queue.Index;
+            var display = isCurrent ? $"▶  {name}" : $"    {name}";
 
-            rows.Add(new PlaylistRow(display, badge));
+            var kind = _preview is null
+                ? PlaylistSubReadyKind.None
+                : PlaylistSubReady.Resolve(
+                    path,
+                    isCurrent,
+                    currentGenerating && isCurrent,
+                    currentExternal && isCurrent,
+                    _preview.IsPrefetchRunning,
+                    _preview.IsPrefetchQueued,
+                    _preview.IsPrefetchFailed);
+
+            // Current live ASR: once marker exists, Resolve already returns Ready.
+            if (isCurrent && kind == PlaylistSubReadyKind.Generating && PreviewPaths.HasReadyAsr(path))
+                kind = PlaylistSubReadyKind.Ready;
+
+            var badgeKey = PlaylistSubReady.BadgeLocKey(kind);
+            var badge = badgeKey is null ? "" : Loc.Get(badgeKey);
+            var kindKey = PlaylistSubReady.KindKey(kind);
+            sigParts.Add($"{i}:{kindKey}");
+            rows.Add(new PlaylistRow(display, badge, kindKey));
         }
 
+        _playlistReadySig = string.Join("|", sigParts) + $"#{_queue.Index}/{_queue.Count}";
         PlaylistBox.ItemsSource = rows;
         if (_queue.Index >= 0 && _queue.Index < rows.Count)
             PlaylistBox.SelectedIndex = _queue.Index;
     }
 
-    private sealed record PlaylistRow(string Display, string Badge);
+    /// <summary>Refresh list badges when readiness changes without rebuilding every chrome tick.</summary>
+    private void MaybeRefreshPlaylistReadyBadges()
+    {
+        if (!_playlistOpen || _queue.Count <= 1 || _preview is null) return;
+        if (_preview.IsStreamPlayback) return;
+
+        var sigParts = new List<string>(_queue.Count);
+        var currentGenerating = _preview.ShowPreviewChrome
+                                && !_preview.UsingExistingSub
+                                && _settings.AutoStartPreview;
+        var currentExternal = _preview.UsingExistingSub;
+        for (var i = 0; i < _queue.Count; i++)
+        {
+            var path = _queue.Items[i];
+            var isCurrent = i == _queue.Index;
+            var kind = PlaylistSubReady.Resolve(
+                path,
+                isCurrent,
+                currentGenerating && isCurrent,
+                currentExternal && isCurrent,
+                _preview.IsPrefetchRunning,
+                _preview.IsPrefetchQueued,
+                _preview.IsPrefetchFailed);
+            if (isCurrent && kind == PlaylistSubReadyKind.Generating && PreviewPaths.HasReadyAsr(path))
+                kind = PlaylistSubReadyKind.Ready;
+            sigParts.Add($"{i}:{PlaylistSubReady.KindKey(kind)}");
+        }
+
+        var sig = string.Join("|", sigParts) + $"#{_queue.Index}/{_queue.Count}";
+        if (string.Equals(sig, _playlistReadySig, StringComparison.Ordinal))
+            return;
+        RefreshPlaylistUi();
+    }
+
+    private sealed record PlaylistRow(string Display, string Badge, string Kind);
 
     private async void PlaylistNext_Click(object sender, RoutedEventArgs e) => await PlaylistSkipAsync(next: true);
     private async void PlaylistPrev_Click(object sender, RoutedEventArgs e) => await PlaylistSkipAsync(next: false);

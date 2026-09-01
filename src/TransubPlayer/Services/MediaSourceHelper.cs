@@ -47,7 +47,14 @@ internal static class MediaSourceHelper
         {
             if (trimmed.StartsWith("www.", StringComparison.OrdinalIgnoreCase)
                 || (trimmed.Contains('.') && !trimmed.Contains('\\') && !Path.IsPathRooted(trimmed)))
+            {
                 trimmed = "https://" + trimmed;
+            }
+            else if (StripchatStreamResolver.TryNormalizeBareHandle(trimmed, out var stripchatPage))
+            {
+                normalized = stripchatPage;
+                return true;
+            }
         }
 
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)) return false;
@@ -66,6 +73,12 @@ internal static class MediaSourceHelper
             return Loc.Get("MediaSource.Screen.Capture");
         }
 
+        if (IsStripchatPage(path))
+        {
+            if (TryParseStripchatUsername(path, out var user))
+                return Loc.Format("MediaSource.Stripchat.User", user);
+        }
+
         if (IsRemoteUrl(path) && Uri.TryCreate(path, UriKind.Absolute, out var uri))
         {
             var seg = uri.Segments.LastOrDefault(s => s.Length > 1)?.TrimEnd('/');
@@ -75,5 +88,21 @@ internal static class MediaSourceHelper
         }
 
         return Path.GetFileName(path);
+    }
+
+    public static bool IsStripchatPage(string? url)
+        => StripchatStreamResolver.IsStripchatPage(url);
+
+    private static bool TryParseStripchatUsername(string url, out string username)
+    {
+        username = "";
+        var m = System.Text.RegularExpressions.Regex.Match(
+            url,
+            @"(?:[\w-]+\.)*stripchat\.[a-z.]+/(?<user>[A-Za-z0-9_-]+)",
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        if (!m.Success) return false;
+        username = m.Groups["user"].Value;
+        var bare = username.Contains('@') ? username[..username.IndexOf('@')] : username;
+        return !string.IsNullOrWhiteSpace(bare);
     }
 }

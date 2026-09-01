@@ -12,6 +12,13 @@ public partial class MainWindow
     private void WireMpvHostInput()
     {
         PlayerHost.NativeRightButtonUp += OpenPlayerContextMenu;
+        if (PlayerContextMenu is not null)
+            PlayerContextMenu.Opened += (_, _) =>
+            {
+                if (AppMenu is { IsOpen: true })
+                    AppMenu.IsOpen = false;
+                RefreshModelMenus();
+            };
         PlayerHost.NativeLeftButtonDown += clickCount =>
         {
             if (!HasMedia) return;
@@ -36,6 +43,9 @@ public partial class MainWindow
                 SyncVolumeUi();
             }
 
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
+                NotifySeekPastReady(_preview.Position);
+
             BumpChrome();
         };
         PlayerHost.NativeMouseMove += () =>
@@ -43,12 +53,21 @@ public partial class MainWindow
             if (_isFullscreen)
                 BumpChrome();
         };
+        // Keys land on mpv HWND after clicking the video — forward so Space etc. still work.
+        PlayerHost.NativeKeyDown += (key, isRepeat) =>
+        {
+            if (isRepeat && key == Key.Space)
+                return;
+            HandlePlaybackKey(key);
+        };
     }
 
     private void OpenPlayerContextMenu()
     {
-        var menu = ContextMenu;
+        var menu = PlayerContextMenu;
         if (menu is null) return;
+        if (AppMenu is { IsOpen: true })
+            AppMenu.IsOpen = false;
         // Close first so a second right-click repositions correctly.
         menu.IsOpen = false;
         menu.Placement = PlacementMode.MousePoint;
@@ -62,6 +81,18 @@ public partial class MainWindow
         if (e.OriginalSource is TextBox)
             return;
 
+        // Space must always toggle play/pause on the main shell. ComboBox keeps
+        // focus after a pick and would otherwise swallow Space (open/select);
+        // focused Buttons can also activate on Space and cancel a TogglePause.
+        if (e.Key == Key.Space)
+        {
+            if (ControlBarComboStealsFocus(e))
+                CloseControlBarDropdowns();
+            if (HandlePlaybackKey(Key.Space))
+                e.Handled = true;
+            return;
+        }
+
         var playbackArrow = IsPlaybackArrowKey(e.Key);
         if (playbackArrow && ControlBarComboStealsFocus(e))
             CloseControlBarDropdowns();
@@ -69,190 +100,180 @@ public partial class MainWindow
         if (!playbackArrow && e.OriginalSource is ComboBox or ComboBoxItem)
             return;
 
+        if (HandlePlaybackKey(e.Key))
+            e.Handled = true;
+    }
+
+    /// <returns>True when the key was consumed as a player shortcut.</returns>
+    private bool HandlePlaybackKey(Key key)
+    {
         if (!HasMedia)
         {
-            switch (e.Key)
+            switch (key)
             {
                 case Key.O when Keyboard.Modifiers.HasFlag(ModifierKeys.Control):
                     if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                        OpenUrl_Click(sender, e);
+                        OpenUrl_Click(this, new RoutedEventArgs());
                     else
-                        Open_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                        Open_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.L:
-                    TogglePlaylist_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                    TogglePlaylist_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.N:
-                    PlaylistNext_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                    PlaylistNext_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.P:
-                    PlaylistPrev_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                    PlaylistPrev_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.F1:
-                    ShortcutsHelp_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                    ShortcutsHelp_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.T:
                     AlwaysOnTopMenu.IsChecked = !AlwaysOnTopMenu.IsChecked;
-                    AlwaysOnTop_Click(sender, e);
-                    e.Handled = true;
-                    break;
+                    AlwaysOnTop_Click(this, new RoutedEventArgs());
+                    return true;
                 case Key.Escape:
                     if (_isFullscreen) ToggleFullscreen();
                     else if (WindowState == WindowState.Maximized) WindowState = WindowState.Normal;
-                    e.Handled = true;
-                    break;
+                    return true;
+                default:
+                    return false;
             }
-            return;
         }
 
-        if (_preview is null && e.Key is not (Key.O or Key.Escape or Key.F11 or Key.F or Key.Enter)) return;
+        if (_preview is null && key is not (Key.O or Key.Escape or Key.F11 or Key.F or Key.Enter))
+            return false;
 
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         var shift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
+        var stream = _preview?.IsStreamPlayback == true;
 
-        switch (e.Key)
+        switch (key)
         {
             case Key.Space:
                 _preview?.TogglePause();
-                e.Handled = true;
-                break;
+                return true;
             case Key.Left:
+                if (stream) return true;
                 _preview?.SeekRelative(ctrl ? -SeekLargeStep() : shift ? -SeekFineStep() : -SeekStep());
-                NoteSeekWhileLagging();
-                e.Handled = true;
-                break;
+                NotifySeekPastReady(_preview?.Position ?? 0);
+                return true;
             case Key.Right:
+                if (stream) return true;
                 _preview?.SeekRelative(ctrl ? SeekLargeStep() : shift ? SeekFineStep() : SeekStep());
-                NoteSeekWhileLagging();
-                e.Handled = true;
-                break;
+                NotifySeekPastReady(_preview?.Position ?? 0);
+                return true;
             case Key.Up:
                 _preview?.AdjustVolume(5);
                 SyncVolumeUi();
-                e.Handled = true;
-                break;
+                return true;
             case Key.Down:
                 _preview?.AdjustVolume(-5);
                 SyncVolumeUi();
-                e.Handled = true;
-                break;
+                return true;
             case Key.PageUp:
+                if (stream) return true;
                 _preview?.SeekRelative(60);
-                e.Handled = true;
-                break;
+                NotifySeekPastReady(_preview?.Position ?? 0);
+                return true;
             case Key.PageDown:
+                if (stream) return true;
                 _preview?.SeekRelative(-60);
-                e.Handled = true;
-                break;
+                NotifySeekPastReady(_preview?.Position ?? 0);
+                return true;
             case Key.Home:
+                if (stream) return true;
                 _preview?.Seek(0);
-                e.Handled = true;
-                break;
+                return true;
             case Key.End when _preview is { Duration: > 0 }:
+                if (stream) return true;
                 _preview.Seek(Math.Max(0, _preview.Duration - 1));
-                e.Handled = true;
-                break;
+                NotifySeekPastReady(_preview.Position);
+                return true;
             case Key.OemPeriod:
             case Key.Decimal:
                 _preview?.FrameStep(true);
-                e.Handled = true;
-                break;
+                return true;
             case Key.OemComma:
                 _preview?.FrameStep(false);
-                e.Handled = true;
-                break;
+                return true;
             case Key.M:
                 _preview?.ToggleMute();
-                e.Handled = true;
-                break;
+                return true;
             case Key.V:
                 _preview?.ToggleSubVisible();
                 RefreshModeButtons();
-                e.Handled = true;
-                break;
+                return true;
             case Key.S when !ctrl:
-                Screenshot_Click(sender, e);
-                e.Handled = true;
-                break;
+                Screenshot_Click(this, new RoutedEventArgs());
+                return true;
             case Key.OemOpenBrackets:
                 _preview?.CycleSpeed();
                 RefreshSpeedButton();
-                e.Handled = true;
-                break;
+                return true;
             case Key.OemCloseBrackets:
                 _preview?.ResetSpeed();
                 RefreshSpeedButton();
-                e.Handled = true;
-                break;
+                return true;
             case Key.F1:
-                ShortcutsHelp_Click(sender, e);
-                e.Handled = true;
-                break;
+                ShortcutsHelp_Click(this, new RoutedEventArgs());
+                return true;
             case Key.T:
                 AlwaysOnTopMenu.IsChecked = !AlwaysOnTopMenu.IsChecked;
-                AlwaysOnTop_Click(sender, e);
-                e.Handled = true;
-                break;
+                AlwaysOnTop_Click(this, new RoutedEventArgs());
+                return true;
             case Key.O when ctrl:
                 if (shift)
-                    OpenUrl_Click(sender, e);
+                    OpenUrl_Click(this, new RoutedEventArgs());
                 else
-                    Open_Click(sender, e);
-                e.Handled = true;
-                break;
+                    Open_Click(this, new RoutedEventArgs());
+                return true;
+            case Key.R when ctrl && shift:
+                _ = ToggleStreamRecordAsync();
+                return true;
             case Key.D1:
-                SetMode(SubtitleDisplayMode.Zh);
-                e.Handled = true;
-                break;
+                if (!stream) SetMode(SubtitleDisplayMode.Zh);
+                return true;
             case Key.D2:
-                SetMode(SubtitleDisplayMode.Source);
-                e.Handled = true;
-                break;
+                if (!stream) SetMode(SubtitleDisplayMode.Source);
+                return true;
             case Key.D3:
-                SetMode(SubtitleDisplayMode.Dual);
-                e.Handled = true;
-                break;
+                if (!stream) SetMode(SubtitleDisplayMode.Dual);
+                return true;
             case Key.D0:
-                _preview?.ToggleSubVisible();
-                RefreshModeButtons();
-                e.Handled = true;
-                break;
+                if (!stream)
+                {
+                    _preview?.ToggleSubVisible();
+                    RefreshModeButtons();
+                }
+                return true;
             case Key.L:
-                TogglePlaylist_Click(sender, e);
-                e.Handled = true;
-                break;
+                if (!stream) TogglePlaylist_Click(this, new RoutedEventArgs());
+                return true;
             case Key.N:
-                PlaylistNext_Click(sender, e);
-                e.Handled = true;
-                break;
+                if (!stream) PlaylistNext_Click(this, new RoutedEventArgs());
+                return true;
             case Key.P:
-                PlaylistPrev_Click(sender, e);
-                e.Handled = true;
-                break;
+                if (!stream) PlaylistPrev_Click(this, new RoutedEventArgs());
+                return true;
             case Key.Z:
-                _preview?.NudgeSubDelay(0.5);
-                e.Handled = true;
-                break;
+                if (!stream) _preview?.NudgeSubDelay(0.5);
+                return true;
             case Key.X:
-                _preview?.NudgeSubDelay(-0.5);
-                e.Handled = true;
-                break;
+                if (!stream) _preview?.NudgeSubDelay(-0.5);
+                return true;
             case Key.Escape:
                 if (_isFullscreen) ToggleFullscreen();
                 else if (WindowState == WindowState.Maximized) WindowState = WindowState.Normal;
-                e.Handled = true;
-                break;
+                return true;
             case Key.Enter:
             case Key.F:
             case Key.F11:
                 ToggleFullscreen();
-                e.Handled = true;
-                break;
+                return true;
+            default:
+                return false;
         }
     }
 
@@ -276,7 +297,13 @@ public partial class MainWindow
     {
         if (!HasMedia) return;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-            _preview!.SeekRelative(e.Delta > 0 ? 2 : -2);
+        {
+            if (_preview?.IsStreamPlayback != true)
+            {
+                _preview!.SeekRelative(e.Delta > 0 ? 2 : -2);
+                NotifySeekPastReady(_preview.Position);
+            }
+        }
         else
         {
             _preview!.AdjustVolume(e.Delta > 0 ? 5 : -5);
@@ -290,10 +317,13 @@ public partial class MainWindow
     private static bool IsPlaybackArrowKey(Key key)
         => key is Key.Left or Key.Right or Key.Up or Key.Down;
 
-    /// <summary>底栏 ComboBox 展开或焦点在其内部时，方向键用于播放而非菜单导航。</summary>
+    /// <summary>底栏 ComboBox 展开或焦点在其内部时，方向键/空格用于播放而非菜单导航。</summary>
     private bool ControlBarComboStealsFocus(KeyEventArgs e)
     {
-        if (SubSourceBox is { IsDropDownOpen: true } || PresetBox is { IsDropDownOpen: true })
+        if (SubSourceBox is { IsDropDownOpen: true }
+            || SourceLangBox is { IsDropDownOpen: true }
+            || TranslateTargetBarBox is { IsDropDownOpen: true }
+            || StreamQualityBox is { IsDropDownOpen: true })
             return true;
 
         if (e.OriginalSource is ComboBox or ComboBoxItem)
@@ -302,15 +332,22 @@ public partial class MainWindow
         if (e.OriginalSource is not DependencyObject src)
             return false;
 
-        return IsDescendantOf(SubSourceBox, src) || IsDescendantOf(PresetBox, src);
+        return IsDescendantOf(SubSourceBox, src)
+               || IsDescendantOf(SourceLangBox, src)
+               || IsDescendantOf(TranslateTargetBarBox, src)
+               || IsDescendantOf(StreamQualityBox, src);
     }
 
     private void CloseControlBarDropdowns()
     {
         if (SubSourceBox is { IsDropDownOpen: true })
             SubSourceBox.IsDropDownOpen = false;
-        if (PresetBox is { IsDropDownOpen: true })
-            PresetBox.IsDropDownOpen = false;
+        if (SourceLangBox is { IsDropDownOpen: true })
+            SourceLangBox.IsDropDownOpen = false;
+        if (TranslateTargetBarBox is { IsDropDownOpen: true })
+            TranslateTargetBarBox.IsDropDownOpen = false;
+        if (StreamQualityBox is { IsDropDownOpen: true })
+            StreamQualityBox.IsDropDownOpen = false;
     }
 
     private static bool IsDescendantOf(DependencyObject? root, DependencyObject node)

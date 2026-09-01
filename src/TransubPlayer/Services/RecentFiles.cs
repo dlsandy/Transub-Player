@@ -39,6 +39,12 @@ internal static class RecentFiles
     public static void Clear(AppSettings settings)
         => settings.RecentFiles.Clear();
 
+    public static void Remove(AppSettings settings, string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
+        settings.RecentFiles.RemoveAll(p => string.Equals(p, path, StringComparison.OrdinalIgnoreCase));
+    }
+
     public static IEnumerable<string> Valid(AppSettings settings)
         => settings.RecentFiles.Where(p => MediaSourceHelper.IsNonLocalMedia(p) || File.Exists(p));
 }

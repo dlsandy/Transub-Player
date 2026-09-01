@@ -1,0 +1,62 @@
+<Window x:Class="TransubPlayer.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:TransubPlayer.Localization"
+        Title="{loc:Loc Main.Menu.About}"
+        SizeToContent="WidthAndHeight"
+        MinWidth="420" MaxWidth="480"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        FocusVisualStyle="{x:Null}">
+    <Border Background="{StaticResource BgBrush}" BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Background="{StaticResource SurfaceBrush}" Height="32"
+                    BorderBrush="{StaticResource LineBrush}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="Caption_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0" IsHitTestVisible="False">
+                        <Image Source="pack://application:,,,/Assets/app.png" Width="18" Height="18" Margin="0,0,8,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Text="{loc:Loc Main.Menu.About}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button HorizontalAlignment="Right" Style="{StaticResource CaptionCloseButton}" Click="Close_Click"
+                            ToolTip="{loc:Loc Common.Close}">
+                        <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                              StrokeThickness="1.4" Width="10" Height="10"
+                              Data="M1,1 L9,9 M9,1 L1,9" Stretch="None"/>
+                    </Button>
+                </Grid>
+            </Border>
+            <StackPanel Margin="32,28,32,24" HorizontalAlignment="Center">
+                <Image Source="pack://application:,,,/Assets/app.png" Width="96" Height="96"
+                       HorizontalAlignment="Center"
+                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                <TextBlock Text="Transub Player" FontSize="20" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" Margin="0,16,0,4"/>
+                <TextBlock x:Name="VersionLabel" HorizontalAlignment="Center"
+                           Foreground="{StaticResource MutedBrush}" FontSize="13"/>
+                <TextBlock Text="{loc:Loc Main.About.Tagline}" TextWrapping="Wrap" TextAlignment="Center"
+                           HorizontalAlignment="Center" Margin="0,16,0,0" FontSize="13" MaxWidth="360"/>
+                <TextBlock Text="{loc:Loc Main.About.Hint}" TextWrapping="Wrap" TextAlignment="Center"
+                           HorizontalAlignment="Center" Margin="0,8,0,0" FontSize="12"
+                           Foreground="{StaticResource MutedBrush}" MaxWidth="360"/>
+                <TextBlock Text="{loc:Loc Main.About.Copyright}" HorizontalAlignment="Center"
+                           Foreground="{StaticResource MutedBrush}" FontSize="11" Margin="0,16,0,0"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0">
+                    <Button Content="{loc:Loc Main.About.CheckUpdate}" Click="CheckUpdate_Click"
+                            Margin="0,0,8,0" Padding="14,6"/>
+                    <Button Content="{loc:Loc Main.About.OpenTransub}" Click="OpenTransub_Click"
+                            Margin="0,0,8,0" Padding="14,6"/>
+                    <Button Content="{loc:Loc Common.Close}" Click="Close_Click"
+                            Style="{StaticResource AccentButton}" Padding="16,6"
+                            IsDefault="True" IsCancel="True"/>
+                </StackPanel>
+            </StackPanel>
+        </DockPanel>
+    </Border>
+</Window>

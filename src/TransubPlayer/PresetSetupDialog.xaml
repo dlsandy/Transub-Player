@@ -1,0 +1,39 @@
+<Window x:Class="TransubPlayer.PresetSetupDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:TransubPlayer.Localization"
+        Title="组件安装"
+        Width="520" Height="460"
+        MinWidth="440" MinHeight="360"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}"
+        Closing="Window_Closing">
+    <DockPanel Margin="20">
+        <StackPanel x:Name="ButtonRow" DockPanel.Dock="Bottom" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="AutoButton" Content="{loc:Loc Main.Deps.AutoInstall}" Click="Auto_Click" Margin="0,0,8,0"
+                    Style="{StaticResource AccentButton}"/>
+            <Button x:Name="ManualButton" Content="{loc:Loc Main.Deps.ManualInstall}" Click="Manual_Click" Margin="0,0,8,0"/>
+            <Button x:Name="CancelButton" Content="{loc:Loc Common.Cancel}" Click="Cancel_Click"/>
+        </StackPanel>
+        <StackPanel x:Name="ProgressPanel" DockPanel.Dock="Bottom" Margin="0,12,0,0" Visibility="Collapsed">
+            <TextBlock x:Name="ProgressLabel" TextWrapping="Wrap" FontSize="13"
+                       Foreground="{StaticResource AccentBrush}" Margin="0,0,0,8"/>
+            <ProgressBar x:Name="ProgressBar" Height="8" IsIndeterminate="True"/>
+            <Button x:Name="CancelInstallButton" Content="{loc:Loc Main.Deps.CancelInstall}"
+                    Click="CancelInstall_Click" HorizontalAlignment="Right" Margin="0,10,0,0" Padding="12,4"/>
+        </StackPanel>
+        <StackPanel>
+            <TextBlock Text="{loc:Loc Main.Deps.DialogHeading}" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="220">
+                <TextBlock x:Name="BodyText" TextWrapping="Wrap" LineHeight="22"
+                           Foreground="{StaticResource MutedBrush}"/>
+            </ScrollViewer>
+            <TextBlock x:Name="HintText" TextWrapping="Wrap" Margin="0,12,0,0" FontSize="12"
+                       Foreground="{StaticResource MutedBrush}"
+                       Text="{loc:Loc Main.Deps.DialogAutoHint}"/>
+        </StackPanel>
+    </DockPanel>
+</Window>

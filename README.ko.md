@@ -11,7 +11,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 시청 중 실시간 이중 언어 자막" width="900">
 </p>
 
-> Windows 데스크톱 플레이어 · 현재 버전 1.5.1  
+> Windows 데스크톱 플레이어 · 현재 버전 1.5.2  
 > [GitHub](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases)에서 설치 프로그램이나 포터블 패키지를 받으세요. 앱 안의「업데이트 확인」으로도 업그레이드할 수 있습니다.
 
 ---
@@ -140,6 +140,12 @@ powershell -ExecutionPolicy Bypass -File tools\pack-release.ps1
 - 목표는 「이해하고 따라갈 수 있음」이며, 배포급 완성 자막이 아닙니다
 - 번역 모델이 없어도 원문 자막으로 시청을 이어갈 수 있습니다
 - 종료하면 플레이어가 띄운 관련 프로세스도 함께 종료되어, 백그라운드에 남지 않습니다
+
+---
+
+## 변경 기록
+
+[CHANGELOG.ko.md](CHANGELOG.ko.md) · [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md) · [CHANGELOG.md](CHANGELOG.md) · [CHANGELOG.ja.md](CHANGELOG.ja.md)
 
 ---
 

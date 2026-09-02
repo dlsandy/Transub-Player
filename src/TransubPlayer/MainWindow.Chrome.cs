@@ -343,6 +343,7 @@ public partial class MainWindow
         RefreshPlaybackEnabled();
         UpdateSubtitleProgress();
         UpdatePresetHint();
+        UpdateOpeningOverlay();
         UpdateWaitZhOverlay();
         MaybeShowSubtitleLagOsd();
         UpdateResumeOffer();

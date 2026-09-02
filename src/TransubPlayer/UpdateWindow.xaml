@@ -1,0 +1,278 @@
+<Window x:Class="TransubPlayer.UpdateWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:TransubPlayer.Localization"
+        xmlns:sys="clr-namespace:System;assembly=System.Runtime"
+        Title="{loc:Loc Update.Center.Title}"
+        Width="580" Height="640"
+        MinWidth="520" MinHeight="560"
+        WindowStartupLocation="CenterOwner"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip"
+        Background="#F3F4F6"
+        Foreground="#111827"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        FontSize="13"
+        FocusVisualStyle="{x:Null}">
+    <Window.Resources>
+        <Color x:Key="UpdSurfaceColor">#FFFFFF</Color>
+        <Color x:Key="UpdLineColor">#E5E7EB</Color>
+        <Color x:Key="UpdTextColor">#111827</Color>
+        <Color x:Key="UpdMutedColor">#6B7280</Color>
+        <Color x:Key="UpdAccentColor">#2563EB</Color>
+        <Color x:Key="UpdAccentHoverColor">#1D4ED8</Color>
+        <Color x:Key="UpdHighlightBgColor">#EFF6FF</Color>
+        <Color x:Key="UpdHighlightBorderColor">#BFDBFE</Color>
+        <Color x:Key="UpdOkColor">#059669</Color>
+        <Color x:Key="UpdErrColor">#DC2626</Color>
+        <Color x:Key="UpdInfoColor">#2563EB</Color>
+        <SolidColorBrush x:Key="UpdTextBrush" Color="{StaticResource UpdTextColor}"/>
+        <SolidColorBrush x:Key="UpdSurfaceBrush" Color="{StaticResource UpdSurfaceColor}"/>
+        <SolidColorBrush x:Key="UpdLineBrush" Color="{StaticResource UpdLineColor}"/>
+        <SolidColorBrush x:Key="UpdMutedBrush" Color="{StaticResource UpdMutedColor}"/>
+        <SolidColorBrush x:Key="UpdAccentBrush" Color="{StaticResource UpdAccentColor}"/>
+        <SolidColorBrush x:Key="UpdAccentHoverBrush" Color="{StaticResource UpdAccentHoverColor}"/>
+        <SolidColorBrush x:Key="UpdHighlightBgBrush" Color="{StaticResource UpdHighlightBgColor}"/>
+        <SolidColorBrush x:Key="UpdHighlightBorderBrush" Color="{StaticResource UpdHighlightBorderColor}"/>
+
+        <Style x:Key="UpdButton" TargetType="Button">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Background" Value="{StaticResource UpdSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource UpdLineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="MinHeight" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#F9FAFB"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="UpdPrimaryButton" TargetType="Button" BasedOn="{StaticResource UpdButton}">
+            <Setter Property="Background" Value="{StaticResource UpdAccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="{StaticResource UpdAccentBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="7" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource UpdAccentHoverBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource UpdAccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="UpdGhostButton" TargetType="Button" BasedOn="{StaticResource UpdButton}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource UpdMutedBrush}"/>
+        </Style>
+        <Style x:Key="UpdNodeButton" TargetType="ToggleButton">
+            <Setter Property="OverridesDefaultStyle" Value="True"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Foreground" Value="#4B5563"/>
+            <Setter Property="Background" Value="{StaticResource UpdSurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource UpdLineBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="999" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{StaticResource UpdAccentBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource UpdAccentBrush}"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="BorderBrush" Value="#93C5FD"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Foreground" Value="{StaticResource UpdTextBrush}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource UpdAccentBrush}"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        </Style>
+        <Style x:Key="UpdCaptionCloseButton" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="40"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <Path x:Name="icon" Stroke="#6B7280" StrokeThickness="1.4"
+                                  Width="10" Height="10" Data="M1,1 L9,9 M9,1 L1,9" Stretch="None"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#FEE2E2"/>
+                                <Setter TargetName="icon" Property="Stroke" Value="#DC2626"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#F3F4F6" BorderBrush="{StaticResource UpdLineBrush}" BorderThickness="1">
+        <DockPanel>
+            <Border DockPanel.Dock="Top" Background="{StaticResource UpdSurfaceBrush}" Height="40"
+                    BorderBrush="{StaticResource UpdLineBrush}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="Caption_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0" IsHitTestVisible="False">
+                        <Image Source="pack://application:,,,/Assets/app.png" Width="18" Height="18" Margin="0,0,8,0"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                        <TextBlock Text="{loc:Loc Update.Center.Title}" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <Button HorizontalAlignment="Right" Style="{StaticResource UpdCaptionCloseButton}"
+                            Click="Close_Click" ToolTip="{loc:Loc Common.Close}"/>
+                </Grid>
+            </Border>
+
+            <Border DockPanel.Dock="Bottom" Background="{StaticResource UpdSurfaceBrush}"
+                    BorderBrush="{StaticResource UpdLineBrush}" BorderThickness="0,1,0,0" Padding="14,10">
+                <Button Content="{loc:Loc Common.Close}" Style="{StaticResource UpdGhostButton}"
+                        HorizontalAlignment="Left" Click="Close_Click" Padding="8,4"/>
+            </Border>
+
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16,14,16,12">
+                <StackPanel>
+                    <TextBlock Text="{loc:Loc Update.Center.Subtitle}" Foreground="{StaticResource UpdMutedBrush}"
+                               FontSize="12" Margin="0,0,0,12"/>
+                    <TextBlock Text="{loc:Loc Update.Center.Intro}" Foreground="{StaticResource UpdMutedBrush}"
+                               FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
+
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="8"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Border Grid.Column="0" BorderBrush="{StaticResource UpdLineBrush}" BorderThickness="1"
+                                Background="#F9FAFB" CornerRadius="8" Padding="10,8">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Update.Center.CurrentVersion}" FontSize="10"
+                                           Foreground="{StaticResource UpdMutedBrush}" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="CurrentVersionText" FontWeight="SemiBold" FontSize="13"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" BorderBrush="{StaticResource UpdHighlightBorderBrush}" BorderThickness="1"
+                                Background="{StaticResource UpdHighlightBgBrush}" CornerRadius="8" Padding="10,8">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Update.Center.ServerVersion}" FontSize="10"
+                                           Foreground="{StaticResource UpdMutedBrush}" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="ServerVersionText" FontWeight="SemiBold" FontSize="13"
+                                           Foreground="{StaticResource UpdAccentBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <TextBlock x:Name="StatusText" TextWrapping="Wrap" Margin="0,0,0,4" MinHeight="18"/>
+                    <TextBlock x:Name="MetaText" Foreground="{StaticResource UpdMutedBrush}" FontSize="11"
+                               TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                    <TextBlock Text="{loc:Loc Update.Center.SourceLabel}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource UpdMutedBrush}" Margin="0,0,0,6"/>
+                    <StackPanel x:Name="SourceGroup" Orientation="Horizontal" Margin="0,0,0,12">
+                        <ToggleButton x:Name="SourceAutoBtn" Style="{StaticResource UpdNodeButton}" Margin="0,0,6,0"
+                                      Content="{loc:Loc Update.Center.Source.Auto}"
+                                      Tag="auto" Click="SourceButton_Click"/>
+                        <ToggleButton x:Name="SourceGitCodeBtn" Style="{StaticResource UpdNodeButton}" Margin="0,0,6,0"
+                                      Content="GitCode" Tag="gitcode" Click="SourceButton_Click"/>
+                        <ToggleButton x:Name="SourceGitHubBtn" Style="{StaticResource UpdNodeButton}"
+                                      Content="GitHub" Tag="github" Click="SourceButton_Click"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{loc:Loc Update.Center.Changelog}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="{StaticResource UpdMutedBrush}" Margin="0,0,0,6"/>
+                    <TextBox x:Name="ChangelogBox" IsReadOnly="True" TextWrapping="Wrap" AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto" MinHeight="120" MaxHeight="180"
+                             BorderBrush="{StaticResource UpdLineBrush}" Background="#FAFAFA"
+                             FontSize="11" Padding="8,6" Margin="0,0,0,12"/>
+
+                    <StackPanel x:Name="ProgressPanel" Visibility="Collapsed" Margin="0,0,0,12">
+                        <Grid Margin="0,0,0,4">
+                            <TextBlock x:Name="ProgressLabelText" FontSize="11"/>
+                            <TextBlock x:Name="ProgressPercentText" HorizontalAlignment="Right" FontSize="11"
+                                       FontFamily="Consolas, Courier New" FontWeight="SemiBold"/>
+                        </Grid>
+                        <ProgressBar x:Name="ProgressBar" Height="8" Maximum="100" Value="0"/>
+                        <TextBlock x:Name="ProgressDetailText" Foreground="{StaticResource UpdMutedBrush}"
+                                   FontSize="10" Margin="0,4,0,0"/>
+                    </StackPanel>
+
+                    <WrapPanel Margin="0,4,0,0">
+                        <Button x:Name="CheckButton" Style="{StaticResource UpdButton}" Margin="0,0,8,8"
+                                Click="CheckButton_Click" Content="{loc:Loc Update.Center.Btn.Check}"/>
+                        <Button x:Name="DownloadButton" Style="{StaticResource UpdPrimaryButton}" Margin="0,0,8,8"
+                                Visibility="Collapsed" Click="DownloadButton_Click"
+                                Content="{loc:Loc Update.Center.Btn.DownloadInstall}"/>
+                        <Button x:Name="OpenReleasesButton" Style="{StaticResource UpdButton}" Margin="0,0,8,8"
+                                Visibility="Collapsed" Click="OpenReleasesButton_Click"
+                                Content="{loc:Loc Update.Center.Btn.OpenReleases}"/>
+                        <Button x:Name="InstallButton" Style="{StaticResource UpdPrimaryButton}" Margin="0,0,8,8"
+                                Visibility="Collapsed" Click="InstallButton_Click"
+                                Content="{loc:Loc Update.Center.Btn.RestartInstall}"/>
+                    </WrapPanel>
+
+                    <TextBlock Text="{loc:Loc Update.Center.Hint.PreserveData}" Foreground="{StaticResource UpdMutedBrush}"
+                               FontSize="10" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</Window>

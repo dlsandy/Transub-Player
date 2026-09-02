@@ -16,6 +16,7 @@ internal sealed class PreviewController : IDisposable
     private LlamaServerProcess? _llama;
     private readonly SemaphoreSlim _translateGate = new(1, 1);
     private bool? _translateReady;
+    private bool _translateRunningOnCpu;
     private SubtitleDisplayMode _displayMode;
     private SubtitleDisplayMode _lastContentMode = SubtitleDisplayMode.Zh;
     private readonly HashSet<string> _skipGapPrompts = new(StringComparer.OrdinalIgnoreCase);
@@ -158,7 +159,8 @@ internal sealed class PreviewController : IDisposable
     public bool IsRetranslating => _retranslatingActive;
     public string WaitZhOverlayTitle { get; private set; } = "";
     public string WaitZhOverlayDetail { get; private set; } = "";
-    public bool ShowOpeningBootstrap => _bootstrapActive && !_waitingForFirstZh;
+    /// <summary>Bootstrap dimmer on OpeningPopup — only while paused; playing uses status bar instead.</summary>
+    public bool ShowOpeningBootstrap => _bootstrapActive && !_waitingForFirstZh && Paused;
     public string OpeningBootstrapTitle => _bootstrapPhaseTitle;
     public string OpeningBootstrapDetail => _bootstrapPhaseDetail;
     public SubtitleDisplayMode DisplayMode => _displayMode;
@@ -280,7 +282,7 @@ internal sealed class PreviewController : IDisposable
             () => WantsPreviewMt,
             () => _translateReady,
             v => _translateReady = v,
-            EnsureTranslateAsync,
+            ct => EnsureTranslateAsync(ct),
             () => _displayMode,
             () => Position,
             ApplySub,
@@ -331,7 +333,7 @@ internal sealed class PreviewController : IDisposable
             status,
             log,
             path => SceneProfiles.Resolve(settings.SourceLanguage, path, out _),
-            EnsureTranslateAsync,
+            ct => EnsureTranslateAsync(ct),
             () => _settings.TranslateEnabled,
             () => MediaPath);
         _prefetch.Changed += state => PrefetchChanged?.Invoke(state);
@@ -563,6 +565,7 @@ internal sealed class PreviewController : IDisposable
             Position = 0;
             Duration = 0;
             _translateReady = null;
+            _translateRunningOnCpu = false;
             _previewRetryAvailable = false;
             _manualPreviewNeeded = false;
             _mtDisabledForSession = false;
@@ -1351,6 +1354,8 @@ internal sealed class PreviewController : IDisposable
                 PreviewPaths.TranslatedPreviewSrt(mediaPath, _settings.TranslateTarget),
                 PreviewPaths.DualSrt(mediaPath),
                 PreviewPaths.DisplaySrt(mediaPath));
+            if (WantsPreviewMt)
+                KickEnsureTranslate();
             _subs.WatchSource();
 
             // Start ASR before llama so status leaves「连接中」and source lines can appear.
@@ -1372,6 +1377,8 @@ internal sealed class PreviewController : IDisposable
                 {
                     if (!IsCurrentMedia(gen, mediaPath)) return;
                     _subs.OnSourceChanged();
+                    if (WantsPreviewMt)
+                        await EnsureTranslateGpuUpgradeAsync(ct).ConfigureAwait(false);
                     await _subs.TryTranslatePendingAsync().ConfigureAwait(false);
                     if (IsCurrentMedia(gen, mediaPath))
                         PreviewPaths.MarkAsrDone(mediaPath);
@@ -1397,6 +1404,12 @@ internal sealed class PreviewController : IDisposable
                         // Epoch check inside ReleaseLiveBusy — always release even if media switched.
                         _prefetch?.ReleaseLiveBusy(liveBusyEpoch);
                     }
+                },
+                onSourceFlushed: () =>
+                {
+                    if (!IsCurrentMedia(gen, mediaPath)) return Task.CompletedTask;
+                    _subs.OnSourceChanged();
+                    return Task.CompletedTask;
                 }).ConfigureAwait(false);
             jobStarted = true;
 
@@ -1415,23 +1428,9 @@ internal sealed class PreviewController : IDisposable
 
             if (WantsPreviewMt)
             {
-                try
-                {
-                    PublishStatus(Loc.Get("Main.Status.AsrStartedMt"));
-                    await EnsureTranslateAsync(ct).ConfigureAwait(false);
-                    ThrowIfStaleMedia(gen);
-                    await _subs.TryTranslatePendingAsync().ConfigureAwait(false);
-                    if (IsCurrentMedia(gen, mediaPath))
-                        PublishStatus(BuildStatusLine());
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    _log("翻译准备：" + ex.Message);
-                }
+                PublishStatus(Loc.Get("Main.Status.AsrStartedMt"));
+                KickEnsureTranslate();
+                _ = _subs.TryTranslatePendingAsync();
             }
         }
         finally
@@ -2183,6 +2182,7 @@ internal sealed class PreviewController : IDisposable
     private void ResetTranslateStack()
     {
         _translateReady = null;
+        _translateRunningOnCpu = false;
         try { _llama?.Dispose(); } catch { /* ignore */ }
         _llama = null;
     }
@@ -2550,6 +2550,7 @@ internal sealed class PreviewController : IDisposable
         Duration = 0;
         Paused = true;
         _translateReady = null;
+        _translateRunningOnCpu = false;
         _previewRetryAvailable = false;
 
         StateChanged?.Invoke();
@@ -2669,6 +2670,8 @@ internal sealed class PreviewController : IDisposable
         var until = MediaTimeFormat.Format(WaitZhTargetSeconds);
         PublishStatus(Loc.Format("Main.Status.WaitZhUntil", until));
         ShowOsd(Loc.Format("Main.Osd.WaitZhUntil", until), 2200);
+        if (WantsPreviewMt)
+            KickEnsureTranslate();
         StartWaitZhTimeout();
         StateChanged?.Invoke();
     }
@@ -3447,6 +3450,44 @@ internal sealed class PreviewController : IDisposable
         _ = EnsureTranslateFireAndForgetAsync(ct);
     }
 
+    private void KickEnsureTranslateGpuUpgrade()
+    {
+        if (_disposed != 0 || !_translateRunningOnCpu) return;
+        CancellationToken ct;
+        try { ct = _lifetimeCts.Token; }
+        catch (ObjectDisposedException) { return; }
+
+        _ = EnsureTranslateGpuUpgradeFireAndForgetAsync(ct);
+    }
+
+    private async Task EnsureTranslateGpuUpgradeAsync(CancellationToken ct)
+    {
+        if (_disposed != 0 || !_translateRunningOnCpu || _engine.HasActiveJob) return;
+        await EnsureTranslateAsync(ct, forceGpuRestart: true).ConfigureAwait(false);
+        await _subs.TryTranslatePendingAsync().ConfigureAwait(false);
+    }
+
+    private async Task EnsureTranslateGpuUpgradeFireAndForgetAsync(CancellationToken ct)
+    {
+        try
+        {
+            if (_disposed != 0) return;
+            await EnsureTranslateGpuUpgradeAsync(ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            // shutdown / media switch
+        }
+        catch (ObjectDisposedException)
+        {
+            // gate or llama already torn down
+        }
+        catch (Exception ex)
+        {
+            _log("翻译模型 GPU 切换：" + ex.Message);
+        }
+    }
+
     private async Task EnsureTranslateFireAndForgetAsync(CancellationToken ct)
     {
         try
@@ -3468,7 +3509,7 @@ internal sealed class PreviewController : IDisposable
         }
     }
 
-    private async Task EnsureTranslateAsync(CancellationToken ct)
+    private async Task EnsureTranslateAsync(CancellationToken ct, bool forceGpuRestart = false)
     {
         if (_disposed != 0) return;
         await _translateGate.WaitAsync(ct).ConfigureAwait(false);
@@ -3484,6 +3525,16 @@ internal sealed class PreviewController : IDisposable
             {
                 // Do not unload ASR GPU while a job is still running (MT reconnect mid-preview).
                 var asrHoldsGpu = _engine.HasActiveJob;
+                if (forceGpuRestart && _translateRunningOnCpu && !asrHoldsGpu)
+                {
+                    _llama?.Stop();
+                    _translateReady = null;
+                }
+                else if (_translateReady == true && !forceGpuRestart)
+                {
+                    return;
+                }
+
                 if (!asrHoldsGpu)
                     await _engine.ReleaseGpuAsync(ct).ConfigureAwait(false);
 
@@ -3497,11 +3548,12 @@ internal sealed class PreviewController : IDisposable
                         _log,
                         ct,
                         PreferredGgufs,
-                        preferCpu: asrHoldsGpu)
+                        preferCpu: asrHoldsGpu && !forceGpuRestart)
                     .ConfigureAwait(false);
                 if (_disposed != 0) return;
                 _settings.TranslateUrl = _llama.BaseUrl;
                 _translateReady = true;
+                _translateRunningOnCpu = asrHoldsGpu && !forceGpuRestart && _llama.Spawned;
                 _log($"翻译模型就绪 · {_llama.BaseUrl}" + (_llama.ModelPath is null ? "" : " · " + Path.GetFileName(_llama.ModelPath)));
                 PublishStatus(BuildStatusLine());
                 MaybeOfferTranslateTargetEnTip();
@@ -3518,6 +3570,7 @@ internal sealed class PreviewController : IDisposable
             {
                 if (_disposed != 0) return;
                 _translateReady = false;
+                _translateRunningOnCpu = false;
                 PublishStatus(Loc.Get("Main.Status.MtStartFailed"), "翻译模型启动失败：" + ex.Message);
                 FallbackDisplayToSource(Loc.Get("Main.Status.FallbackSource.Mt"));
             }
@@ -3645,6 +3698,11 @@ internal sealed class PreviewController : IDisposable
 
     private void MaybeOfferQualityHandoffTip()
     {
+        if (!UserTips.ShouldShow(_settings, UserTips.QualityHandoff)) return;
+        if (!ShowPreviewChrome) return;
+        if (CueCount < 1) return;
+        UserTips.Dismiss(_settings, UserTips.QualityHandoff);
+        PublishStatus(Loc.Get("Main.Status.QualityHandoff"));
     }
 
     private string BuildStatusLine(string? engineLabel = null)

@@ -1,4 +1,7 @@
 using System.Diagnostics;
+using System.Net;
+using System.Net.Http;
+using System.Net.Sockets;
 using System.Text.Json;
 
 namespace TransubPlayer.Services;
@@ -27,17 +30,69 @@ internal sealed class LlamaServerProcess : IDisposable
     public string? ExePath { get; private set; }
 
     public static async Task<bool> IsHealthyAsync(string baseUrl, CancellationToken ct)
+        => await LooksLikeLlamaModelsAsync(baseUrl, ct).ConfigureAwait(false);
+
+    /// <summary>
+    /// Something is listening but it is not llama-server (e.g. Netease GameViewer on 39281).
+    /// </summary>
+    private static async Task<bool> PortBlockedByForeignServiceAsync(string baseUrl, CancellationToken ct)
     {
         try
         {
             using var res = await LocalHttp.Client
                 .GetAsync($"{baseUrl.TrimEnd('/')}/v1/models", ct)
                 .ConfigureAwait(false);
-            return res.IsSuccessStatusCode;
+            if (await LooksLikeLlamaModelsAsync(baseUrl, ct, res).ConfigureAwait(false))
+                return false;
+            // Any HTTP response here means another service owns the port.
+            return true;
+        }
+        catch (HttpRequestException)
+        {
+            return false;
         }
         catch
         {
             return false;
+        }
+    }
+
+    private static async Task<bool> LooksLikeLlamaModelsAsync(
+        string baseUrl,
+        CancellationToken ct,
+        HttpResponseMessage? existing = null)
+    {
+        try
+        {
+            using var res = existing ?? await LocalHttp.Client
+                .GetAsync($"{baseUrl.TrimEnd('/')}/v1/models", ct)
+                .ConfigureAwait(false);
+            if (!res.IsSuccessStatusCode) return false;
+            var json = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+            using var doc = JsonDocument.Parse(json);
+            if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
+                return true;
+            if (doc.RootElement.TryGetProperty("models", out var models) && models.ValueKind == JsonValueKind.Array)
+                return true;
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static int FindFreePort()
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        try
+        {
+            return ((IPEndPoint)listener.LocalEndpoint).Port;
+        }
+        finally
+        {
+            listener.Stop();
         }
     }
 
@@ -52,13 +107,29 @@ internal sealed class LlamaServerProcess : IDisposable
             if (!res.IsSuccessStatusCode) return ids;
             await using var stream = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
             using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
-            if (!doc.RootElement.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
-                return ids;
-            foreach (var item in data.EnumerateArray())
+            if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
             {
-                if (item.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                foreach (var item in data.EnumerateArray())
                 {
-                    var s = id.GetString();
+                    if (item.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                    {
+                        var s = id.GetString();
+                        if (!string.IsNullOrWhiteSpace(s))
+                            ids.Add(s);
+                    }
+                }
+            }
+            else if (doc.RootElement.TryGetProperty("models", out var models) && models.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in models.EnumerateArray())
+                {
+                    string? s = null;
+                    if (item.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
+                        s = id.GetString();
+                    else if (item.TryGetProperty("model", out var model) && model.ValueKind == JsonValueKind.String)
+                        s = model.GetString();
+                    else if (item.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
+                        s = name.GetString();
                     if (!string.IsNullOrWhiteSpace(s))
                         ids.Add(s);
                 }
@@ -144,6 +215,15 @@ internal sealed class LlamaServerProcess : IDisposable
             if (!uri.IsDefaultPort) port = uri.Port;
         }
         catch { /* keep default */ }
+
+        if (await PortBlockedByForeignServiceAsync(url, ct).ConfigureAwait(false))
+        {
+            var blocked = port;
+            port = FindFreePort();
+            url = $"http://127.0.0.1:{port}";
+            BaseUrl = url;
+            log?.Invoke($"翻译端口 {blocked} 已被其他程序占用（非 llama-server），改用 {port}");
+        }
 
         // Prefer GPU; when ASR already holds VRAM, try CPU first to avoid multi-minute ngl retries.
         Exception? last = null;

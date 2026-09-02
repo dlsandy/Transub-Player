@@ -39,6 +39,7 @@ internal sealed class PreviewSubtitleSync : IDisposable
     private readonly List<Cue> _cues = [];
     private readonly object _cueLock = new();
     private int _translateBusy; // 0 = idle, 1 = busy (Interlocked)
+    private int _mtKickPending;
     private bool _usingExistingSub;
     private string? _lastDisplayFp;
     private string? _loadedDisplayPath;
@@ -119,6 +120,7 @@ internal sealed class PreviewSubtitleSync : IDisposable
         CancelDeferredReload();
         ReplaceMtCts();
         Interlocked.Exchange(ref _translateBusy, 0);
+        Interlocked.Exchange(ref _mtKickPending, 0);
         lock (_cueLock) _cues.Clear();
         _translated.Clear();
         _mtSkip.Clear();
@@ -286,6 +288,7 @@ internal sealed class PreviewSubtitleSync : IDisposable
     {
         ReplaceMtCts();
         Interlocked.Exchange(ref _translateBusy, 0);
+        Interlocked.Exchange(ref _mtKickPending, 0);
         CancelDeferredReload();
         _reloadPending = false;
         lock (_cueLock)
@@ -405,7 +408,11 @@ internal sealed class PreviewSubtitleSync : IDisposable
     public async Task TryTranslatePendingAsync()
     {
         if (_disposed || !_wantsPreviewMt()) return;
-        if (Interlocked.CompareExchange(ref _translateBusy, 1, 0) != 0) return;
+        if (Interlocked.CompareExchange(ref _translateBusy, 1, 0) != 0)
+        {
+            Interlocked.Exchange(ref _mtKickPending, 1);
+            return;
+        }
         var mtCts = _mtCts;
         var mtCt = mtCts.Token;
         List<Cue> pending;
@@ -417,6 +424,7 @@ internal sealed class PreviewSubtitleSync : IDisposable
         if (pending.Count == 0)
         {
             Interlocked.Exchange(ref _translateBusy, 0);
+        Interlocked.Exchange(ref _mtKickPending, 0);
             return;
         }
 
@@ -515,11 +523,20 @@ internal sealed class PreviewSubtitleSync : IDisposable
             // Only clear busy if we still own this MT session (Reset replaces _mtCts).
             if (ReferenceEquals(mtCts, _mtCts))
                 Interlocked.Exchange(ref _translateBusy, 0);
+        Interlocked.Exchange(ref _mtKickPending, 0);
         }
 
         // Continue after clearing busy — calling while busy made the chain a no-op.
         if (drainMore && !_disposed && !mtCt.IsCancellationRequested && ReferenceEquals(mtCts, _mtCts))
             _ = TryTranslatePendingAsync();
+        else if (Volatile.Read(ref _mtKickPending) != 0
+                 && !_disposed
+                 && !mtCt.IsCancellationRequested
+                 && ReferenceEquals(mtCts, _mtCts))
+        {
+            Interlocked.Exchange(ref _mtKickPending, 0);
+            _ = TryTranslatePendingAsync();
+        }
     }
 
     public void StopWatching()

@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace TransubPlayer.Services;
 
-/// <summary>Optional local Transub install discovery (lexicon / MT reuse only — no handoff).</summary>
+/// <summary>Optional local Transub install discovery (handoff exe + lexicon / MT reuse).</summary>
 internal static class TransubInstall
 {
     public static string? FindExe(AppSettings settings)

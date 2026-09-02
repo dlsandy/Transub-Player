@@ -135,6 +135,28 @@ internal static class AppUpdateService
         }
     }
 
+    public static string PendingApplyMarker => Path.Combine(UpdatesDir, "pending-apply.json");
+
+    /// <summary>True when a portable update was downloaded and is waiting for restart.</summary>
+    public static bool TryReadPendingUpdate(out string version)
+    {
+        version = "";
+        try
+        {
+            if (!File.Exists(PendingApplyMarker))
+                return false;
+            using var doc = JsonDocument.Parse(File.ReadAllText(PendingApplyMarker));
+            version = doc.RootElement.TryGetProperty("version", out var v)
+                ? v.GetString() ?? ""
+                : "";
+            return !string.IsNullOrWhiteSpace(version);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public static async Task<AppUpdateCheckResult> CheckAsync(AppSettings settings, CancellationToken ct)
     {
         var current = CurrentVersion;

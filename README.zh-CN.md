@@ -8,7 +8,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 边看边出双语字幕" width="900">
 </p>
 
-> Windows 本地播放器 · 当前版本 1.5.1  
+> Windows 本地播放器 · 当前版本 1.5.2  
 > 从 [GitHub](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) 下载安装程序或便携包即可使用。软件内也可「检查更新」检查并升级至新版本。
 
 ---
@@ -137,6 +137,12 @@ powershell -ExecutionPolicy Bypass -File tools\pack-release.ps1
 - 目标是「能看懂、跟得上」，不是成片发布级字幕
 - 没有翻译模型时，仍可先看原文字幕继续播放
 - 关掉程序后，播放器拉起的相关进程会一起退出，不在后台偷偷占资源
+
+---
+
+## 更新日志
+
+见 [CHANGELOG.zh-CN.md](CHANGELOG.zh-CN.md)（中文，主稿）· [CHANGELOG.md](CHANGELOG.md) · [CHANGELOG.ja.md](CHANGELOG.ja.md) · [CHANGELOG.ko.md](CHANGELOG.ko.md)
 
 ---
 

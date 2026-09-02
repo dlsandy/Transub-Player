@@ -62,6 +62,8 @@
                                         <Separator/>
                                         <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
                                         <MenuItem Header="{loc:Loc Main.Menu.FileAssociation}" Click="FileAssociation_Click"/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.Transub}" Click="Transub_Click"
+                                                  ToolTip="{loc:Loc Main.Transub.Tip}"/>
                                         <MenuItem Header="{loc:Loc Main.Menu.TransubSite}" Click="TransubSite_Click"/>
                                         <Separator/>
                                         <MenuItem Header="{loc:Loc Main.Menu.Help}">
@@ -424,6 +426,8 @@
                                 </MenuItem>
                                 <MenuItem x:Name="PlaylistToggleMenu" Header="{loc:Loc Main.Playlist.ShowHide}" Click="TogglePlaylist_Click" InputGestureText="L"/>
                                 <Separator/>
+                                <MenuItem Header="{loc:Loc Main.Menu.Transub}" Click="Transub_Click"
+                                          ToolTip="{loc:Loc Main.Transub.Tip}"/>
                                 <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
                             </ContextMenu>
                         </Grid.ContextMenu>

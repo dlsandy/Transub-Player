@@ -122,7 +122,8 @@ internal sealed class AsrPipeline : IDisposable
         AsrJobRequest job,
         CancellationToken outerCt,
         Func<Task> onDone,
-        Action<string> onFinished)
+        Action<string> onFinished,
+        Func<Task>? onSourceFlushed = null)
     {
         await _jobGate.WaitAsync(outerCt).ConfigureAwait(false);
         try
@@ -133,7 +134,7 @@ internal sealed class AsrPipeline : IDisposable
             _jobId = Guid.NewGuid().ToString("N")[..8];
             var id = _jobId;
             _log(Loc.Format("Main.Status.AsrJobCreated", id));
-            _runTask = RunJobAsync(job, id, token, onDone, onFinished);
+            _runTask = RunJobAsync(job, id, token, onDone, onFinished, onSourceFlushed);
         }
         finally
         {
@@ -164,7 +165,7 @@ internal sealed class AsrPipeline : IDisposable
             _jobId = Guid.NewGuid().ToString("N")[..8];
             var id = _jobId;
             _log(Loc.Format("Main.Status.AsrPrefetchJobCreated", id));
-            _runTask = RunJobAsync(job, id, token, onDone: () => Task.CompletedTask, _ => { }, shouldAbort);
+            _runTask = RunJobAsync(job, id, token, onDone: () => Task.CompletedTask, _ => { }, onSourceFlushed: null, shouldAbort);
             run = _runTask;
         }
         finally
@@ -314,6 +315,7 @@ internal sealed class AsrPipeline : IDisposable
         CancellationToken ct,
         Func<Task> onDone,
         Action<string> onFinished,
+        Func<Task>? onSourceFlushed = null,
         Func<bool>? shouldAbort = null)
     {
         var finished = false;
@@ -335,6 +337,31 @@ internal sealed class AsrPipeline : IDisposable
             Zh = c.Zh,
         }).ToList() ?? [];
         var lastFlush = DateTime.UtcNow;
+        var lastIncrementalFlush = DateTime.UtcNow;
+        var incrementalSanitizeFrom = 0;
+        var cleanFrom = 0;
+
+        async Task FlushSourceAsync(bool incremental)
+        {
+            if (incremental)
+            {
+                PreviewTextSanitize.CleanAsrCues(cues, _settings, job.ContentProfile, incrementalSanitizeFrom);
+                incrementalSanitizeFrom = cues.Count;
+            }
+            else
+            {
+                PreviewTextSanitize.CleanAsrCues(cues, _settings, job.ContentProfile, cleanFrom);
+                cleanFrom = cues.Count;
+                incrementalSanitizeFrom = cues.Count;
+            }
+
+            SubtitleFile.WriteSrt(sourceSrt, cues, chinese: false);
+            if (onSourceFlushed is not null)
+            {
+                try { await onSourceFlushed().ConfigureAwait(false); }
+                catch { /* UI / MT kick */ }
+            }
+        }
 
         try
         {
@@ -379,7 +406,8 @@ internal sealed class AsrPipeline : IDisposable
                 _log(Loc.Format("Main.Status.AsrProgress", pct, $"{start:0}s"));
 
                 string? wav = null;
-                var cleanFrom = cues.Count;
+                cleanFrom = cues.Count;
+                incrementalSanitizeFrom = cleanFrom;
                 try
                 {
                     wav = await AsrAudioExtract.ExtractWavAsync(job.MediaPath, start, len, ct).ConfigureAwait(false);
@@ -404,6 +432,13 @@ internal sealed class AsrPipeline : IDisposable
                                 End = cueEnd,
                                 Text = text,
                             });
+
+                            var now = DateTime.UtcNow;
+                            if ((now - lastIncrementalFlush).TotalSeconds >= 4)
+                            {
+                                lastIncrementalFlush = now;
+                                await FlushSourceAsync(incremental: true).ConfigureAwait(false);
+                            }
                         }
                     }
                     finally
@@ -416,9 +451,7 @@ internal sealed class AsrPipeline : IDisposable
                     AsrAudioExtract.TryDeleteTemp(wav);
                 }
 
-                // Sanitize only new cues per chunk; full pass once at the end.
-                PreviewTextSanitize.CleanAsrCues(cues, _settings, job.ContentProfile, cleanFrom);
-                SubtitleFile.WriteSrt(sourceSrt, cues, chinese: false);
+                await FlushSourceAsync(incremental: false).ConfigureAwait(false);
 
                 if ((DateTime.UtcNow - lastFlush).TotalMilliseconds > 800)
                 {
@@ -428,7 +461,7 @@ internal sealed class AsrPipeline : IDisposable
             }
 
             PreviewTextSanitize.CleanAsrCues(cues, _settings, job.ContentProfile);
-            SubtitleFile.WriteSrt(sourceSrt, cues, chinese: false);
+            await FlushSourceAsync(incremental: false).ConfigureAwait(false);
 
             _log(Loc.Get("Main.Status.AsrJobDone"));
             await onDone().ConfigureAwait(false);

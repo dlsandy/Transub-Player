@@ -1112,6 +1112,31 @@ public partial class MainWindow : Window
     private int SeekFineStep() => Math.Max(1, _settings.SeekStepFineSeconds);
     private int SeekLargeStep() => Math.Max(1, _settings.SeekStepLargeSeconds);
 
+    private void Transub_Click(object sender, RoutedEventArgs e)
+    {
+        var request = new TransubHandoffRequest(
+            _preview?.MediaPath,
+            SourceLanguage: _preview?.ActiveScene.Language ?? _settings.SourceLanguage,
+            TranslateTarget: _settings.TranslateTarget,
+            ContentProfile: _preview?.ActiveScene.ContentProfile);
+        if (TransubHandoff.TryOpen(_settings, request, out var message))
+        {
+            _preview?.ArmFinishedSubtitleWatch();
+            SetStatus(message);
+            return;
+        }
+
+        SetStatus(message);
+        var go = MessageBox.Show(
+            this,
+            message + Environment.NewLine + Environment.NewLine + Loc.Get("Main.Transub.OpenSitePrompt"),
+            "Transub Player",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (go == MessageBoxResult.Yes)
+            FirstRunHelp.OpenTransubSite();
+    }
+
     private void TransubSite_Click(object sender, RoutedEventArgs e)
         => FirstRunHelp.OpenTransubSite();
 
@@ -1177,8 +1202,8 @@ public partial class MainWindow : Window
     private void About_Click(object sender, RoutedEventArgs e)
         => AboutWindow.Show(this);
 
-    private async void CheckUpdate_Click(object sender, RoutedEventArgs e)
-        => await AppUpdateUi.CheckInteractiveAsync(this, _settings, quietIfCurrent: false);
+    private void CheckUpdate_Click(object sender, RoutedEventArgs e)
+        => UpdateWindow.Show(this, _settings, autoCheck: true);
 
     /// <summary>Live settings instance for update checks (avoid reloading a stale disk copy).</summary>
     internal AppSettings SettingsForUpdate => _settings;

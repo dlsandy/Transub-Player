@@ -1,15 +1,15 @@
 ; Transub Player — Inno Setup 6 script
 ; Invoked by tools\pack-release.ps1 with:
-;   /DMyAppVersion=1.5.1
+;   /DMyAppVersion=1.5.2
 ;   /DMyStageDir=...\artifacts\pack\_stage
 ;   /DMyOutDir=...\artifacts\pack
-;   /DMySetupBaseName=TransubPlayer-1.5.1-win-x64-setup
+;   /DMySetupBaseName=TransubPlayer-1.5.2-win-x64-setup
 ;   /DMyAppIcon=...\src\TransubPlayer\Assets\app.ico
 ;
 ; Do NOT ship portable.txt in the install tree (data lives under LocalAppData).
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.5.1"
+  #define MyAppVersion "1.5.2"
 #endif
 #ifndef MyStageDir
   #define MyStageDir "..\..\artifacts\pack\_stage"

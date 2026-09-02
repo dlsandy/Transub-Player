@@ -32,8 +32,8 @@ public partial class AboutWindow : Window
         if (owner is MainWindow main)
             settings = main.SettingsForUpdate;
         Close();
-        if (owner is MainWindow mw)
-            _ = AppUpdateUi.CheckInteractiveAsync(mw, settings ?? AppSettings.Load(), quietIfCurrent: false);
+        if (owner is not null)
+            UpdateWindow.Show(owner, settings ?? AppSettings.Load(), autoCheck: true);
     }
 
     private void OpenTransub_Click(object sender, RoutedEventArgs e)

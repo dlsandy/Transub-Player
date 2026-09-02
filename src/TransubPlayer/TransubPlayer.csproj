@@ -13,9 +13,9 @@
     <RootNamespace>TransubPlayer</RootNamespace>
     <Product>Transub Player</Product>
     <AssemblyTitle>Transub Player</AssemblyTitle>
-    <Version>1.5.1</Version>
-    <FileVersion>1.5.1</FileVersion>
-    <InformationalVersion>1.5.1</InformationalVersion>
+    <Version>1.5.2</Version>
+    <FileVersion>1.5.2</FileVersion>
+    <InformationalVersion>1.5.2</InformationalVersion>
     <Authors>Transub</Authors>
     <Description>本地影片边看边出字幕。成片级字幕请用 Transub。</Description>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>

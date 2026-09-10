@@ -11,7 +11,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 再生しながら二言語字幕を表示" width="900">
 </p>
 
-> Windows 向けデスクトッププレーヤー · 現在のバージョン 1.5.2  
+> Windows 向けデスクトッププレーヤー · 現在のバージョン 1.5.3  
 > [GitHub](https://github.com/dlsandy/Transub-Player/releases) または [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) からインストーラーまたはポータブル版をダウンロードしてください。アプリ内の「更新を確認」からもアップグレードできます。
 
 ---

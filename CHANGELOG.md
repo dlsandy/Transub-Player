@@ -2,6 +2,24 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.5.3] — 2026-09-10
+
+### Added
+
+- When several local subtitle files sit next to the video (`video.srt`, `video.zh-cn.srt`, …), switch among them from the control bar or the Subtitles menu.
+
+### Improved
+
+- More stable GPU recognition when switching videos or running playlist prefetch: wait for Whisper to finish releasing before the next job, and free translation GPU when ASR needs Vulkan.
+- Playlist subtitle prefetch only queues the next few items, not the entire remaining list.
+
+### Fixed
+
+- Volume changes from the player (slider, wheel, or arrow keys) are remembered after restart.
+- Opening a livestream no longer fails with "No process is associated with this object".
+
+---
+
 ## [1.5.2] — 2026-09-02
 
 ### Improved

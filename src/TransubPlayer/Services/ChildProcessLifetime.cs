@@ -29,7 +29,15 @@ internal static class ChildProcessLifetime
         if (process is null) return;
         try
         {
-            if (process.HasExited) return;
+            try
+            {
+                if (process.HasExited) return;
+            }
+            catch (InvalidOperationException)
+            {
+                return;
+            }
+
             process.EnableRaisingEvents = true;
             var pid = process.Id;
             Pids[pid] = 0;
@@ -60,9 +68,11 @@ internal static class ChildProcessLifetime
         try
         {
             var pid = 0;
-            try { pid = p.Id; } catch { /* handle closed */ }
+            try { pid = p.Id; } catch { /* handle closed / not started */ }
             if (pid != 0) Pids.TryRemove(pid, out _);
-            if (!p.HasExited)
+            var alive = false;
+            try { alive = !p.HasExited; } catch (InvalidOperationException) { /* not started */ }
+            if (alive)
             {
                 p.Kill(entireProcessTree: true);
                 p.WaitForExit(waitMs);

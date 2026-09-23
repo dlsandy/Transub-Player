@@ -155,36 +155,44 @@ public partial class MainWindow
     private void VolumeBar_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (!IsLoaded || _volumeDrag) return;
-        VolumeLabel.Text = ((int)e.NewValue).ToString();
+        var vol = (int)e.NewValue;
+        VolumeLabel.Text = vol.ToString();
         if (_preview is not null)
-            _preview.SetVolume((int)e.NewValue);
+            _preview.SetVolume(vol, clearMute: true);
         else
         {
-            _settings.Volume = (int)e.NewValue;
+            _settings.Volume = vol;
+            if (vol > 0)
+                _settings.Muted = false;
             _settings.SaveSoon();
         }
 
-        MuteButton.Content = e.NewValue <= 0 || (_preview?.Muted ?? false) ? "🔇" : "🔊";
-        if (MuteMenu is not null)
-            MuteMenu.IsChecked = e.NewValue <= 0 || (_preview?.Muted ?? false);
+        ApplyMuteButton(e.NewValue <= 0 || (_preview?.Muted ?? _settings.Muted));
     }
 
     private void SyncVolumeUi()
     {
         if (_preview is null) return;
+        var vol = _preview.Volume;
         _volumeDrag = true;
         try
         {
-            VolumeBar.Value = _preview.Volume;
-            VolumeLabel.Text = _preview.Volume.ToString();
-            MuteButton.Content = _preview.Muted || _preview.Volume == 0 ? "🔇" : "🔊";
-            if (MuteMenu is not null)
-                MuteMenu.IsChecked = _preview.Muted || _preview.Volume == 0;
+            if ((int)VolumeBar.Value != vol)
+                VolumeBar.Value = vol;
+            VolumeLabel.Text = vol.ToString();
+            ApplyMuteButton(_preview.Muted || vol == 0);
         }
         finally
         {
             _volumeDrag = false;
         }
+    }
+
+    private void ApplyMuteButton(bool muted)
+    {
+        MuteButton.Content = muted ? "🔇" : "🔊";
+        if (MuteMenu is not null)
+            MuteMenu.IsChecked = muted;
     }
 
     private void RefreshSpeedButton()
@@ -218,6 +226,13 @@ public partial class MainWindow
         ModeDualButton.IsEnabled = on && !stream;
         if (SubSourceBox is not null)
             SubSourceBox.IsEnabled = on && !stream;
+        if (TransubButton is not null)
+        {
+            // Local files only — stream URLs cannot be handed off for production subs.
+            // Keep enabled without media so users can still open / install Transub (same as the menu).
+            TransubButton.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
+            TransubButton.IsEnabled = !stream;
+        }
         MuteButton.IsEnabled = on;
         VolumeBar.IsEnabled = on;
         SpeedButton.IsEnabled = on;
@@ -269,6 +284,7 @@ public partial class MainWindow
         }
         SpeedMenu.IsEnabled = on;
         ScreenshotMenu.IsEnabled = on;
+        RefreshClipUi();
         RePreviewMenu.IsEnabled = on && !stream && (_preview?.ShowSwitchToPreviewAction == true || _preview?.PreviewRetryAvailable == true);
         if (RestartFromPlayheadMenu is not null)
             RestartFromPlayheadMenu.IsEnabled = on && !stream && _preview?.CanRestartFromPlayhead == true;
@@ -1065,6 +1081,7 @@ public partial class MainWindow
         PresetBoxBorder.Visibility = hidePreviewChrome ? Visibility.Collapsed : Visibility.Visible;
         PresetMenu.Visibility = hidePreviewChrome ? Visibility.Collapsed : Visibility.Visible;
         RefreshSubSourceBox();
+        RefreshLocalSubSwitchUi();
 
         var layoutMenus = onPreviewPath ? Visibility.Visible : Visibility.Collapsed;
         ModeZhMenu.Visibility = layoutMenus;

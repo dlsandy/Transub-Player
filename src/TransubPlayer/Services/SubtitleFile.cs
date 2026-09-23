@@ -123,20 +123,120 @@ internal static class SubtitleFile
 
     public static string? FindExistingSubtitle(string mediaPath)
     {
-        foreach (var p in EnumerateSidecarCandidates(mediaPath))
+        var list = FindAllExistingSidecars(mediaPath);
+        return list.Count > 0 ? list[0].Path : null;
+    }
+
+    // Short-lived per-directory listing so playlist badges / multi-sidecar UI do not
+    // EnumerateFiles the whole folder on every chrome tick or per-row check.
+    private static readonly object DirListCacheLock = new();
+    private static string? DirListCachePath;
+    private static List<(string FullPath, string NameNoExt, string Ext, long Length)>? DirListCache;
+    private static long DirListCacheTick;
+
+    public static void InvalidateDirectoryListingCache(string? directory = null)
+    {
+        lock (DirListCacheLock)
         {
+            if (directory is null
+                || (DirListCachePath is not null
+                    && string.Equals(DirListCachePath, directory, StringComparison.OrdinalIgnoreCase)))
+            {
+                DirListCachePath = null;
+                DirListCache = null;
+                DirListCacheTick = 0;
+            }
+        }
+    }
+
+    private static List<(string FullPath, string NameNoExt, string Ext, long Length)> ListSubtitleFilesCached(string dir)
+    {
+        lock (DirListCacheLock)
+        {
+            var now = Environment.TickCount64;
+            if (DirListCache is not null
+                && DirListCachePath is not null
+                && string.Equals(DirListCachePath, dir, StringComparison.OrdinalIgnoreCase)
+                && now - DirListCacheTick < 2500)
+                return DirListCache;
+
+            var list = new List<(string, string, string, long)>();
             try
             {
-                if (File.Exists(p) && new FileInfo(p).Length > 40)
-                    return p;
+                foreach (var file in Directory.EnumerateFiles(dir))
+                {
+                    var ext = Path.GetExtension(file);
+                    if (!IsSidecarExtension(ext)) continue;
+                    try
+                    {
+                        var info = new FileInfo(file);
+                        list.Add((Path.GetFullPath(file), Path.GetFileNameWithoutExtension(file), ext, info.Length));
+                    }
+                    catch
+                    {
+                        // ignore unreadable
+                    }
+                }
             }
             catch
             {
-                // ignore unreadable
+                return [];
+            }
+
+            DirListCachePath = dir;
+            DirListCache = list;
+            DirListCacheTick = now;
+            return list;
+        }
+    }
+
+    /// <summary>
+    /// All valid sidecars next to the media: <c>{stem}.srt</c> and <c>{stem}.{tag}.srt</c>
+    /// (e.g. <c>.zh-cn</c>, <c>.en</c>), preference-ordered for auto-pick.
+    /// </summary>
+    public static IReadOnlyList<SidecarInfo> FindAllExistingSidecars(string mediaPath)
+    {
+        var dir = Path.GetDirectoryName(mediaPath);
+        var stem = Path.GetFileNameWithoutExtension(mediaPath);
+        if (dir is null || string.IsNullOrWhiteSpace(stem) || !Directory.Exists(dir))
+            return [];
+
+        List<SidecarInfo> found;
+        try
+        {
+            found = [];
+            foreach (var (full, nameNoExt, ext, length) in ListSubtitleFilesCached(dir))
+            {
+                if (length <= 40) continue;
+                if (!IsStemSidecarName(stem, nameNoExt)) continue;
+                var tag = SidecarTag(stem, nameNoExt);
+                found.Add(new SidecarInfo(full, tag, ext.TrimStart('.')));
             }
         }
+        catch
+        {
+            return [];
+        }
 
-        return null;
+        return found
+            .OrderBy(s => SidecarPreferenceRank(s.Tag, s.Extension))
+            .ThenBy(s => s.Tag, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(s => ExtRank(s.Extension))
+            .ThenBy(s => s.Path, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    /// <summary>Language / role tag between stem and extension; empty for <c>{stem}.srt</c>.</summary>
+    public static string SidecarTag(string mediaStem, string fileNameWithoutExtension)
+    {
+        if (string.IsNullOrWhiteSpace(mediaStem) || string.IsNullOrWhiteSpace(fileNameWithoutExtension))
+            return "";
+        if (fileNameWithoutExtension.Equals(mediaStem, StringComparison.OrdinalIgnoreCase))
+            return "";
+        var prefix = mediaStem + ".";
+        if (!fileNameWithoutExtension.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return "";
+        return fileNameWithoutExtension[prefix.Length..];
     }
 
     public static bool IsSidecarExtension(string? ext)
@@ -170,14 +270,12 @@ internal static class SubtitleFile
     public static Dictionary<string, SidecarFingerprint> SnapshotSidecars(string mediaPath)
     {
         var map = new Dictionary<string, SidecarFingerprint>(StringComparer.OrdinalIgnoreCase);
-        foreach (var p in EnumerateSidecarCandidates(mediaPath))
+        foreach (var s in FindAllExistingSidecars(mediaPath))
         {
             try
             {
-                if (!File.Exists(p)) continue;
-                var info = new FileInfo(p);
-                if (info.Length <= 40) continue;
-                map[Path.GetFullPath(p)] = new SidecarFingerprint(info.Length, info.LastWriteTimeUtc.Ticks);
+                var info = new FileInfo(s.Path);
+                map[s.Path] = new SidecarFingerprint(info.Length, info.LastWriteTimeUtc.Ticks);
             }
             catch
             {
@@ -195,17 +293,15 @@ internal static class SubtitleFile
         string mediaPath,
         IReadOnlyDictionary<string, SidecarFingerprint> baseline)
     {
-        foreach (var p in EnumerateSidecarCandidates(mediaPath))
+        foreach (var s in FindAllExistingSidecars(mediaPath))
         {
             try
             {
-                if (!File.Exists(p)) continue;
-                var info = new FileInfo(p);
+                var info = new FileInfo(s.Path);
                 if (info.Length <= 40) continue;
-                var full = Path.GetFullPath(p);
                 var fp = new SidecarFingerprint(info.Length, info.LastWriteTimeUtc.Ticks);
-                if (!baseline.TryGetValue(full, out var old) || old != fp)
-                    return full;
+                if (!baseline.TryGetValue(s.Path, out var old) || old != fp)
+                    return s.Path;
             }
             catch
             {
@@ -215,6 +311,41 @@ internal static class SubtitleFile
 
         return null;
     }
+
+    private static bool IsStemSidecarName(string mediaStem, string fileNameWithoutExtension)
+    {
+        if (fileNameWithoutExtension.Equals(mediaStem, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return fileNameWithoutExtension.StartsWith(mediaStem + ".", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Lower is preferred for auto-pick (Transub zh / bilingual / bare / other tags).</summary>
+    private static int SidecarPreferenceRank(string tag, string extension)
+    {
+        var t = (tag ?? "").Trim().ToLowerInvariant();
+        var ext = NormalizeExt(extension);
+        if (t is "zh" && ext is "srt" or "ass" or "vtt") return 0;
+        if (t is "bilingual" && ext is "srt" or "ass") return 10;
+        if (t is "dual" && ext is "ass") return 11;
+        if (t.Length == 0 && ext is "srt" or "ass" or "vtt") return 20;
+        if (t is "zh-hant") return 30;
+        if (t.StartsWith("zh", StringComparison.Ordinal)
+            || t is "chs" or "cht" or "chi" or "cn" or "tw" or "sc" or "tc")
+            return 40;
+        return 100;
+    }
+
+    private static int ExtRank(string extension) => NormalizeExt(extension) switch
+    {
+        "srt" => 0,
+        "ass" => 1,
+        "ssa" => 2,
+        "vtt" => 3,
+        _ => 9,
+    };
+
+    private static string NormalizeExt(string extension)
+        => (extension ?? "").Trim().TrimStart('.').ToLowerInvariant();
 
     private static double ParseTs(string raw)
     {

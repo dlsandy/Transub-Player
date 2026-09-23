@@ -195,6 +195,27 @@ internal sealed class PlaylistPrefetch
                 if (_liveBusy || !_settings.PrefetchPlaylistSubtitles)
                     break;
 
+                // Serialize with any live/orphan Whisper wind-down before starting the next file.
+                if (_engine.HasActiveJob)
+                {
+                    try
+                    {
+                        await _engine.WaitUntilIdleAsync(ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _log("列表预生成等待引擎空闲：" + ex.Message);
+                        break;
+                    }
+
+                    if (_liveBusy || ct.IsCancellationRequested)
+                        break;
+                }
+
                 string? next = null;
                 lock (_gate)
                 {

@@ -58,6 +58,11 @@
     <sys:String x:Key="Str.Main.SubSource.OffOpen">字幕已关闭 · 不自动原文提取/翻译/在线查找</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">实时字幕</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">选择字幕来源：关闭 / 在线 / 本地 / 实时字幕</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Default">默认</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Tip">切换同目录字幕文件</sys:String>
+    <sys:String x:Key="Str.Main.Menu.LocalSidecars">本地字幕文件</sys:String>
+    <sys:String x:Key="Str.Main.Status.LocalSubSwitched">已切换本地字幕：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LocalSubSwitched">字幕：{0}</sys:String>
     <sys:String x:Key="Str.Main.NeedsInstall">需安装</sys:String>
     <sys:String x:Key="Str.Main.Recent">最近打开</sys:String>
     <sys:String x:Key="Str.Main.RecentEmpty">（暂无）</sys:String>
@@ -580,6 +585,30 @@
     <sys:String x:Key="Str.Main.Menu.StreamRecordStop">停止录制</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenScreenshotFolder">打开截图文件夹</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenRecordingsFolder">打开录制文件夹</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip">开始截取片段</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipStop">停止并保存片段</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipBusy">正在截取…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip.Tip">从当前画面记起点，再到终点按 C 保存。Shift+C 取消。本机有 ffmpeg 时原样截取，否则会转码，稍等片刻。</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenClipsFolder">打开视频所在文件夹</sys:String>
+    <sys:String x:Key="Str.Main.Clip.StopTip">停止并保存 · C</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Failed">无法截取这段视频</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Reencoded">已转码</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSavedNote">片段已保存 · {0}（{1}）</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipNotLocal">只能截取本地影片。直播请用「录制直播」。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipNotLocal">本地影片才能截取片段</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipStarted">已标记起点 {0} · 再到终点按 C · Shift+C 取消</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipStarted">截取起点 {0} · C 结束</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipCancelled">已取消截取</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipCancelled">已取消截取</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipTooShort">片段太短，已取消</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipTooShort">片段太短</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipExtracting">正在截取 {0}–{1}…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipExtracting">正在截取…</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSaved">片段已保存 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipSaved">已保存 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipFailed">截取失败 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipFailed">截取失败</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipBusy">正在截取，请稍候</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.Title">直播录制</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StartTip">录制直播 · Ctrl+Shift+R</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StopTip">停止录制 · Ctrl+Shift+R</sys:String>
@@ -845,7 +874,7 @@
 片头/片尾 Home/End · 逐帧 , .
 音量 ↑↓ · 滚轮 · 微调进度 Shift+滚轮
 译文/原文/双语 1/2/3 · 显隐字幕 V/0 · 同步 Z/X ±0.5s
-播放列表 L · 上/下集 P/N · 静音 M · 截图 S
+播放列表 L · 上/下集 P/N · 静音 M · 截图 S · 截取片段 C
 循环/重置倍速 [ / ] · 全屏 F/F11/Enter · 置顶 T · 帮助 F1</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.Header">推荐首次配置</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.UiLang">界面语言已选</sys:String>
@@ -1047,7 +1076,7 @@
 片头/片尾 Home/End · 逐帧 , .
 音量 ↑↓ · 滚轮 · 微调进度 Shift+滚轮
 EN/原文/双语 1/2/3（译文语言=English 时）· 显隐字幕 V/0 · 同步 Z/X ±0.5s
-播放列表 L · 上/下集 P/N · 静音 M · 截图 S
+播放列表 L · 上/下集 P/N · 静音 M · 截图 S · 截取片段 C
 循环/重置倍速 [ / ] · 全屏 F/F11/Enter · 置顶 T · 帮助 F1</sys:String>
 
 </ResourceDictionary>

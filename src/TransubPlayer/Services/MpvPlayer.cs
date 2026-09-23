@@ -43,7 +43,7 @@ internal sealed class MpvPlayer : IDisposable
     public event Action<bool, double>? BufferingChanged;
     public event Action<string>? Log;
 
-    public bool IsRunning => _process is { HasExited: false };
+    public bool IsRunning => IsProcessAlive(_process);
     public bool IpcFailed => _ipcFailed;
     public int Volume => _volume;
     public bool Muted => _muted;
@@ -77,6 +77,11 @@ internal sealed class MpvPlayer : IDisposable
             throw new InvalidOperationException("播放窗口尚未就绪。");
 
         settings ??= new AppSettings();
+        // Keep local volume/speed in sync with settings immediately — do not wait for
+        // observe_property, or RefreshChrome may briefly push the UI (and settings) to defaults.
+        _volume = Math.Clamp(settings.Volume, 0, 130);
+        _muted = settings.Muted;
+        _speed = settings.Speed > 0 ? settings.Speed : 1.0;
         _pipeName = "transub-player-mpv-" + Guid.NewGuid().ToString("N")[..12];
         var ipc = @"\\.\pipe\" + _pipeName;
         var start = new ProcessStartInfo
@@ -117,14 +122,29 @@ internal sealed class MpvPlayer : IDisposable
         if (hasInitial)
             start.ArgumentList.Add(initialMedia!);
 
-        _process = new Process { StartInfo = start, EnableRaisingEvents = true };
-        _process.ErrorDataReceived += (_, e) =>
+        // Assign _process only after Start() succeeds — HasExited on an unstarted Process
+        // throws "No process is associated with this object" (UI timer / IsRunning race).
+        var process = new Process { StartInfo = start, EnableRaisingEvents = true };
+        process.ErrorDataReceived += (_, e) =>
         {
             if (!string.IsNullOrWhiteSpace(e.Data)) Log?.Invoke(e.Data);
         };
-        _process.Exited += (_, _) => Log?.Invoke("mpv 已退出");
-        if (!_process.Start())
-            throw new InvalidOperationException("无法启动 mpv。");
+        process.Exited += (_, _) => Log?.Invoke("mpv 已退出");
+        try
+        {
+            if (!process.Start())
+            {
+                process.Dispose();
+                throw new InvalidOperationException("无法启动 mpv。");
+            }
+        }
+        catch
+        {
+            try { process.Dispose(); } catch { /* ignore */ }
+            throw;
+        }
+
+        _process = process;
         ChildProcessLifetime.Track(_process);
         _process.BeginErrorReadLine();
         try
@@ -159,7 +179,12 @@ internal sealed class MpvPlayer : IDisposable
         }
     }
 
-    public bool LoadFile(string mediaPath, bool autoPlay = true, IReadOnlyDictionary<string, string>? httpHeaders = null, string? osdText = null)
+    public bool LoadFile(
+        string mediaPath,
+        bool autoPlay = true,
+        IReadOnlyDictionary<string, string>? httpHeaders = null,
+        string? osdText = null,
+        string? subtitlePath = null)
     {
         _currentSub = null;
         _videoWidth = 0;
@@ -170,9 +195,25 @@ internal sealed class MpvPlayer : IDisposable
             ApplyStreamDemuxerOptions(mediaPath);
         else
             ApplyLocalPlaybackOptions(mediaPath);
-        if (!TryCommand("loadfile", mediaPath, "replace"))
+
+        // With --sub-auto=no, attach the chosen sidecar in the same loadfile so it is not
+        // lost to a loadfile/sub-add race (symptoms: playlist shows external, screen blank).
+        var loadedWithSub = false;
+        if (!string.IsNullOrWhiteSpace(subtitlePath) && File.Exists(subtitlePath))
         {
-            if (_process is { HasExited: true })
+            loadedWithSub = TryCommand(
+                "loadfile",
+                mediaPath,
+                "replace",
+                0,
+                new Dictionary<string, string> { ["sub-file"] = subtitlePath });
+            if (loadedWithSub)
+                _currentSub = subtitlePath;
+        }
+
+        if (!loadedWithSub && !TryCommand("loadfile", mediaPath, "replace"))
+        {
+            if (IsProcessExited(_process))
                 Log?.Invoke("mpv 在 loadfile 时已退出");
             return false;
         }
@@ -293,6 +334,16 @@ internal sealed class MpvPlayer : IDisposable
 
     public void TogglePause() => Command("cycle", "pause");
 
+    /// <summary>
+    /// <c>--keep-open</c> pauses on the last frame. Unpausing alone does not leave EOF;
+    /// seek to the start, then resume.
+    /// </summary>
+    public void ReplayFromStart()
+    {
+        Command("seek", 0, "absolute");
+        SetPause(false);
+    }
+
     public void Seek(double seconds)
         => Command("set_property", "time-pos", seconds);
 
@@ -309,8 +360,6 @@ internal sealed class MpvPlayer : IDisposable
     {
         _volume = Math.Clamp(volume, 0, 130);
         Command("set_property", "volume", _volume);
-        if (_muted && _volume > 0)
-            SetMute(false);
         VolumeChanged?.Invoke(_volume);
     }
 
@@ -365,7 +414,12 @@ internal sealed class MpvPlayer : IDisposable
         }
 
         Command("sub-remove");
-        Command("sub-add", path, "select");
+        if (!TryCommand("sub-add", path, "select"))
+        {
+            Log?.Invoke("mpv sub-add 失败 · " + Path.GetFileName(path));
+            return;
+        }
+
         _currentSub = path;
         // Keep current visibility — display mode / user toggle owns show vs hide.
     }
@@ -553,7 +607,10 @@ internal sealed class MpvPlayer : IDisposable
         yield return $"--hwdec={hw}";
         yield return $"--wid={hwnd.ToInt64()}";
         yield return $"--input-ipc-server={ipc}";
+        yield return "--volume-max=130";
         yield return $"--volume={Math.Clamp(settings.Volume, 0, 130)}";
+        if (settings.Muted)
+            yield return "--mute=yes";
     }
 
     private static IEnumerable<string> BuildStartupArgs(
@@ -582,8 +639,11 @@ internal sealed class MpvPlayer : IDisposable
         yield return "--vo=gpu";
         yield return "--gpu-context=d3d11";
         yield return "--ytdl=no";
+        yield return "--volume-max=130";
         yield return $"--volume={Math.Clamp(settings.Volume, 0, 130)}";
-        yield return "--sub-auto=exact";
+        if (settings.Muted)
+            yield return "--mute=yes";
+        yield return "--sub-auto=no";
         yield return "--sub-codepage=utf-8";
         yield return $"--sub-font={font}";
         yield return $"--sub-font-size={size}";
@@ -663,7 +723,7 @@ internal sealed class MpvPlayer : IDisposable
     /// <summary>Low-rate property read (live mode polls time-pos instead of observe_property).</summary>
     public async Task<double?> GetDoubleAsync(string property, int timeoutMs = 900)
     {
-        if (_writer is null || _process is { HasExited: true })
+        if (_writer is null || IsProcessExited(_process))
             return null;
 
         var id = Interlocked.Increment(ref _requestId);
@@ -699,7 +759,7 @@ internal sealed class MpvPlayer : IDisposable
     /// <summary>Ping mpv IPC; kill the process if it does not answer.</summary>
     public async Task<bool> EnsureResponsiveAsync()
     {
-        if (_process is null || _process.HasExited)
+        if (_process is null || IsProcessExited(_process))
         {
             CleanupAfterProcessExit();
             _ipcFailed = false;
@@ -727,7 +787,7 @@ internal sealed class MpvPlayer : IDisposable
         if (_process is null && _writer is null)
             return;
 
-        if (_process is { HasExited: true })
+        if (IsProcessExited(_process))
         {
             CleanupAfterProcessExit();
             _ipcFailed = false;
@@ -753,8 +813,9 @@ internal sealed class MpvPlayer : IDisposable
         {
             try
             {
-                if (_process is { HasExited: false })
-                    _process.WaitForExit(ChildProcessLifetime.MpvQuitWaitMs);
+                var proc = _process;
+                if (IsProcessAlive(proc))
+                    proc!.WaitForExit(ChildProcessLifetime.MpvQuitWaitMs);
             }
             catch { /* ignore */ }
         }
@@ -787,7 +848,7 @@ internal sealed class MpvPlayer : IDisposable
 
     private async Task<bool> TryPingAsync()
     {
-        if (_writer is null || _process is { HasExited: true })
+        if (_writer is null || IsProcessExited(_process))
             return false;
 
         var id = Interlocked.Increment(ref _requestId);
@@ -822,7 +883,7 @@ internal sealed class MpvPlayer : IDisposable
     {
         try
         {
-            if (_process is { HasExited: false })
+            if (IsProcessAlive(_process))
                 ChildProcessLifetime.Stop(ref _process, waitMs: 2000);
         }
         catch { /* ignore */ }
@@ -1034,4 +1095,21 @@ internal sealed class MpvPlayer : IDisposable
     private static bool IsTruthy(JsonElement data)
         => data.ValueKind == JsonValueKind.True
            || (data.ValueKind == JsonValueKind.String && data.GetString() is "true" or "yes" or "1");
+
+    /// <summary>
+    /// <see cref="Process.HasExited"/> throws when the process was never started or the handle was closed.
+    /// </summary>
+    private static bool IsProcessAlive(Process? process)
+    {
+        if (process is null) return false;
+        try { return !process.HasExited; }
+        catch (InvalidOperationException) { return false; }
+    }
+
+    private static bool IsProcessExited(Process? process)
+    {
+        if (process is null) return true;
+        try { return process.HasExited; }
+        catch (InvalidOperationException) { return true; }
+    }
 }

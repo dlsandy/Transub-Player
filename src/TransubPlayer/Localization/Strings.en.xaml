@@ -58,6 +58,11 @@
     <sys:String x:Key="Str.Main.SubSource.OffOpen">Subtitles off · no auto ASR/MT/online search</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">Live subtitles</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">Subtitle source: off / online / local file / live ASR</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Default">Default</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Tip">Switch sidecar subtitle files</sys:String>
+    <sys:String x:Key="Str.Main.Menu.LocalSidecars">Local subtitle files</sys:String>
+    <sys:String x:Key="Str.Main.Status.LocalSubSwitched">Switched local subtitle: {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LocalSubSwitched">Subtitle: {0}</sys:String>
     <sys:String x:Key="Str.Main.NeedsInstall">Install needed</sys:String>
     <sys:String x:Key="Str.Main.Recent">Recent</sys:String>
     <sys:String x:Key="Str.Main.RecentEmpty">(None)</sys:String>
@@ -580,6 +585,30 @@ Continue?</sys:String>
     <sys:String x:Key="Str.Main.Menu.StreamRecordStop">Stop recording</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenScreenshotFolder">Open screenshot folder</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenRecordingsFolder">Open recordings folder</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip">Start clip</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipStop">Stop and save clip</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipBusy">Capturing…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip.Tip">Mark the current frame, then press C at the end to save. Shift+C cancels. Uses ffmpeg stream-copy when installed; otherwise re-encodes and may take a moment.</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenClipsFolder">Open video folder</sys:String>
+    <sys:String x:Key="Str.Main.Clip.StopTip">Stop and save · C</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Failed">Could not capture this segment</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Reencoded">re-encoded</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSavedNote">Clip saved · {0} ({1})</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipNotLocal">Clips work on local files only. For live streams, use Record stream.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipNotLocal">Local files only</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipStarted">Start marked at {0} · press C at the end · Shift+C cancels</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipStarted">Clip start {0} · C to stop</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipCancelled">Clip cancelled</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipCancelled">Clip cancelled</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipTooShort">Clip too short — cancelled</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipTooShort">Clip too short</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipExtracting">Capturing {0}–{1}…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipExtracting">Capturing…</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSaved">Clip saved · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipSaved">Saved · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipFailed">Capture failed · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipFailed">Capture failed</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipBusy">Already capturing — please wait</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.Title">Stream recording</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StartTip">Record stream · Ctrl+Shift+R</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StopTip">Stop recording · Ctrl+Shift+R</sys:String>
@@ -845,7 +874,7 @@ Fine Shift+←→ · Large Ctrl+←→ · ±60s PageUp/Down
 Start/End Home/End · Frame , .
 Volume ↑↓ · wheel · fine seek Shift+wheel
 ZH/Src/Dual 1/2/3 · toggle subs V/0 · sync Z/X ±0.5s
-Playlist L · prev/next P/N · mute M · screenshot S
+Playlist L · prev/next P/N · mute M · screenshot S · clip C
 speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.Header">Recommended first setup</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.UiLang">UI language chosen</sys:String>
@@ -1047,7 +1076,7 @@ Fine Shift+←→ · Large Ctrl+←→ · ±60s PageUp/Down
 Start/End Home/End · Frame , .
 Volume ↑↓ · wheel · fine seek Shift+wheel
 EN / source / dual 1/2/3 (when translation target = English) · sub V/0 · sync Z/X ±0.5s
-Playlist L · prev/next P/N · mute M · screenshot S
+Playlist L · prev/next P/N · mute M · screenshot S · clip C
 loop/reset speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
 
 </ResourceDictionary>

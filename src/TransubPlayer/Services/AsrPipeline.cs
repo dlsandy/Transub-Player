@@ -31,7 +31,21 @@ internal sealed class AsrPipeline : IDisposable
     public EngineCapabilities? Capabilities { get; private set; }
     public string? JobId => _jobId;
     public bool IsConnected { get; private set; }
-    public bool HasActiveJob => _jobId is not null;
+    /// <summary>
+    /// True while a job is booked or its run task is still winding down after cancel.
+    /// Must stay true until native Whisper releases the factory — otherwise ReleaseGpu /
+    /// a second job can dispose Vulkan mid-<c>ProcessAsync</c> and freeze the GPU driver.
+    /// </summary>
+    public bool HasActiveJob => _jobId is not null || IsRunTaskAlive;
+
+    private bool IsRunTaskAlive
+    {
+        get
+        {
+            var t = _runTask;
+            return t is { IsCompleted: false };
+        }
+    }
 
     public AsrPipeline(AppSettings settings, Action<string> status, Action<string> log)
     {
@@ -101,7 +115,8 @@ internal sealed class AsrPipeline : IDisposable
 
     public Task ReleaseGpuAsync(CancellationToken ct)
     {
-        // Only release when idle — mid-job ReleaseModel would dispose under ProcessAsync.
+        // Only release when idle — mid-job ReleaseModel would dispose under ProcessAsync
+        // (factory gate is free between chunks during WAV extract).
         if (HasActiveJob) return Task.CompletedTask;
         if (!_factoryGate.Wait(0))
             return Task.CompletedTask;
@@ -129,6 +144,7 @@ internal sealed class AsrPipeline : IDisposable
         try
         {
             await CancelJobCoreAsync(CancellationToken.None).ConfigureAwait(false);
+            await WaitForRunTaskIdleAsync(outerCt).ConfigureAwait(false);
             _jobCts = CancellationTokenSource.CreateLinkedTokenSource(outerCt);
             var token = _jobCts.Token;
             _jobId = Guid.NewGuid().ToString("N")[..8];
@@ -157,6 +173,7 @@ internal sealed class AsrPipeline : IDisposable
                 throw new OperationCanceledException(ct);
 
             await CancelJobCoreAsync(CancellationToken.None).ConfigureAwait(false);
+            await WaitForRunTaskIdleAsync(ct).ConfigureAwait(false);
             if (shouldAbort?.Invoke() == true)
                 throw new OperationCanceledException(ct);
 
@@ -191,6 +208,8 @@ internal sealed class AsrPipeline : IDisposable
         double startSec,
         CancellationToken ct)
     {
+        // Never overlap another Whisper ProcessAsync on the shared factory (Vulkan).
+        await WaitUntilIdleAsync(ct).ConfigureAwait(false);
         await EnsureAsrModelAsync(ct).ConfigureAwait(false);
         var modelPath = AsrModelStore.TurboPath(_modelsRoot);
         // Reuse the shared factory — a second FromPath can double VRAM and OOM on Vulkan.
@@ -250,6 +269,50 @@ internal sealed class AsrPipeline : IDisposable
 
     public Task CancelJobAsync() => CancelJobAsync(CancellationToken.None);
 
+    /// <summary>
+    /// After <see cref="CancelJobAsync"/>, wait until native Whisper has fully left the GPU.
+    /// Safe to call when already idle. Does not hold the job gate for the whole wait so
+    /// concurrent cancel can still run.
+    /// </summary>
+    public async Task WaitUntilIdleAsync(CancellationToken ct)
+    {
+        while (true)
+        {
+            Task? poll;
+            await _jobGate.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                poll = _runTask;
+                if (poll is null || poll.IsCompleted)
+                {
+                    await WaitForRunTaskIdleAsync(ct).ConfigureAwait(false);
+                    return;
+                }
+            }
+            finally
+            {
+                _jobGate.Release();
+            }
+
+            try
+            {
+                await poll.WaitAsync(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                // Still winding down — loop and re-check under the gate.
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Faulted — loop to clear bookkeeping.
+            }
+        }
+    }
+
     public async Task PrepareShutdownAsync(CancellationToken ct)
     {
         try
@@ -262,11 +325,18 @@ internal sealed class AsrPipeline : IDisposable
         }
 
         // Never dispose WhisperFactory while ProcessAsync may still touch it.
-        var poll = _runTask;
-        if (poll is not null)
+        try
         {
-            try { await poll.WaitAsync(TimeSpan.FromSeconds(8), CancellationToken.None).ConfigureAwait(false); }
-            catch { /* abandon after best-effort wait */ }
+            await WaitUntilIdleAsync(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch
+        {
+            var poll = _runTask;
+            if (poll is not null)
+            {
+                try { await poll.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false); }
+                catch { /* best-effort */ }
+            }
         }
 
         try
@@ -503,6 +573,11 @@ internal sealed class AsrPipeline : IDisposable
         _loadedModelPath = null;
     }
 
+    /// <summary>
+    /// Request cancel and wait for the run task. Never clears bookkeeping while native
+    /// Whisper may still touch the factory — callers that need a free GPU must then
+    /// <see cref="WaitForRunTaskIdleAsync"/>.
+    /// </summary>
     private async Task CancelJobCoreAsync(CancellationToken ct)
     {
         var jobCts = _jobCts;
@@ -511,17 +586,78 @@ internal sealed class AsrPipeline : IDisposable
 
         if (poll is not null)
         {
-            try { await poll.WaitAsync(TimeSpan.FromSeconds(5), ct).ConfigureAwait(false); }
-            catch { /* ignore */ }
+            // Prefer finishing cancel over abandoning: Vulkan whisper.cpp often needs
+            // well beyond a few seconds to leave ProcessAsync after Cancel.
+            try { await poll.WaitAsync(TimeSpan.FromSeconds(45), ct).ConfigureAwait(false); }
+            catch (OperationCanceledException)
+            {
+                // Short outer budgets (media switch) may expire first — keep ownership.
+            }
+            catch
+            {
+                // Faulted / abandoned wait — still inspect IsCompleted below.
+            }
+        }
+
+        if (poll is not null && !poll.IsCompleted)
+        {
+            _log("ASR 取消仍在收尾 · 保持 GPU 占用直至任务结束");
+            return;
         }
 
         if (ReferenceEquals(_runTask, poll))
             _runTask = null;
-        _jobId = null;
+        if (poll is not null || _jobId is not null)
+            _jobId = null;
         if (ReferenceEquals(_jobCts, jobCts))
         {
             _jobCts = null;
             try { jobCts?.Dispose(); } catch { /* ignore */ }
+        }
+    }
+
+    /// <summary>Block until any prior run task has fully exited (or throw if cancelled).</summary>
+    private async Task WaitForRunTaskIdleAsync(CancellationToken ct)
+    {
+        var poll = _runTask;
+        if (poll is null || poll.IsCompleted)
+        {
+            if (ReferenceEquals(_runTask, poll))
+                _runTask = null;
+            if (_jobId is not null && (poll is null || poll.IsCompleted))
+                _jobId = null;
+            return;
+        }
+
+        _log("等待上一识别任务释放 GPU…");
+        try
+        {
+            await poll.WaitAsync(TimeSpan.FromSeconds(90), ct).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            throw new InvalidOperationException("上一识别任务超时未释放 GPU，已拒绝启动新任务以免驱动卡死。");
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Faulted prior task — GPU should be free.
+        }
+
+        if (!poll.IsCompleted)
+            throw new InvalidOperationException("上一识别任务仍未结束，已拒绝启动新任务以免驱动卡死。");
+
+        if (ReferenceEquals(_runTask, poll))
+            _runTask = null;
+        _jobId = null;
+        var leftover = _jobCts;
+        if (leftover is not null)
+        {
+            _jobCts = null;
+            try { leftover.Dispose(); } catch { /* ignore */ }
         }
     }
 

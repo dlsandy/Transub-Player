@@ -61,6 +61,8 @@ public sealed class AppSettings
     /// <summary>Optional glossary JSON (Transub editor format). Empty = auto-detect data/glossary.json or Transub install.</summary>
     public string GlossaryPath { get; set; } = "";
     public int Volume { get; set; } = 50;
+    /// <summary>Transport mute. Kept across files and restarts; volume nudges clear it.</summary>
+    public bool Muted { get; set; }
     public double Speed { get; set; } = 1.0;
     public bool AlwaysOnTop { get; set; }
     /// <summary>When true, live window resize keeps video-area aspect (or current window aspect if no video).</summary>
@@ -235,6 +237,7 @@ public sealed class AppSettings
         TextSanitizeEnabled = copy.TextSanitizeEnabled;
         GlossaryPath = copy.GlossaryPath;
         Volume = copy.Volume;
+        Muted = copy.Muted;
         Speed = copy.Speed;
         AlwaysOnTop = copy.AlwaysOnTop;
         LockWindowAspectRatio = copy.LockWindowAspectRatio;

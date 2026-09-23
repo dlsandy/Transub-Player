@@ -986,10 +986,13 @@ internal static class StripchatStreamResolver
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
-            ConnectTimeout = TimeSpan.FromSeconds(15),
+            // Outer cap for StripchatConnect (several addresses). Default dual-stack
+            // connect spends this whole window on a blackholed IPv6 route.
+            ConnectTimeout = TimeSpan.FromSeconds(20),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             UseProxy = true,
             Proxy = HttpClient.DefaultProxy,
+            ConnectCallback = StripchatConnect.ConnectAsync,
             SslOptions = new System.Net.Security.SslClientAuthenticationOptions
             {
                 EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12

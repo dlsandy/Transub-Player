@@ -23,6 +23,8 @@ internal sealed class PreviewController : IDisposable
     private bool _depsCheckedForStart;
     private bool _waitingForFirstZh;
     private bool _waitingForModeReady;
+    /// <summary>Local file hit EOF under keep-open. Play / Space should start over, not just unpause.</summary>
+    private volatile bool _playbackEnded;
     private bool _retranslatingActive;
     private double _nextPreviewStartFrom;
     private IReadOnlyList<Cue>? _nextPreviewSeedCues;
@@ -37,6 +39,10 @@ internal sealed class PreviewController : IDisposable
     private bool _mtDisabledForSession;
     private PresetGapReport? _pendingGapReport;
     private int _mediaGeneration;
+    /// <summary>Only the current open may run deferred engine cancel; newer opens supersede.</summary>
+    private int _engineCancelOwnerGen;
+    private IReadOnlyList<SidecarInfo>? _sidecarCache;
+    private string? _sidecarCacheMediaPath;
     /// <summary>Sensed source lang for this media while settings stay auto; survives <see cref="ResolveScene"/>.</summary>
     private string? _sessionSensedLanguage;
     private int _onlineSubtitleBusy;
@@ -108,7 +114,34 @@ internal sealed class PreviewController : IDisposable
 
     public bool HasLocalSubtitle
         => !string.IsNullOrWhiteSpace(MediaPath)
-           && SubtitleFile.FindExistingSubtitle(MediaPath) is not null;
+           && LocalSidecars.Count > 0;
+
+    /// <summary>Same-folder sidecars (<c>stem.srt</c> / <c>stem.zh-cn.srt</c> …), preference-ordered.</summary>
+    public IReadOnlyList<SidecarInfo> LocalSidecars
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(MediaPath))
+                return [];
+            if (_sidecarCache is not null
+                && string.Equals(_sidecarCacheMediaPath, MediaPath, StringComparison.OrdinalIgnoreCase))
+                return _sidecarCache;
+
+            _sidecarCache = SubtitleFile.FindAllExistingSidecars(MediaPath);
+            _sidecarCacheMediaPath = MediaPath;
+            return _sidecarCache;
+        }
+    }
+
+    /// <summary>True when more than one sidecar is available for switching UI.</summary>
+    public bool HasMultipleLocalSidecars => LocalSidecars.Count > 1;
+
+    private void InvalidateSidecarCache()
+    {
+        _sidecarCache = null;
+        _sidecarCacheMediaPath = null;
+    }
+
     /// <summary>字幕来源为「本地字幕」：不连识别引擎，控制栏不显示预设/版式芯片。</summary>
     public bool IsLocalSubtitleSource => ActiveSource == SubtitleSourceKind.Local;
     /// <summary>网络流 / 桌面采集：只播画面，不做字幕任务。</summary>
@@ -314,9 +347,11 @@ internal sealed class PreviewController : IDisposable
         _mpv.SpeedChanged += _ => StateChanged?.Invoke();
         _mpv.EofReached += ended =>
         {
-            if (!ended) return;
-            // Live HLS may spuriously signal EOF; do not end the session.
-            if (MediaSourceHelper.IsRemoteUrl(MediaPath) && !MediaSourceHelper.IsScreenCapture(MediaPath))
+            // Live HLS may spuriously signal EOF; do not end the session or arm replay.
+            var remote = MediaSourceHelper.IsRemoteUrl(MediaPath)
+                         && !MediaSourceHelper.IsScreenCapture(MediaPath);
+            _playbackEnded = ended && !remote && !IsStreamPlayback;
+            if (!ended || remote)
                 return;
             MediaEnded?.Invoke();
         };
@@ -333,7 +368,7 @@ internal sealed class PreviewController : IDisposable
             status,
             log,
             path => SceneProfiles.Resolve(settings.SourceLanguage, path, out _),
-            ct => EnsureTranslateAsync(ct),
+            ct => EnsureTranslateAsync(ct, preferCpu: true),
             () => _settings.TranslateEnabled,
             () => MediaPath);
         _prefetch.Changed += state => PrefetchChanged?.Invoke(state);
@@ -473,10 +508,13 @@ internal sealed class PreviewController : IDisposable
         await _mpv.StartAsync(mpv, _host.Hwnd, _settings, CancellationToken.None, initialMedia, httpHeaders, autoPlay)
             .ConfigureAwait(false);
         await _host.Dispatcher.InvokeAsync(() => _host.HookEmbeddedChildren());
-        // Live spawn already has volume/sub fonts on the command line — do not IPC-touch demuxer mid-open.
+        // Live spawn already has volume/speed on argv + local fields synced in StartAsync.
+        // Avoid extra IPC right after open (light-IPC live path is demuxer-sensitive).
         if (string.IsNullOrWhiteSpace(initialMedia))
         {
             _mpv.SetVolume(_settings.Volume);
+            if (_settings.Muted)
+                _mpv.SetMute(true);
             _mpv.SetSpeed(_settings.Speed <= 0 ? 1.0 : _settings.Speed);
             _mpv.ApplySubtitleSettings(_settings);
         }
@@ -489,9 +527,10 @@ internal sealed class PreviewController : IDisposable
         string playPath,
         bool autoPlay,
         IReadOnlyDictionary<string, string>? headers = null,
-        string? osdText = null)
+        string? osdText = null,
+        string? subtitlePath = null)
     {
-        if (_mpv.LoadFile(playPath, autoPlay, headers, osdText))
+        if (_mpv.LoadFile(playPath, autoPlay, headers, osdText, subtitlePath))
             return true;
 
         _log("mpv 加载失败，重启后重试");
@@ -503,7 +542,8 @@ internal sealed class PreviewController : IDisposable
         string playPath,
         bool autoPlay,
         IReadOnlyDictionary<string, string>? headers = null,
-        string? osdText = null)
+        string? osdText = null,
+        string? subtitlePath = null)
     {
         var needsSpawnWithUrl = MediaSourceHelper.IsRemoteUrl(playPath)
                                 && !MediaSourceHelper.IsScreenCapture(playPath)
@@ -516,6 +556,8 @@ internal sealed class PreviewController : IDisposable
             await EnsurePlayerAsync(playPath, headers, autoPlay).ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(osdText))
                 _mpv.ShowOsd(osdText);
+            if (!string.IsNullOrWhiteSpace(subtitlePath))
+                _mpv.SetSubtitle(subtitlePath);
             return _mpv.IsRunning;
         }
 
@@ -532,21 +574,25 @@ internal sealed class PreviewController : IDisposable
         if (!_mpv.IsRunning)
             await EnsurePlayerAsync().ConfigureAwait(false);
 
-        if (LoadIntoMpv(playPath, autoPlay, headers, osdText))
+        if (LoadIntoMpv(playPath, autoPlay, headers, osdText, subtitlePath))
             return true;
 
         _mpv.Stop();
         await EnsurePlayerAsync().ConfigureAwait(false);
-        return LoadIntoMpv(playPath, autoPlay, headers, osdText);
+        return LoadIntoMpv(playPath, autoPlay, headers, osdText, subtitlePath);
     }
 
     public async Task OpenMediaAsync(string path, CancellationToken ct)
     {
         var gen = Interlocked.Increment(ref _mediaGeneration);
+        Volatile.Write(ref _engineCancelOwnerGen, gen);
         await _mpvLoadGate.WaitAsync(ct).ConfigureAwait(false);
+        // WaitAsync may complete synchronously on the UI thread — leave Dispatcher before sync IPC/IO.
+        await Task.Yield();
         // Block prefetch before cancelling the old job so onFinished cannot start a pump mid-open.
         var liveBusyEpoch = _prefetch?.EnterLiveBusy() ?? 0;
         var handOffToPreview = false;
+        var gateReleased = false;
         try
         {
             CancelPreviewRun();
@@ -556,6 +602,7 @@ internal sealed class PreviewController : IDisposable
 
             // Fast switch: update player and clear old subtitles before waiting on engine cancel.
             MediaPath = path;
+            InvalidateSidecarCache();
             _finishedSub.Disarm();
             UsingExistingSub = false;
             ActiveSubPath = null;
@@ -564,6 +611,7 @@ internal sealed class PreviewController : IDisposable
             VideoHeight = 0;
             Position = 0;
             Duration = 0;
+            _playbackEnded = false;
             _translateReady = null;
             _translateRunningOnCpu = false;
             _previewRetryAvailable = false;
@@ -688,7 +736,7 @@ internal sealed class PreviewController : IDisposable
             _mpvPlayUrl = path;
             _mpvPlayHeaders = null;
             _mpvPlayOsd = null;
-            if (!await EnsureLoadIntoMpvAsync(path, autoPlay).ConfigureAwait(false))
+            if (!await EnsureLoadIntoMpvAsync(path, autoPlay, subtitlePath: existing).ConfigureAwait(false))
                 throw new InvalidOperationException(Loc.Get("Main.Status.MpvLoadFailed"));
             Paused = !autoPlay;
             if (sessionPrefs.HasViewPrefs)
@@ -750,8 +798,8 @@ internal sealed class PreviewController : IDisposable
                 _externalOrigin = onlineFetched is not null
                     ? ExternalSubOrigin.Online
                     : ExternalSubOrigin.Local;
-                ActiveSubPath = existing;
-                _mpv.SetSubtitle(existing);
+                // Prefer ApplySub so visibility is restored; loadfile may already have attached the track.
+                ApplySub(existing);
                 EndBootstrap();
                 if (onlineFetched is not null)
                 {
@@ -799,18 +847,53 @@ internal sealed class PreviewController : IDisposable
             // Preview start takes a new live-busy epoch; keep open-phase busy until then
             // (do not Release here — that would briefly free the engine for prefetch).
             _manualPreviewNeeded = false;
-        handOffToPreview = true;
+            handOffToPreview = true;
             _ = StartPreviewInBackgroundAsync(gen, ct);
         }
         finally
         {
             if (!handOffToPreview)
             {
-                // Finish engine cancel under live-busy so prefetch cannot start a second job mid-cancel.
-                await CancelStaleEngineJobAsync().ConfigureAwait(false);
-                _prefetch?.ReleaseLiveBusy(liveBusyEpoch);
+                // Release the load gate BEFORE Whisper cancel/idle (tens of seconds).
+                // Rapid next/prev must not serialize behind CancelStaleEngineJobAsync.
+                _mpvLoadGate.Release();
+                gateReleased = true;
+                _ = FinishOpenWithoutPreviewAsync(liveBusyEpoch, gen);
             }
-            _mpvLoadGate.Release();
+            else if (!gateReleased)
+            {
+                _mpvLoadGate.Release();
+            }
+        }
+    }
+
+    /// <summary>
+    /// After an external-sub / no-ASR open: allow prefetch once leftover Whisper has been
+    /// signalled (via EnterLiveBusy / CancelPreviewRun). Runs off the open critical path.
+    /// </summary>
+    private async Task FinishOpenWithoutPreviewAsync(int liveBusyEpoch, int openGen)
+    {
+        try
+        {
+            // Newer open owns live-busy / engine — only release our epoch below.
+            if (openGen == Volatile.Read(ref _engineCancelOwnerGen))
+            {
+                // Do not CancelJob here: a newer StartPreview may already own the pipeline.
+                // Cancel was signalled at open; wait briefly so prefetch does not slam the GPU.
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+                try
+                {
+                    await _engine.WaitUntilIdleAsync(cts.Token).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Still winding down — PlaylistPrefetch.PumpAsync waits again before ASR.
+                }
+            }
+        }
+        finally
+        {
+            _prefetch?.ReleaseLiveBusy(liveBusyEpoch);
         }
     }
 
@@ -892,7 +975,8 @@ internal sealed class PreviewController : IDisposable
         if (string.IsNullOrWhiteSpace(MediaPath))
             throw new InvalidOperationException("尚未打开影片。");
 
-        var local = SubtitleFile.FindExistingSubtitle(MediaPath);
+        var sidecars = SubtitleFile.FindAllExistingSidecars(MediaPath);
+        var local = ResolvePreferredLocalPath(sidecars);
 
         var gen = Volatile.Read(ref _mediaGeneration);
         var path = MediaPath!;
@@ -925,6 +1009,36 @@ internal sealed class PreviewController : IDisposable
         StateChanged?.Invoke();
     }
 
+    /// <summary>Switch to a specific same-folder sidecar and set source to Local.</summary>
+    public async Task SelectLocalSidecarAsync(string subPath, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(MediaPath))
+            throw new InvalidOperationException("尚未打开影片。");
+        if (string.IsNullOrWhiteSpace(subPath) || !File.Exists(subPath))
+            throw new FileNotFoundException("字幕文件不存在。", subPath);
+
+        var full = Path.GetFullPath(subPath);
+        if (UsingExistingSub
+            && !string.IsNullOrWhiteSpace(ActiveSubPath)
+            && string.Equals(Path.GetFullPath(ActiveSubPath), full, StringComparison.OrdinalIgnoreCase))
+        {
+            if (_displayMode == SubtitleDisplayMode.Off)
+                SetDisplayMode(_lastContentMode, announce: true);
+            SaveSubtitleSource(SubtitleSourceKind.Local);
+            StateChanged?.Invoke();
+            return;
+        }
+
+        SaveSubtitleSource(SubtitleSourceKind.Local);
+        await LoadExternalSubtitleFileAsync(full, ExternalSubOrigin.Local, ct).ConfigureAwait(false);
+        var label = FormatSidecarLabel(full);
+        PublishStatus(
+            Loc.Format("Main.Status.LocalSubSwitched", label) + Loc.Get("Main.Status.ExternalSubHint"),
+            $"切换本地字幕 {full}");
+        ShowOsd(Loc.Format("Main.Osd.LocalSubSwitched", label), 2000);
+        MaybeOfferExternalSubHint();
+    }
+
     /// <summary>Load a specific sidecar (e.g. Transub-finished) and stop live ASR/MT for this media.</summary>
     public async Task LoadExternalSubtitleFileAsync(string subPath, ExternalSubOrigin origin, CancellationToken ct)
     {
@@ -945,6 +1059,44 @@ internal sealed class PreviewController : IDisposable
 
         await ApplyExternalSubtitleCoreAsync(subPath, origin, gen, path).ConfigureAwait(false);
         StateChanged?.Invoke();
+    }
+
+    private string? ResolvePreferredLocalPath(IReadOnlyList<SidecarInfo> sidecars)
+    {
+        if (sidecars.Count == 0) return null;
+        if (!string.IsNullOrWhiteSpace(ActiveSubPath))
+        {
+            try
+            {
+                var active = Path.GetFullPath(ActiveSubPath);
+                foreach (var s in sidecars)
+                {
+                    if (string.Equals(s.Path, active, StringComparison.OrdinalIgnoreCase))
+                        return s.Path;
+                }
+            }
+            catch
+            {
+                // fall through to preference pick
+            }
+        }
+
+        return sidecars[0].Path;
+    }
+
+    private string FormatSidecarLabel(string subPath)
+    {
+        if (string.IsNullOrWhiteSpace(MediaPath) || string.IsNullOrWhiteSpace(subPath))
+            return Path.GetFileName(subPath) ?? "";
+        var stem = Path.GetFileNameWithoutExtension(MediaPath);
+        var nameNoExt = Path.GetFileNameWithoutExtension(subPath);
+        var tag = SubtitleFile.SidecarTag(stem, nameNoExt);
+        var ext = Path.GetExtension(subPath).TrimStart('.').ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(tag))
+            return string.IsNullOrWhiteSpace(ext)
+                ? Loc.Get("Main.LocalSub.Default")
+                : Loc.Get("Main.LocalSub.Default") + " · " + ext;
+        return string.IsNullOrWhiteSpace(ext) ? tag : tag + " · " + ext;
     }
 
     private Task ApplyExternalSubtitleCoreAsync(
@@ -1123,6 +1275,9 @@ internal sealed class PreviewController : IDisposable
         catch (OperationCanceledException)
         {
             // StartPreviewAsync finally / job onFinished own ReleaseLiveBusy.
+            // Wait was armed before cancel — do not leave the overlay stuck forever.
+            if (_waitingForFirstZh && mediaPath is not null && IsCurrentMedia(gen, mediaPath))
+                await FinishWaitForFirstZhOnUiAsync(play: true, "原文提取已取消，已开始播放").ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -1362,6 +1517,10 @@ internal sealed class PreviewController : IDisposable
             SetBootstrapPhase(BootstrapPhase.StartingAsr);
             PublishStatus(WantsPreviewMt ? Loc.Get("Main.Status.StartingAsrMt") : Loc.Get("Main.Status.StartingAsr"));
 
+            // Prefetch MT may have loaded llama on Vulkan — free GPU before Whisper.
+            await DemoteTranslateGpuForAsrAsync(ct).ConfigureAwait(false);
+            ThrowIfStaleMedia(gen);
+
             var body = new AsrJobRequest(
                 mediaPath,
                 outDir,
@@ -1438,6 +1597,8 @@ internal sealed class PreviewController : IDisposable
             if (!jobStarted)
             {
                 _prefetch?.ReleaseLiveBusy(liveBusyEpoch);
+                // Cached ASR may still be waiting for Zh — do not dismiss here.
+                // Cancel / hard failure paths clear wait in StartPreviewInBackgroundAsync or above.
                 if (!_waitingForFirstZh)
                     EndBootstrap();
             }
@@ -1456,6 +1617,8 @@ internal sealed class PreviewController : IDisposable
     {
         _subs.StopWatching();
         await _engine.CancelJobAsync(ct).ConfigureAwait(false);
+        // Must not start language-sense / a new Whisper job until Vulkan has fully released.
+        await _engine.WaitUntilIdleAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>Engine-only cancel for media switch — does not touch subtitle watcher or preview run.</summary>
@@ -1463,8 +1626,10 @@ internal sealed class PreviewController : IDisposable
     {
         try
         {
-            using var cts = new CancellationTokenSource(ChildProcessLifetime.HttpBudget);
+            // Whisper Vulkan cancel often exceeds the short HTTP budget used elsewhere.
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             await _engine.CancelJobAsync(cts.Token).ConfigureAwait(false);
+            await _engine.WaitUntilIdleAsync(cts.Token).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -1480,8 +1645,9 @@ internal sealed class PreviewController : IDisposable
 
         try
         {
-            using var cts = new CancellationTokenSource(ChildProcessLifetime.HttpBudget);
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             await _engine.CancelJobAsync(cts.Token).ConfigureAwait(false);
+            await _engine.WaitUntilIdleAsync(cts.Token).ConfigureAwait(false);
             await _engine.ReleaseGpuAsync(cts.Token).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -1624,6 +1790,12 @@ internal sealed class PreviewController : IDisposable
 
     public void TogglePause()
     {
+        if (_playbackEnded && !string.IsNullOrWhiteSpace(MediaPath) && !IsStreamPlayback)
+        {
+            ReplayFromStart();
+            return;
+        }
+
         if (_mpv.LiveLightIpc)
         {
             // No pause observe_property in live MVP mode — keep UI state locally.
@@ -1634,6 +1806,17 @@ internal sealed class PreviewController : IDisposable
         }
 
         _mpv.TogglePause();
+    }
+
+    /// <summary>After keep-open EOF, Play and Space start the current file again.</summary>
+    private void ReplayFromStart()
+    {
+        _playbackEnded = false;
+        Position = 0;
+        _mpv.ReplayFromStart();
+        Paused = false;
+        OnUserSeek();
+        PublishStatus(BuildStatusLine());
     }
 
     /// <summary>Poll time-pos for live (no observe_property flood).</summary>
@@ -1756,14 +1939,28 @@ internal sealed class PreviewController : IDisposable
         => _coverage.EstimateSecondsToReach(mediaSeconds, SubFrontier);
 
     public void FrameStep(bool forward = true) => _mpv.FrameStep(forward);
-    public void SetVolume(int volume)
+    public void SetVolume(int volume, bool clearMute = false)
     {
-        _mpv.SetVolume(volume);
-        _settings.Volume = _mpv.Volume;
+        var clamped = Math.Clamp(volume, 0, 130);
+        _mpv.SetVolume(clamped);
+        // Reapplying the saved level (next file, mpv spawn) must not drop mute.
+        // Only an explicit volume nudge does.
+        if (clearMute && clamped > 0 && _mpv.Muted)
+        {
+            _mpv.SetMute(false);
+            _settings.Muted = false;
+        }
+        // Persist the requested level, not a possibly-stale observe echo from mpv.
+        _settings.Volume = clamped;
         _settings.SaveSoon();
     }
-    public void AdjustVolume(int delta) => SetVolume(_mpv.Volume + delta);
-    public void ToggleMute() => _mpv.ToggleMute();
+    public void AdjustVolume(int delta) => SetVolume(_mpv.Volume + delta, clearMute: true);
+    public void ToggleMute()
+    {
+        _mpv.ToggleMute();
+        _settings.Muted = _mpv.Muted;
+        _settings.SaveSoon();
+    }
     public void CycleSpeed()
     {
         _mpv.CycleSpeed();
@@ -2524,10 +2721,11 @@ internal sealed class PreviewController : IDisposable
         _subs.Reset();
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        cts.CancelAfter(ChildProcessLifetime.HttpBudget);
+        cts.CancelAfter(TimeSpan.FromSeconds(60));
         try
         {
             await _engine.CancelJobAsync(cts.Token).ConfigureAwait(false);
+            await _engine.WaitUntilIdleAsync(cts.Token).ConfigureAwait(false);
             await _engine.ReleaseGpuAsync(cts.Token).ConfigureAwait(false);
         }
         catch (Exception ex)
@@ -2549,6 +2747,7 @@ internal sealed class PreviewController : IDisposable
         Position = 0;
         Duration = 0;
         Paused = true;
+        _playbackEnded = false;
         _translateReady = null;
         _translateRunningOnCpu = false;
         _previewRetryAvailable = false;
@@ -2588,7 +2787,7 @@ internal sealed class PreviewController : IDisposable
         catch { /* ignore */ }
         _prefetch = null;
         _subs.Dispose();
-        using var cts = new CancellationTokenSource(ChildProcessLifetime.HttpBudget);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(90));
         try
         {
             await _engine.PrepareShutdownAsync(cts.Token).ConfigureAwait(false);
@@ -3460,6 +3659,28 @@ internal sealed class PreviewController : IDisposable
         _ = EnsureTranslateGpuUpgradeFireAndForgetAsync(ct);
     }
 
+    /// <summary>Stop GPU-resident llama so Whisper Vulkan can own the device exclusively.</summary>
+    private async Task DemoteTranslateGpuForAsrAsync(CancellationToken ct)
+    {
+        if (_disposed != 0 || _llama is null) return;
+        if (_translateRunningOnCpu || _translateReady != true) return;
+
+        await _translateGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (_disposed != 0 || _llama is null) return;
+            if (_translateRunningOnCpu) return;
+            _log("识别占用 GPU · 停止翻译模型 GPU 实例");
+            try { _llama.Stop(); } catch { /* ignore */ }
+            _translateReady = null;
+            _translateRunningOnCpu = false;
+        }
+        finally
+        {
+            try { _translateGate.Release(); } catch (ObjectDisposedException) { /* shutdown */ }
+        }
+    }
+
     private async Task EnsureTranslateGpuUpgradeAsync(CancellationToken ct)
     {
         if (_disposed != 0 || !_translateRunningOnCpu || _engine.HasActiveJob) return;
@@ -3509,7 +3730,7 @@ internal sealed class PreviewController : IDisposable
         }
     }
 
-    private async Task EnsureTranslateAsync(CancellationToken ct, bool forceGpuRestart = false)
+    private async Task EnsureTranslateAsync(CancellationToken ct, bool forceGpuRestart = false, bool preferCpu = false)
     {
         if (_disposed != 0) return;
         await _translateGate.WaitAsync(ct).ConfigureAwait(false);
@@ -3523,8 +3744,9 @@ internal sealed class PreviewController : IDisposable
 
             try
             {
-                // Do not unload ASR GPU while a job is still running (MT reconnect mid-preview).
-                var asrHoldsGpu = _engine.HasActiveJob;
+                // Keep Whisper VRAM while a job is active/winding down, or when prefetch
+                // asks for CPU-only MT so Vulkan ASR is not contested by llama ngl=99.
+                var asrHoldsGpu = _engine.HasActiveJob || preferCpu;
                 if (forceGpuRestart && _translateRunningOnCpu && !asrHoldsGpu)
                 {
                     _llama?.Stop();
@@ -3532,7 +3754,16 @@ internal sealed class PreviewController : IDisposable
                 }
                 else if (_translateReady == true && !forceGpuRestart)
                 {
-                    return;
+                    // Prefetch may have left llama on GPU — demote before overlapping Whisper.
+                    if (preferCpu && !_translateRunningOnCpu && _llama?.Spawned == true)
+                    {
+                        _llama.Stop();
+                        _translateReady = null;
+                    }
+                    else
+                    {
+                        return;
+                    }
                 }
 
                 if (!asrHoldsGpu)

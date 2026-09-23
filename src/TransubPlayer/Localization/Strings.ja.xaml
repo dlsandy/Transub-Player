@@ -58,6 +58,11 @@
     <sys:String x:Key="Str.Main.SubSource.OffOpen">字幕オフ · 自動 ASR/MT/オンライン検索なし</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">ライブ字幕</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">字幕ソース：オフ／オンライン／ローカルファイル／ライブ ASR</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Default">デフォルト</sys:String>
+    <sys:String x:Key="Str.Main.LocalSub.Tip">同フォルダの字幕ファイルを切替</sys:String>
+    <sys:String x:Key="Str.Main.Menu.LocalSidecars">ローカル字幕ファイル</sys:String>
+    <sys:String x:Key="Str.Main.Status.LocalSubSwitched">ローカル字幕を切替：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LocalSubSwitched">字幕：{0}</sys:String>
     <sys:String x:Key="Str.Main.NeedsInstall">インストールが必要</sys:String>
     <sys:String x:Key="Str.Main.Recent">最近</sys:String>
     <sys:String x:Key="Str.Main.RecentEmpty">（なし）</sys:String>
@@ -580,6 +585,30 @@
     <sys:String x:Key="Str.Main.Menu.StreamRecordStop">録画を停止</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenScreenshotFolder">スクリーンショットフォルダを開く</sys:String>
     <sys:String x:Key="Str.Main.Menu.OpenRecordingsFolder">録画フォルダを開く</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip">区間の切り出しを開始</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipStop">停止して保存</sys:String>
+    <sys:String x:Key="Str.Main.Menu.ClipBusy">切り出し中…</sys:String>
+    <sys:String x:Key="Str.Main.Menu.Clip.Tip">現在位置を始点にし、終点で C を押して保存。Shift+C でキャンセル。ffmpeg があれば無劣化、なければ再エンコードで少し待ちます。</sys:String>
+    <sys:String x:Key="Str.Main.Menu.OpenClipsFolder">動画のあるフォルダを開く</sys:String>
+    <sys:String x:Key="Str.Main.Clip.StopTip">停止して保存 · C</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Failed">この区間を切り出せませんでした</sys:String>
+    <sys:String x:Key="Str.Main.Clip.Reencoded">再エンコード</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSavedNote">保存しました · {0}（{1}）</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipNotLocal">ローカル動画のみ切り出せます。配信は「ストリームを録画」を使ってください。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipNotLocal">ローカル動画のみ</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipStarted">始点 {0} · 終点で C · Shift+C でキャンセル</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipStarted">始点 {0} · C で終了</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipCancelled">切り出しをキャンセルしました</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipCancelled">キャンセルしました</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipTooShort">短すぎるためキャンセルしました</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipTooShort">短すぎます</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipExtracting">切り出し中 {0}–{1}…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipExtracting">切り出し中…</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipSaved">保存しました · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipSaved">保存 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipFailed">失敗 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Osd.ClipFailed">切り出し失敗</sys:String>
+    <sys:String x:Key="Str.Main.Status.ClipBusy">切り出し中です。少々お待ちください</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.Title">ストリーム録画</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StartTip">ストリームを録画 · Ctrl+Shift+R</sys:String>
     <sys:String x:Key="Str.Main.StreamRecord.StopTip">録画を停止 · Ctrl+Shift+R</sys:String>
@@ -845,7 +874,7 @@
 先頭／末尾 Home/End · フレーム , .
 音量 ↑↓ · ホイール · 微シーク Shift+ホイール
 訳文／原文／二か国語 1/2/3 · 字幕切替 V/0 · 同期 Z/X ±0.5s
-プレイリスト L · 前／次 P/N · ミュート M · スクリーンショット S
+プレイリスト L · 前／次 P/N · ミュート M · スクリーンショット S · 区間切り出し C
 速度 [ / ] · フルスクリーン F/F11/Enter · 最前面 T · ヘルプ F1</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.Header">推奨の初回セットアップ</sys:String>
     <sys:String x:Key="Str.Settings.FirstRun.UiLang">UI 言語を選択済み</sys:String>
@@ -1047,7 +1076,7 @@
 先頭／末尾 Home/End · フレーム , .
 音量 ↑↓ · ホイール · 微シーク Shift+ホイール
 EN／原文／二か国語 1/2/3（訳文ターゲット＝英語時）· 字幕 V/0 · 同期 Z/X ±0.5s
-プレイリスト L · 前／次 P/N · ミュート M · スクリーンショット S
+プレイリスト L · 前／次 P/N · ミュート M · スクリーンショット S · 区間切り出し C
 速度ループ／リセット [ / ] · フルスクリーン F/F11/Enter · 最前面 T · ヘルプ F1</sys:String>
 
 </ResourceDictionary>

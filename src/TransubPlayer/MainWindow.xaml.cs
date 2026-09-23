@@ -53,6 +53,7 @@ public partial class MainWindow : Window
         AlwaysOnTopMenu.IsChecked = _settings.AlwaysOnTop;
         VolumeBar.Value = Math.Clamp(_settings.Volume, 0, 130);
         VolumeLabel.Text = ((int)VolumeBar.Value).ToString();
+        ApplyMuteButton(_settings.Muted || VolumeBar.Value <= 0);
         SpeedButton.Content = $"{(_settings.Speed <= 0 ? 1.0 : _settings.Speed):0.##}x";
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
@@ -237,6 +238,8 @@ public partial class MainWindow : Window
         AlwaysOnTopMenu.IsChecked = _settings.AlwaysOnTop;
         VolumeBar.Value = Math.Clamp(_settings.Volume, 0, 130);
         VolumeLabel.Text = ((int)VolumeBar.Value).ToString();
+        if (_preview is null)
+            ApplyMuteButton(_settings.Muted || VolumeBar.Value <= 0);
         SpeedButton.Content = $"{(_settings.Speed <= 0 ? 1.0 : _settings.Speed):0.##}x";
         ApplyHideTimerInterval();
         SeekBackButton.ToolTip = Loc.Format("Main.Transport.SeekBack", _settings.SeekStepSeconds);
@@ -1281,6 +1284,7 @@ public partial class MainWindow : Window
         _clickTimer.Stop();
         Interlocked.Increment(ref _openGen);
         try { _openCts?.Cancel(); } catch { /* ignore */ }
+        CancelVideoClip();
         _openCts?.Dispose();
         _openCts = null;
         WaitZhPopup.IsOpen = false;

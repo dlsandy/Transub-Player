@@ -18,6 +18,7 @@ public partial class MainWindow
                 if (AppMenu is { IsOpen: true })
                     AppMenu.IsOpen = false;
                 RefreshModelMenus();
+                RefreshClipUi();
             };
         PlayerHost.NativeLeftButtonDown += clickCount =>
         {
@@ -58,7 +59,7 @@ public partial class MainWindow
         {
             if (isRepeat && key == Key.Space)
                 return;
-            HandlePlaybackKey(key);
+            HandlePlaybackKey(key, isRepeat);
         };
     }
 
@@ -88,7 +89,7 @@ public partial class MainWindow
         {
             if (ControlBarComboStealsFocus(e))
                 CloseControlBarDropdowns();
-            if (HandlePlaybackKey(Key.Space))
+            if (HandlePlaybackKey(Key.Space, e.IsRepeat))
                 e.Handled = true;
             return;
         }
@@ -100,12 +101,12 @@ public partial class MainWindow
         if (!playbackArrow && e.OriginalSource is ComboBox or ComboBoxItem)
             return;
 
-        if (HandlePlaybackKey(e.Key))
+        if (HandlePlaybackKey(e.Key, e.IsRepeat))
             e.Handled = true;
     }
 
     /// <returns>True when the key was consumed as a player shortcut.</returns>
-    private bool HandlePlaybackKey(Key key)
+    private bool HandlePlaybackKey(Key key, bool isRepeat = false)
     {
         if (!HasMedia)
         {
@@ -207,6 +208,13 @@ public partial class MainWindow
                 return true;
             case Key.S when !ctrl:
                 Screenshot_Click(this, new RoutedEventArgs());
+                return true;
+            case Key.C when !ctrl && !Keyboard.Modifiers.HasFlag(ModifierKeys.Alt):
+                if (isRepeat) return true;
+                if (shift)
+                    CancelClipMark();
+                else
+                    _ = ToggleVideoClipAsync();
                 return true;
             case Key.OemOpenBrackets:
                 _preview?.CycleSpeed();
@@ -321,6 +329,7 @@ public partial class MainWindow
     private bool ControlBarComboStealsFocus(KeyEventArgs e)
     {
         if (SubSourceBox is { IsDropDownOpen: true }
+            || LocalSubBox is { IsDropDownOpen: true }
             || SourceLangBox is { IsDropDownOpen: true }
             || TranslateTargetBarBox is { IsDropDownOpen: true }
             || StreamQualityBox is { IsDropDownOpen: true })
@@ -333,6 +342,7 @@ public partial class MainWindow
             return false;
 
         return IsDescendantOf(SubSourceBox, src)
+               || IsDescendantOf(LocalSubBox, src)
                || IsDescendantOf(SourceLangBox, src)
                || IsDescendantOf(TranslateTargetBarBox, src)
                || IsDescendantOf(StreamQualityBox, src);
@@ -342,6 +352,8 @@ public partial class MainWindow
     {
         if (SubSourceBox is { IsDropDownOpen: true })
             SubSourceBox.IsDropDownOpen = false;
+        if (LocalSubBox is { IsDropDownOpen: true })
+            LocalSubBox.IsDropDownOpen = false;
         if (SourceLangBox is { IsDropDownOpen: true })
             SourceLangBox.IsDropDownOpen = false;
         if (TranslateTargetBarBox is { IsDropDownOpen: true })

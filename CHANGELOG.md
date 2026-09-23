@@ -2,30 +2,59 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.5.4] — 2026-09-22
+
+### Added
+
+- **Control-bar Transub button:** language/translate icon next to the subtitle controls opens Transub to generate high-quality / production subtitles (same handoff as the app menu).
+- **Clip a local segment:** press `C` to mark the start, `C` again at the end to save; `Shift+C` cancels. Saves beside the video when the folder is writable (otherwise under the clips folder). Uses ffmpeg stream-copy when installed; otherwise re-encodes (may take a moment).
+
+### Fixed
+
+- After a video finishes and playback stops, Play or Space starts it again from the beginning.
+- Mute is remembered across files and after restart (volume nudges clear mute).
+
+---
+
+
+
 ## [1.5.3] — 2026-09-10
+
+
 
 ### Added
 
 - When several local subtitle files sit next to the video (`video.srt`, `video.zh-cn.srt`, …), switch among them from the control bar or the Subtitles menu.
+
+
 
 ### Improved
 
 - More stable GPU recognition when switching videos or running playlist prefetch: wait for Whisper to finish releasing before the next job, and free translation GPU when ASR needs Vulkan.
 - Playlist subtitle prefetch only queues the next few items, not the entire remaining list.
 
+
+
 ### Fixed
 
 - Volume changes from the player (slider, wheel, or arrow keys) are remembered after restart.
 - Opening a livestream no longer fails with "No process is associated with this object".
+- Loading a local sidecar with the video no longer races and leaves the subtitle track blank.
 
 ---
 
+
+
 ## [1.5.2] — 2026-09-02
+
+
 
 ### Improved
 
 - **Translation + recognition coordination:** Translation starts on demand while recognition is still running, so translated subtitles appear sooner.
 - **Automatic translation port switch:** If the translation port is in use, the player picks another port so translation does not fail.
+
+
 
 ### Fixed
 
@@ -33,7 +62,11 @@
 
 ---
 
+
+
 ## [1.5.1] — 2026-09-01
+
+
 
 ### Added
 
@@ -41,6 +74,8 @@
 - Switch translation / source / dual subtitles (shortcuts `1` / `2` / `3`); Chinese / Japanese / Korean / English.
 - Stream playback and recording; optional GPU acceleration (Vulkan).
 - Multilingual README (English / 简体中文 / 日本語 / 한국어) and product screenshot.
+
+
 
 ### Distribution
 

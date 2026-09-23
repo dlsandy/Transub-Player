@@ -74,6 +74,7 @@ internal static class AppPaths
     public static string PreviewDir => EnsureSub("preview");
     public static string LogsDir => EnsureSub("logs");
     public static string ScreenshotsDir => EnsureSub("screenshots");
+    public static string ClipsDir => EnsureSub("clips");
     public static string RecordingsDir => EnsureSub("recordings");
     public static string CacheDir => EnsureSub("cache");
     public static string ModelsDir => EnsureSub("models");

@@ -141,7 +141,8 @@ public partial class MainWindow
             RecentFiles.Add(_settings, path);
             _settings.Save();
             RefreshRecentMenu();
-            _preview.SetVolume((int)VolumeBar.Value);
+            // Prefer persisted settings — VolumeBar may briefly lag behind after mpv spawn.
+            _preview.SetVolume(_settings.Volume);
             if (_settings.Speed > 0) _preview.SetSpeed(_settings.Speed);
             if (_queue.Count > 1)
                 _preview.ShowOsd($"{_queue.Index + 1}/{_queue.Count}  {MediaSourceHelper.DisplayName(path)}");
@@ -254,12 +255,13 @@ public partial class MainWindow
         if (_settings.PrefetchPlaylistSubtitles && _queue.Count > 1 && _preview is not null)
         {
             // Auto-next opens the next file live; prefetch starts after that item.
+            // Cap like EnqueueUpcomingPrefetch — never dump the entire remainder onto Whisper.
             var start = _settings.AutoPlayNext && _queue.HasNext
                 ? _queue.Index + 2
                 : _queue.Index + 1;
             if (start < _queue.Count)
             {
-                var rest = _queue.Items.Skip(start).ToList();
+                var rest = _queue.Items.Skip(start).Take(3).ToList();
                 _preview.EnqueuePlaylistPrefetch(rest);
                 if (rest.Count > 0 && !_settings.AutoPlayNext)
                     SetStatus(Loc.Format("Main.Status.PrefetchAfterEnd", rest.Count));

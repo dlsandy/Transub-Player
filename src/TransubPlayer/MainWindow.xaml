@@ -294,6 +294,15 @@
                                                 Click="ModeDual_Click" ToolTip="{loc:Loc Main.Mode.Dual.Tip}" IsEnabled="False"/>
                                     </StackPanel>
                                 </Border>
+                                <!-- 同目录多外挂：仅当 >1 个时显示切换 -->
+                                <ComboBox x:Name="LocalSubBox" Style="{StaticResource ControlBarComboBox}"
+                                          DisplayMemberPath="Name"
+                                          SelectedValuePath="Id"
+                                          MinWidth="72" MaxWidth="120" MaxDropDownHeight="280"
+                                          Margin="0,0,2,0" FontSize="12"
+                                          Visibility="Collapsed" IsEnabled="False"
+                                          SelectionChanged="LocalSubBox_SelectionChanged"
+                                          ToolTip="{loc:Loc Main.LocalSub.Tip}"/>
                                 <!-- 字幕来源：图标按钮，展开为文字菜单 -->
                                 <ComboBox x:Name="SubSourceBox" Style="{StaticResource ControlBarIconComboBox}"
                                           DisplayMemberPath="Name"
@@ -304,6 +313,12 @@
                                           SelectionChanged="SubSourceBox_SelectionChanged"
                                           IsEnabled="False"
                                           ToolTip="{loc:Loc Main.SubSource.Tip}"/>
+                                <!-- 成片：交接到 Transub 生成高质量字幕 -->
+                                <Button x:Name="TransubButton" Style="{StaticResource TransportIconButton}"
+                                        Content="&#xF2B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                                        Click="Transub_Click"
+                                        ToolTip="{loc:Loc Main.Transub.Tip}"
+                                        Margin="2,0,0,0"/>
                             </StackPanel>
 
                             <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
@@ -321,6 +336,22 @@
                                 <Button x:Name="ScreenshotButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xE722;" FontFamily="Segoe MDL2 Assets"
                                         Click="Screenshot_Click" ToolTip="截图 · S" Margin="0,0,2,0" IsEnabled="False"/>
+                                <Border x:Name="ClipActivePanel" Background="#2A2410" BorderBrush="{StaticResource AccentBrush}"
+                                        BorderThickness="1" CornerRadius="6" Padding="6,2,4,2" Margin="0,0,2,0"
+                                        VerticalAlignment="Center" Visibility="Collapsed">
+                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="●" Foreground="{StaticResource AccentBrush}" FontSize="11"
+                                                   VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                        <TextBlock x:Name="ClipRangeLabel" Text="00:00"
+                                                   Foreground="#FFE7B0" FontSize="12" FontFamily="Consolas, Cascadia Mono, Segoe UI"
+                                                   VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <Button x:Name="ClipStopButton" Style="{StaticResource TransportIconButton}"
+                                                Content="&#xE71A;" FontFamily="Segoe MDL2 Assets"
+                                                Width="28" Height="26" FontSize="12"
+                                                Click="ToggleClip_Click"
+                                                ToolTip="{loc:Loc Main.Clip.StopTip}"/>
+                                    </StackPanel>
+                                </Border>
                                 <ComboBox x:Name="StreamQualityBox" Style="{StaticResource ControlBarComboBox}"
                                           DisplayMemberPath="Label"
                                           SelectedValuePath="Id"
@@ -389,6 +420,8 @@
                                     <MenuItem Header="{loc:Loc Main.Menu.SubDelayLater}" Click="SubDelayLater_Click" InputGestureText="Z"/>
                                     <MenuItem Header="{loc:Loc Main.Menu.SubDelayEarlier}" Click="SubDelayEarlier_Click" InputGestureText="X"/>
                                     <Separator/>
+                                    <MenuItem x:Name="LocalSubMenu" Header="{loc:Loc Main.Menu.LocalSidecars}"
+                                              Visibility="Collapsed" IsEnabled="False"/>
                                     <MenuItem x:Name="FindOnlineSubMenu" Header="{loc:Loc Main.Menu.FindOnlineSubtitles}"
                                               Click="FindOnlineSubtitles_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="RePreviewMenu" Header="{loc:Loc Main.Menu.RePreview}" Click="RePreview_Click" IsEnabled="False"/>
@@ -418,10 +451,14 @@
                                 </MenuItem>
                                 <Separator/>
                                 <MenuItem x:Name="ScreenshotMenu" Header="{loc:Loc Main.Menu.Screenshot}" Click="Screenshot_Click" InputGestureText="S" IsEnabled="False"/>
+                                <MenuItem x:Name="ClipMenu" Header="{loc:Loc Main.Menu.Clip}"
+                                          ToolTip="{loc:Loc Main.Menu.Clip.Tip}"
+                                          Click="ToggleClip_Click" InputGestureText="C" IsEnabled="False"/>
                                 <MenuItem x:Name="RecordMenu" Header="{loc:Loc Main.Menu.StreamRecord}" Click="ToggleStreamRecord_Click"
                                           InputGestureText="Ctrl+Shift+R" IsEnabled="False"/>
                                 <MenuItem Header="{loc:Loc Main.Menu.Folders}">
                                     <MenuItem Header="{loc:Loc Main.Menu.OpenScreenshotFolder}" Click="OpenScreenshotFolder_Click"/>
+                                    <MenuItem Header="{loc:Loc Main.Menu.OpenClipsFolder}" Click="OpenClipsFolder_Click"/>
                                     <MenuItem Header="{loc:Loc Main.Menu.OpenRecordingsFolder}" Click="OpenRecordingsFolder_Click"/>
                                 </MenuItem>
                                 <MenuItem x:Name="PlaylistToggleMenu" Header="{loc:Loc Main.Playlist.ShowHide}" Click="TogglePlaylist_Click" InputGestureText="L"/>

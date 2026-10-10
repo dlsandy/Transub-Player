@@ -324,7 +324,12 @@ internal sealed class PreviewController : IDisposable
             OnZhFrontierProgress,
             OnZhTranslationFailed);
         _mpv.Log += log;
-        _mpv.TimeChanged += t => Position = t;
+        _mpv.TimeChanged += t =>
+        {
+            Position = t;
+            try { _subs.OnPlaybackPosition(t); }
+            catch { /* subtitle sync must not break playback clock */ }
+        };
         _mpv.DurationChanged += d =>
         {
             Duration = d;
@@ -1456,6 +1461,11 @@ internal sealed class PreviewController : IDisposable
                 PreviewPaths.DualSrt(mediaPath),
                 PreviewPaths.DisplaySrt(mediaPath));
 
+            ThrowIfStaleMedia(gen);
+            // Sense before cache / MT so Murasaki (JA-only) does not run under unresolved Auto.
+            await MaybeSenseSourceLanguageAsync(mediaPath, gen, ct).ConfigureAwait(false);
+            ThrowIfStaleMedia(gen);
+
             if (!partialRestart && PreviewPaths.HasReadyAsr(mediaPath))
             {
                 SetBootstrapPhase(BootstrapPhase.LoadingCache);
@@ -1476,10 +1486,6 @@ internal sealed class PreviewController : IDisposable
                     EndBootstrap();
                 return;
             }
-
-            ThrowIfStaleMedia(gen);
-            await MaybeSenseSourceLanguageAsync(mediaPath, gen, ct).ConfigureAwait(false);
-            ThrowIfStaleMedia(gen);
 
             // Re-probe after language sense (auto may resolve to a different installed model later).
             packs = await _engine.ProbePacksAsync(ct).ConfigureAwait(false);
@@ -1509,17 +1515,27 @@ internal sealed class PreviewController : IDisposable
                 PreviewPaths.TranslatedPreviewSrt(mediaPath, _settings.TranslateTarget),
                 PreviewPaths.DualSrt(mediaPath),
                 PreviewPaths.DisplaySrt(mediaPath));
-            if (WantsPreviewMt)
-                KickEnsureTranslate();
+            // Do not KickEnsureTranslate here — that would load llama on GPU then Demote kills it.
             _subs.WatchSource();
 
             // Start ASR before llama so status leaves「连接中」and source lines can appear.
             SetBootstrapPhase(BootstrapPhase.StartingAsr);
             PublishStatus(WantsPreviewMt ? Loc.Get("Main.Status.StartingAsrMt") : Loc.Get("Main.Status.StartingAsr"));
 
-            // Prefetch MT may have loaded llama on Vulkan — free GPU before Whisper.
+            // Prefetch / prior media may have left llama on Vulkan — free GPU before Whisper.
             await DemoteTranslateGpuForAsrAsync(ct).ConfigureAwait(false);
             ThrowIfStaleMedia(gen);
+
+            // DurationChanged may lag OpenMedia; brief wait so KnownDuration is not 0.
+            if (Duration <= 1)
+            {
+                for (var i = 0; i < 10 && Duration <= 1; i++)
+                {
+                    try { await Task.Delay(50, ct).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { throw; }
+                    ThrowIfStaleMedia(gen);
+                }
+            }
 
             var body = new AsrJobRequest(
                 mediaPath,
@@ -1528,6 +1544,7 @@ internal sealed class PreviewController : IDisposable
                 AsrModel,
                 ActiveScene.ContentProfile,
                 StartFromSeconds: startFrom,
+                KnownDurationSec: Duration > 1 ? Duration : 0,
                 SeedCues: seedCues);
             await _engine.StartJobAsync(
                 body,
@@ -2335,7 +2352,11 @@ internal sealed class PreviewController : IDisposable
         if (!WantsPreviewMt)
         {
             _subs.RefreshDisplaySub();
-            ShowOsd(Loc.Get(osdSourceOnlyKey), 2200);
+            ShowOsd(
+                Loc.Get(MtRouteUnsupportedByModel
+                    ? "Main.Osd.MtRouteUnsupported"
+                    : osdSourceOnlyKey),
+                2800);
             StateChanged?.Invoke();
             return;
         }
@@ -2378,10 +2399,75 @@ internal sealed class PreviewController : IDisposable
 
     private void ResetTranslateStack()
     {
-        _translateReady = null;
-        _translateRunningOnCpu = false;
-        try { _llama?.Dispose(); } catch { /* ignore */ }
-        _llama = null;
+        // Serialize with EnsureTranslate / Demote — dispose must not race mid-EnsureRunning.
+        bool entered;
+        try
+        {
+            entered = _translateGate.Wait(TimeSpan.FromSeconds(8));
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+
+        if (!entered)
+        {
+            // EnsureTranslate may still be inside multi-minute ngl retries — do not steal _llama.
+            _log("翻译栈重置跳过：启动仍在进行");
+            return;
+        }
+
+        try
+        {
+            _translateReady = null;
+            _translateRunningOnCpu = false;
+            try { _llama?.Dispose(); } catch { /* ignore */ }
+            _llama = null;
+        }
+        finally
+        {
+            try { _translateGate.Release(); } catch (ObjectDisposedException) { /* shutdown */ }
+        }
+    }
+
+    /// <summary>Stop/dispose llama under the translate gate when possible (shutdown / Dispose).</summary>
+    private void TearDownLlama(TimeSpan gateWait)
+    {
+        bool entered;
+        try
+        {
+            entered = _translateGate.Wait(gateWait);
+        }
+        catch (ObjectDisposedException)
+        {
+            try { _llama?.Dispose(); } catch { /* ignore */ }
+            _llama = null;
+            return;
+        }
+
+        try
+        {
+            _translateReady = null;
+            _translateRunningOnCpu = false;
+            if (entered)
+            {
+                try { _llama?.Dispose(); } catch { /* ignore */ }
+                _llama = null;
+            }
+            else
+            {
+                // Do not Dispose/null — EnsureTranslate may hold a local snapshot mid-EnsureRunning.
+                try { _llama?.Stop(); } catch { /* ignore */ }
+                _log("翻译退出：门闩忙，已停止 llama 进程");
+            }
+        }
+        finally
+        {
+            if (entered)
+            {
+                try { _translateGate.Release(); } catch (ObjectDisposedException) { /* ignore */ }
+            }
+        }
     }
 
     public async Task ApplyTranslateEnabledAsync(CancellationToken ct = default)
@@ -2797,8 +2883,7 @@ internal sealed class PreviewController : IDisposable
             _log("退出清理引擎：" + ex.Message);
         }
 
-        try { _llama?.Dispose(); } catch { /* ignore */ }
-        _llama = null;
+        TearDownLlama(TimeSpan.FromSeconds(30));
         try { _translateGate.Dispose(); } catch { /* ignore */ }
         try { _engine.Dispose(); } catch { /* ignore */ }
         try { _mpv.Dispose(); } catch { /* ignore */ }
@@ -2817,8 +2902,7 @@ internal sealed class PreviewController : IDisposable
         try { _prefetch?.Dispose(); } catch { /* ignore */ }
         _prefetch = null;
         try { _subs.Dispose(); } catch { /* ignore */ }
-        try { _llama?.Dispose(); } catch { /* ignore */ }
-        _llama = null;
+        TearDownLlama(TimeSpan.FromSeconds(8));
         try { _translateGate.Dispose(); } catch { /* ignore */ }
         try { _engine.Dispose(); } catch { /* ignore */ }
         try { _mpv.Dispose(); } catch { /* ignore */ }
@@ -2827,7 +2911,15 @@ internal sealed class PreviewController : IDisposable
     }
 
     private bool WantsPreviewMt =>
-        MtRoute.WantsTranslation(ActiveMtRoute) && _settings.TranslateEnabled && !_mtDisabledForSession;
+        MtRoute.WantsTranslation(ActiveMtRoute)
+        && _settings.TranslateEnabled
+        && !_mtDisabledForSession
+        && TranslateModels.SupportsRoute(_settings.TranslateModelId, ActiveMtRoute);
+
+    private bool MtRouteUnsupportedByModel =>
+        _settings.TranslateEnabled
+        && MtRoute.WantsTranslation(ActiveMtRoute)
+        && !TranslateModels.SupportsRoute(_settings.TranslateModelId, ActiveMtRoute);
 
     /// <summary>Display modes that expect translated lines (not source-only / off).</summary>
     private bool WantsTranslatedDisplay
@@ -3637,7 +3729,7 @@ internal sealed class PreviewController : IDisposable
         => $"{ModelPicker.Normalize(_settings.AsrModel)}|{ActiveScene.Language}|{_settings.TranslateTarget}|{_settings.TranslateEnabled}|{TranslateModels.Normalize(_settings.TranslateModelId)}";
 
     private IReadOnlyList<string> PreferredGgufs
-        => TranslateModels.PreferredFilenames;
+        => TranslateModels.PreferredFilenamesFor(_settings.TranslateModelId);
 
     private void KickEnsureTranslate()
     {
@@ -3663,13 +3755,16 @@ internal sealed class PreviewController : IDisposable
     private async Task DemoteTranslateGpuForAsrAsync(CancellationToken ct)
     {
         if (_disposed != 0 || _llama is null) return;
-        if (_translateRunningOnCpu || _translateReady != true) return;
+        // OpenMedia clears _translateReady without Stop — demote by process state, not readiness flag.
+        if (_translateRunningOnCpu) return;
+        if (_llama.Spawned != true && _translateReady != true) return;
 
         await _translateGate.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             if (_disposed != 0 || _llama is null) return;
             if (_translateRunningOnCpu) return;
+            if (_llama.Spawned != true && _translateReady != true) return;
             _log("识别占用 GPU · 停止翻译模型 GPU 实例");
             try { _llama.Stop(); } catch { /* ignore */ }
             _translateReady = null;
@@ -3754,8 +3849,18 @@ internal sealed class PreviewController : IDisposable
                 }
                 else if (_translateReady == true && !forceGpuRestart)
                 {
+                    // Settings / KickEnsureTranslate may change TranslateModelId while ready.
+                    var path = _llama?.ModelPath;
+                    var modelMismatch = path is not null
+                        && !TranslateModels.MatchesFamily(path, _settings.TranslateModelId);
+                    if (modelMismatch && _llama is not null)
+                    {
+                        _log("翻译模型已切换，正在重启 llama-server · " + Path.GetFileName(path));
+                        _llama.Stop();
+                        _translateReady = null;
+                    }
                     // Prefetch may have left llama on GPU — demote before overlapping Whisper.
-                    if (preferCpu && !_translateRunningOnCpu && _llama?.Spawned == true)
+                    else if (preferCpu && !_translateRunningOnCpu && _llama?.Spawned == true)
                     {
                         _llama.Stop();
                         _translateReady = null;
@@ -3770,11 +3875,12 @@ internal sealed class PreviewController : IDisposable
                     await _engine.ReleaseGpuAsync(ct).ConfigureAwait(false);
 
                 if (_disposed != 0) return;
-                _llama ??= new LlamaServerProcess();
+                // Local snapshot: Shutdown/Reset must not null the field under a successful start.
+                var llama = _llama ??= new LlamaServerProcess();
                 _status(asrHoldsGpu
                     ? Loc.Get("Main.Status.StartingMt.GpuBusy")
                     : Loc.Get("Main.Status.PreparingMt"));
-                await _llama.EnsureRunningAsync(
+                await llama.EnsureRunningAsync(
                         _settings,
                         _log,
                         ct,
@@ -3782,10 +3888,10 @@ internal sealed class PreviewController : IDisposable
                         preferCpu: asrHoldsGpu && !forceGpuRestart)
                     .ConfigureAwait(false);
                 if (_disposed != 0) return;
-                _settings.TranslateUrl = _llama.BaseUrl;
+                _settings.TranslateUrl = llama.BaseUrl;
                 _translateReady = true;
-                _translateRunningOnCpu = asrHoldsGpu && !forceGpuRestart && _llama.Spawned;
-                _log($"翻译模型就绪 · {_llama.BaseUrl}" + (_llama.ModelPath is null ? "" : " · " + Path.GetFileName(_llama.ModelPath)));
+                _translateRunningOnCpu = asrHoldsGpu && !forceGpuRestart && llama.Spawned;
+                _log($"翻译模型就绪 · {llama.BaseUrl}" + (llama.ModelPath is null ? "" : " · " + Path.GetFileName(llama.ModelPath)));
                 PublishStatus(BuildStatusLine());
                 MaybeOfferTranslateTargetEnTip();
             }
@@ -3959,6 +4065,8 @@ internal sealed class PreviewController : IDisposable
             return Loc.Format("Main.Status.Build.FirstCueEta", mode, firstEta);
         if (ActiveMtRoute.IsOff)
             return Loc.Format("Main.Status.Build.PreviewJa", mode);
+        if (MtRouteUnsupportedByModel)
+            return Loc.Format("Main.Status.Build.MtRouteUnsupported", mode);
         if (!_settings.TranslateEnabled
             && _displayMode is SubtitleDisplayMode.Zh or SubtitleDisplayMode.Dual)
             return Loc.Format("Main.Status.Build.TranslateOff", mode);

@@ -571,11 +571,13 @@ internal sealed class PreviewSubtitleSync : IDisposable
         var active = CueAt(snapshot, pos);
         var prevText = DisplayTextAt(_syncedCues, pos, mode);
         var nextText = active is null ? null : SubtitleFile.FormatCueBody(active, mode);
-        // Both null (gap) or equal on-screen text → safe to defer sub-reload.
         var onScreenUnchanged = string.Equals(prevText, nextText, StringComparison.Ordinal);
         var pathReady = string.Equals(_loadedDisplayPath, _displaySrt, StringComparison.OrdinalIgnoreCase);
 
-        if (!onScreenUnchanged || !pathReady)
+        // In a gap there is nothing to flicker — reload immediately so mpv picks up newly
+        // appended cues. Deferring here used wall-clock timers (breaks on pause / speed)
+        // and left playback stuck on the first loaded cue while display.srt already grew.
+        if (active is null || !onScreenUnchanged || !pathReady)
         {
             CancelDeferredReload();
             _reloadPending = false;
@@ -585,9 +587,9 @@ internal sealed class PreviewSubtitleSync : IDisposable
             return;
         }
 
-        // On-screen text is stable — keep current frame, reload before mpv needs unknown cues.
+        // On-screen text is stable mid-cue — keep current frame, reload before the next unknown cue.
         _applySub(_displaySrt!, false);
-        var deadline = active?.End ?? pos + 30;
+        var deadline = active.End;
         foreach (var c in snapshot)
         {
             if (c.Start <= pos + 0.02) continue;
@@ -599,6 +601,60 @@ internal sealed class PreviewSubtitleSync : IDisposable
 
         var delaySec = Math.Max(0.05, deadline - pos - 0.08);
         ScheduleDeferredReload(delaySec, snapshot);
+    }
+
+    /// <summary>
+    /// Playhead tick: if we entered (or are about to enter) a cue mpv never reloaded, sync now.
+    /// Covers pause/speed drift of the deferred wall-clock timer.
+    /// </summary>
+    public void OnPlaybackPosition(double pos)
+    {
+        if (_disposed || _usingExistingSub || _displaySrt is null) return;
+
+        var mode = _getDisplayMode();
+        var forceReload = false;
+        var flushDeferred = false;
+        lock (_cueLock)
+        {
+            if (_cues.Count == 0) return;
+            var active = CueAt(_cues, pos);
+            if (active is not null && !CueKnownSynced(active, mode))
+            {
+                forceReload = true;
+            }
+            else if (_reloadPending)
+            {
+                foreach (var c in _cues)
+                {
+                    if (c.Start <= pos + 0.02) continue;
+                    if (CueKnownSynced(c, mode)) continue;
+                    if (c.Start - pos <= 1.0)
+                        flushDeferred = true;
+                    break;
+                }
+            }
+        }
+
+        if (forceReload)
+        {
+            CancelDeferredReload();
+            _reloadPending = false;
+            List<Cue> snapshot;
+            lock (_cueLock)
+            {
+                snapshot = _cues
+                    .Select(c => new Cue { Index = c.Index, Start = c.Start, End = c.End, Text = c.Text, Zh = c.Zh })
+                    .ToList();
+            }
+
+            _applySub(_displaySrt, true);
+            _loadedDisplayPath = _displaySrt;
+            _syncedCues = snapshot;
+            return;
+        }
+
+        if (flushDeferred)
+            FlushPendingSubReload();
     }
 
     private void ScheduleDeferredReload(double delaySec, List<Cue> snapshotForSync)

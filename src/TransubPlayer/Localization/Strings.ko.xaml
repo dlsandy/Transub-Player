@@ -915,7 +915,11 @@
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">품질 우선</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
-    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">기본 번역 모델 (약 2.5 GB). 실시간 자막 번역에 적합합니다.</sys:String>
+    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">기본 번역 모델(약 2.5 GB). 다국어 실시간 자막용.</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki">Murasaki 4B (일→중)</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki.Hint">ACGN 일→중 강화(약 2.5 GB). 일→중/번체만. 실시간용으로 CoT 끔.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.MtRouteUnsupported">현재 번역 모델이 이 언어 쌍을 지원하지 않음 · 원문 표시(TranslateGemma로 전환 가능)</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtRouteUnsupported">생성 중 · {0} · 모델 미지원 · 원문만</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Zh">번역</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.En">영어</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Src">원문</sys:String>

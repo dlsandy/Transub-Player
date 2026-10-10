@@ -182,22 +182,75 @@ internal static class PreviewTextSanitize
 
     public static void CleanAsrCues(IList<Cue> cues, AppSettings settings, string? contentProfile = null, int startIndex = 0)
     {
-        if (!settings.TextSanitizeEnabled) return;
         startIndex = Math.Clamp(startIndex, 0, cues.Count);
-        for (var i = cues.Count - 1; i >= startIndex; i--)
+        if (settings.TextSanitizeEnabled)
         {
-            var cleaned = CleanAsr(cues[i].Text, settings, contentProfile);
-            if (string.IsNullOrWhiteSpace(cleaned))
+            for (var i = cues.Count - 1; i >= startIndex; i--)
             {
-                cues.RemoveAt(i);
-                continue;
-            }
+                var cleaned = CleanAsr(cues[i].Text, settings, contentProfile);
+                if (string.IsNullOrWhiteSpace(cleaned))
+                {
+                    cues.RemoveAt(i);
+                    continue;
+                }
 
-            cues[i].Text = cleaned;
+                cues[i].Text = cleaned;
+            }
         }
+
+        // Always collapse stuck ASR repeats (independent of text-sanitize style rules).
+        // Look one cue back so a streak that started before startIndex still collapses.
+        CollapseRepeatedSourceCues(cues, Math.Max(0, startIndex - 1));
 
         for (var i = 0; i < cues.Count; i++)
             cues[i].Index = i + 1;
+    }
+
+    /// <summary>
+    /// Whisper often sticks on one phrase and emits it every ~2s. Keep the first cue in a
+    /// same-text streak; drop the rest. Short debris (あ / ん) streaks are removed entirely.
+    /// </summary>
+    internal static void CollapseRepeatedSourceCues(IList<Cue> cues, int startIndex = 0)
+    {
+        if (cues.Count < 2) return;
+        startIndex = Math.Clamp(startIndex, 0, cues.Count - 1);
+        var i = startIndex;
+        while (i < cues.Count)
+        {
+            var key = JaNormKey(cues[i].Text);
+            if (key.Length == 0)
+            {
+                i++;
+                continue;
+            }
+
+            var j = i + 1;
+            while (j < cues.Count && string.Equals(JaNormKey(cues[j].Text), key, StringComparison.Ordinal))
+                j++;
+            var streak = j - i;
+            if (streak < 2)
+            {
+                i++;
+                continue;
+            }
+
+            // Mono / ultra-short spam filling silence — drop the whole run.
+            if (key.Length <= 2 && streak >= 3)
+            {
+                for (var k = j - 1; k >= i; k--)
+                    cues.RemoveAt(k);
+                continue;
+            }
+
+            // Same phrase stuck across windows — keep first timing, drop echoes.
+            if (key.Length >= 3 || streak >= 3)
+            {
+                for (var k = j - 1; k > i; k--)
+                    cues.RemoveAt(k);
+            }
+
+            i++;
+        }
     }
 
     /// <summary>Drop stuck identical ZH across adjacent cues with different JA.</summary>

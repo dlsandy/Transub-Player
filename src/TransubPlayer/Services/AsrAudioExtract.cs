@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Text.RegularExpressions;
 using TransubPlayer.Localization;
 
 namespace TransubPlayer.Services;
@@ -7,6 +8,16 @@ namespace TransubPlayer.Services;
 /// <summary>Extract 16 kHz mono PCM WAV via mpv (no bundled ffmpeg).</summary>
 internal static class AsrAudioExtract
 {
+    /// <summary>Sentinel when CLI duration probe fails (mpv unavailable / no marker).</summary>
+    internal const double FallbackDurationSec = 3600;
+
+    internal static bool IsFallbackDuration(double sec)
+        => Math.Abs(sec - FallbackDurationSec) < 0.5;
+
+    private static readonly Regex DurationMarker = new(
+        @"^DURATION:([0-9]+(?:\.[0-9]+)?)\s*$",
+        RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     public static async Task<double> ProbeDurationAsync(string mediaPath, CancellationToken ct)
     {
         var mpv = MpvLocator.Find()
@@ -20,21 +31,48 @@ internal static class AsrAudioExtract
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        // mpv 0.41 removed CLI --get-property. Print raw seconds via term-playing-msg instead.
+        // --really-quiet suppresses the message; --frames=0 never fires it.
         psi.ArgumentList.Add("--no-config");
-        psi.ArgumentList.Add("--really-quiet");
         psi.ArgumentList.Add("--vo=null");
         psi.ArgumentList.Add("--ao=null");
-        psi.ArgumentList.Add("--frames=0");
-        psi.ArgumentList.Add("--get-property=duration");
+        psi.ArgumentList.Add("--frames=1");
+        psi.ArgumentList.Add("--quiet");
+        psi.ArgumentList.Add("--terminal=yes");
+        psi.ArgumentList.Add("--term-playing-msg=DURATION:${=duration}");
+        psi.ArgumentList.Add("--");
         psi.ArgumentList.Add(mediaPath);
 
-        var (exitCode, stdout, _) = await RunMpvAsync(psi, ct, readStdout: true).ConfigureAwait(false);
-        var text = stdout.Trim();
-        if (exitCode != 0)
-            return 3600;
-        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var sec) && sec > 0
-            ? sec
-            : 3600;
+        var (exitCode, stdout, stderr) = await RunMpvAsync(psi, ct, readStdout: true).ConfigureAwait(false);
+        if (TryParseDurationMarker(stdout, out var sec) || TryParseDurationMarker(stderr, out sec))
+        {
+            PlayerLog.WriteEngine($"ASR media duration={sec.ToString("0.###", CultureInfo.InvariantCulture)}s");
+            return sec;
+        }
+
+        var detail = TrimMpvError(string.IsNullOrWhiteSpace(stderr) ? stdout : stderr);
+        PlayerLog.WriteEngine(string.IsNullOrWhiteSpace(detail)
+            ? $"ASR duration probe failed (exit={exitCode}); assuming {FallbackDurationSec:0}s"
+            : $"ASR duration probe failed (exit={exitCode}); assuming {FallbackDurationSec:0}s · {detail}");
+        return FallbackDurationSec;
+    }
+
+    private static bool TryParseDurationMarker(string text, out double sec)
+    {
+        sec = 0;
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var m = DurationMarker.Match(line);
+            if (!m.Success)
+                continue;
+            if (double.TryParse(m.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out sec) && sec > 0)
+                return true;
+        }
+
+        return false;
     }
 
     public static async Task<string> ExtractWavAsync(

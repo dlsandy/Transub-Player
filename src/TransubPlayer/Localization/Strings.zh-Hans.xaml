@@ -915,7 +915,11 @@
     <sys:String x:Key="Str.SourceLang.Short.Zh">中文</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">品质优先</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
-    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">默认翻译模型，约 2.5 GB，适合边看边译。</sys:String>
+    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">默认翻译模型，约 2.5 GB，适合边看边译（多语种）。</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki">Murasaki 4B（日译中）</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki.Hint">ACGN 日译中增强，约 2.5 GB；仅日→中/繁，默认关思维链以保实时字幕。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.MtRouteUnsupported">当前翻译模型不支持此语向 · 已显示原文（可改回 TranslateGemma）</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtRouteUnsupported">生成中 · {0} · 模型不支持此语向 · 仅原文</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Zh">译文</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.En">English</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Src">原文</sys:String>

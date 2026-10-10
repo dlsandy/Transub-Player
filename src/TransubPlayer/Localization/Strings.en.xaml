@@ -915,7 +915,11 @@ speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">Quality first</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
-    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">Default MT model (~2.5 GB); suited to live subtitle translation.</sys:String>
+    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">Default MT model (~2.5 GB); live subtitles, multi-language.</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki">Murasaki 4B (JA→ZH)</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki.Hint">ACGN JA→Chinese (~2.5 GB); JA→ZH/ZH-Hant only; CoT off for live subtitles.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.MtRouteUnsupported">Current MT model does not support this language pair · showing source (switch back to TranslateGemma)</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtRouteUnsupported">Generating · {0} · model unsupported for this pair · source only</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Zh">Translation</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.En">English</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Src">Source</sys:String>

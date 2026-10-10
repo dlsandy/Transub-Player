@@ -73,7 +73,8 @@ internal sealed class AsrPipeline : IDisposable
     public Task RebindAfterSettingsAsync(CancellationToken ct)
     {
         _modelsRoot = AsrModelStore.ResolveModelsRoot(_settings);
-        if (_factoryGate.Wait(0))
+        // Never dispose the factory between ASR chunks — ProcessAsync may still need it.
+        if (!HasActiveJob && _factoryGate.Wait(0))
         {
             try { ReleaseModel(); }
             finally { _factoryGate.Release(); }
@@ -222,7 +223,7 @@ internal sealed class AsrPipeline : IDisposable
             {
                 EnsureFactory(modelPath);
                 await using var stream = File.OpenRead(wav);
-                await using var processor = _factory!.CreateBuilder().WithLanguage("auto").Build();
+                await using var processor = BuildProcessor("auto");
                 var detected = "";
                 await foreach (var seg in processor.ProcessAsync(stream, ct).ConfigureAwait(false))
                 {
@@ -325,29 +326,37 @@ internal sealed class AsrPipeline : IDisposable
         }
 
         // Never dispose WhisperFactory while ProcessAsync may still touch it.
+        // Honor the same shutdown budget — unbounded None can hang Window_Closing forever.
         try
         {
-            await WaitUntilIdleAsync(CancellationToken.None).ConfigureAwait(false);
+            await WaitUntilIdleAsync(ct).ConfigureAwait(false);
         }
         catch
         {
             var poll = _runTask;
             if (poll is not null)
             {
-                try { await poll.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false); }
-                catch { /* best-effort */ }
+                try { await poll.WaitAsync(TimeSpan.FromSeconds(30), ct).ConfigureAwait(false); }
+                catch { /* best-effort within budget */ }
             }
         }
 
         try
         {
-            await _factoryGate.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            await _factoryGate.WaitAsync(ct).ConfigureAwait(false);
             try { ReleaseModel(); }
             finally { _factoryGate.Release(); }
         }
         catch
         {
-            ReleaseModel();
+            // Timed out or cancelled — only release if nothing is still in ProcessAsync.
+            if (!IsRunTaskAlive && _factoryGate.Wait(0))
+            {
+                try { ReleaseModel(); }
+                finally { _factoryGate.Release(); }
+            }
+            else
+                _log("ASR shutdown: factory kept (run still active or gate busy)");
         }
     }
 
@@ -447,7 +456,24 @@ internal sealed class AsrPipeline : IDisposable
                 _factoryGate.Release();
             }
 
-            var duration = await AsrAudioExtract.ProbeDurationAsync(job.MediaPath, ct).ConfigureAwait(false);
+            // Prefer playing mpv duration — skips a second mpv spawn and avoids the 3600s probe sentinel
+            // overrunning short files (KnownDuration < 3600 would lose with a naive "longer wins" rule).
+            double duration;
+            if (job.KnownDurationSec > 1)
+            {
+                duration = job.KnownDurationSec;
+                _log($"ASR duration: using player={duration:0.#}s");
+            }
+            else
+            {
+                duration = await AsrAudioExtract.ProbeDurationAsync(job.MediaPath, ct).ConfigureAwait(false);
+                if (AsrAudioExtract.IsFallbackDuration(duration))
+                {
+                    // Prefetch / no player duration: do not burn ~1h of Whisper on a failed probe.
+                    throw new InvalidOperationException(
+                        Loc.Format("Main.Status.AsrFailed", $"duration probe failed (assumed {AsrAudioExtract.FallbackDurationSec:0}s)"));
+                }
+            }
             var whisperLang = MapWhisperLanguage(job.Language);
             var chunkStep = ChunkSec - ChunkOverlapSec;
             var totalChunks = Math.Max(1, (int)Math.Ceiling(duration / chunkStep));
@@ -480,19 +506,34 @@ internal sealed class AsrPipeline : IDisposable
                 incrementalSanitizeFrom = cleanFrom;
                 try
                 {
-                    wav = await AsrAudioExtract.ExtractWavAsync(job.MediaPath, start, len, ct).ConfigureAwait(false);
+                    try
+                    {
+                        wav = await AsrAudioExtract.ExtractWavAsync(job.MediaPath, start, len, ct).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex) when (chunk > firstChunk || cues.Count > 0)
+                    {
+                        // Overestimated duration / EOF: keep cues already written instead of failing the job.
+                        _log($"ASR extract ended early at {start:0.#}s · {ex.Message}");
+                        break;
+                    }
+
                     await _factoryGate.WaitAsync(ct).ConfigureAwait(false);
                     try
                     {
                         await using var stream = File.OpenRead(wav);
-                        await using var processor = string.Equals(whisperLang, "auto", StringComparison.OrdinalIgnoreCase)
-                            ? _factory!.CreateBuilder().Build()
-                            : _factory!.CreateBuilder().WithLanguage(whisperLang).Build();
+                        await using var processor = BuildProcessor(whisperLang);
+                        // Later chunks re-decode the overlap tail of the previous chunk — drop those cues.
+                        var overlapFloor = chunk > firstChunk ? start + ChunkOverlapSec : double.NegativeInfinity;
                         await foreach (var seg in processor.ProcessAsync(stream, ct).ConfigureAwait(false))
                         {
                             var text = (seg.Text ?? "").Trim();
                             if (string.IsNullOrWhiteSpace(text)) continue;
                             var cueStart = start + seg.Start.TotalSeconds;
+                            if (cueStart < overlapFloor - 0.05) continue;
                             var cueEnd = start + seg.End.TotalSeconds;
                             if (cueEnd <= cueStart + 0.04) cueEnd = cueStart + 0.2;
                             cues.Add(new Cue
@@ -564,6 +605,24 @@ internal sealed class AsrPipeline : IDisposable
         ReleaseModel();
         _factory = WhisperFactory.FromPath(modelPath);
         _loadedModelPath = modelPath;
+    }
+
+    /// <summary>
+    /// Build a Whisper processor. <see cref="WhisperProcessorBuilder.WithNoContext"/> turns off
+    /// conditioning on previous text (whisper.cpp <c>-mc 0</c>), which otherwise causes
+    /// forever-loop hallucinations (same cue every ~2s for minutes).
+    /// </summary>
+    private WhisperProcessor BuildProcessor(string whisperLang)
+    {
+        var builder = _factory!.CreateBuilder();
+        if (string.Equals(whisperLang, "auto", StringComparison.OrdinalIgnoreCase))
+            builder = builder.WithLanguageDetection();
+        else
+            builder = builder.WithLanguage(whisperLang);
+
+        // Soft / music / silence often triggers stuck phrases; no-context is the standard fix.
+        builder = builder.WithNoContext();
+        return builder.Build();
     }
 
     private void ReleaseModel()

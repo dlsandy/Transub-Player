@@ -25,11 +25,12 @@ internal static class StreamRecord
         return string.IsNullOrWhiteSpace(stem) ? "stream" : stem;
     }
 
-    public static string DefaultOutputPath(string displayName)
+    public static string DefaultOutputPath(string displayName, string? directory = null)
     {
         var stem = SanitizeStem(displayName);
         var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-        return Path.Combine(RecordingsDir, $"{stem}_{stamp}.mp4");
+        var dir = string.IsNullOrWhiteSpace(directory) ? RecordingsDir : directory;
+        return Path.Combine(dir, $"{stem}_{stamp}.mp4");
     }
 
     public static string EnsureOutputExtension(string path)

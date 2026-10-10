@@ -915,7 +915,11 @@
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">品質優先</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
-    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">既定の MT モデル（約 2.5 GB）；ライブ字幕翻訳向け。</sys:String>
+    <sys:String x:Key="Str.TranslateModel.TranslateGemma.Hint">既定の MT モデル（約 2.5 GB）；多言語のライブ字幕向け。</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki">Murasaki 4B（日→中）</sys:String>
+    <sys:String x:Key="Str.TranslateModel.Murasaki.Hint">ACGN 日中翻訳（約 2.5 GB）；日→中/繁のみ。ライブ字幕のため CoT オフ。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.MtRouteUnsupported">現在の翻訳モデルはこの言語対に非対応 · 原文表示（TranslateGemma に戻せる）</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtRouteUnsupported">生成中 · {0} · モデル非対応 · 原文のみ</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Zh">訳文</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.En">英語</sys:String>
     <sys:String x:Key="Str.Settings.SubMode.Src">原文</sys:String>

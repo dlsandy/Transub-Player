@@ -24,7 +24,7 @@ Set-Location $root
 $csproj = Join-Path $root "src\TransubPlayer\TransubPlayer.csproj"
 if (-not (Test-Path $csproj)) { throw "Project not found: $csproj" }
 
-$version = "1.5.4"
+$version = "1.5.5"
 Select-Xml -Path $csproj -XPath "//Version" -ErrorAction SilentlyContinue |
     ForEach-Object { if ($_.Node.InnerText) { $version = $_.Node.InnerText.Trim() } }
 
@@ -35,7 +35,6 @@ $publishDir = Join-Path $outRoot "_publish"
 $stageDir = Join-Path $outRoot "_stage"
 $portableStageDir = Join-Path $outRoot $packName
 $zipPath = Join-Path $outRoot "$packName.zip"
-$stableZip = Join-Path $outRoot "TransubPlayer-win-x64.zip"
 $setupPath = Join-Path $outRoot "TransubPlayer-$version-win-x64-setup.exe"
 $issPath = Join-Path $root "tools\installer\TransubPlayer.iss"
 
@@ -202,9 +201,6 @@ Keep this file next to TransubPlayer.exe so settings and models stay in .\data\
     try {
         & tar.exe -a -cf $zipPath $packName
         if ($LASTEXITCODE -ne 0) { throw "tar zip failed: $LASTEXITCODE" }
-
-        Copy-Item -LiteralPath $zipPath -Destination $stableZip -Force
-        Write-Host "稳定别名: $stableZip"
     }
     finally {
         Pop-Location
@@ -269,9 +265,6 @@ function Show-Summary {
         }
         if (-not $SkipZip -and (Test-Path $zipPath)) {
             Write-Host ("  便携 zip: {0} ({1:N1} MB)" -f $zipPath, ((Get-Item $zipPath).Length / 1MB))
-            if (Test-Path $stableZip) {
-                Write-Host "  更新用别名: $stableZip"
-            }
         }
     }
 
@@ -285,8 +278,7 @@ function Show-Summary {
     Write-Host ""
     Write-Host "发布到 GitHub / GitCode Releases 时请上传："
     Write-Host "  - TransubPlayer-$version-win-x64-setup.exe   （安装程序，推荐）"
-    Write-Host "  - TransubPlayer-$version-win-x64.zip         （便携包）"
-    Write-Host "  - TransubPlayer-win-x64.zip                  （应用内更新别名）"
+    Write-Host "  - TransubPlayer-$version-win-x64.zip         （便携包 / 应用内更新）"
     Write-Host "tag 用 v$version。"
 }
 

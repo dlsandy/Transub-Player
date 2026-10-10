@@ -426,15 +426,17 @@ internal static class AppUpdateService
                 sz = s;
 
             var score = 0;
-            if (n.Equals("TransubPlayer-win-x64.zip", StringComparison.OrdinalIgnoreCase))
-                score += 100;
             if (n.Contains("TransubPlayer", StringComparison.OrdinalIgnoreCase))
                 score += 40;
+            // Prefer versioned portable zip (TransubPlayer-{ver}-win-x64.zip).
             if (n.Contains(versionText, StringComparison.OrdinalIgnoreCase))
-                score += 20;
+                score += 30;
             if (n.Contains("win-x64", StringComparison.OrdinalIgnoreCase)
                 || n.Contains("win64", StringComparison.OrdinalIgnoreCase))
                 score += 10;
+            // Legacy unversioned alias still accepted if present on older releases.
+            if (n.Equals("TransubPlayer-win-x64.zip", StringComparison.OrdinalIgnoreCase))
+                score += 5;
             if (n.Contains("framework", StringComparison.OrdinalIgnoreCase))
                 score -= 30;
 

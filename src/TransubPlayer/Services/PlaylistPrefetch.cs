@@ -318,7 +318,10 @@ internal sealed class PlaylistPrefetch
         PreviewPaths.MarkAsrDone(mediaPath);
 
         var route = MtRoute.Resolve(scene.Language, _settings.TranslateTarget, scene.ContentProfile);
-        if (_translateWanted() && MtRoute.WantsTranslation(route) && _settings.TranslateEnabled)
+        if (_translateWanted()
+            && MtRoute.WantsTranslation(route)
+            && _settings.TranslateEnabled
+            && TranslateModels.SupportsRoute(_settings.TranslateModelId, route))
         {
             try
             {

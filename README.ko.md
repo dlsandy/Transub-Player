@@ -11,7 +11,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 시청 중 실시간 이중 언어 자막" width="900">
 </p>
 
-> Windows 데스크톱 플레이어 · 현재 버전 1.5.4  
+> Windows 데스크톱 플레이어 · 현재 버전 1.5.5  
 > [GitHub](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases)에서 설치 프로그램이나 포터블 패키지를 받으세요. 앱 안의「업데이트 확인」으로도 업그레이드할 수 있습니다.
 
 ---

@@ -38,7 +38,7 @@ public sealed class AppSettings
     /// <summary>Preview translation language: zh (default) | en | ja | ko.</summary>
     public string TranslateTarget { get; set; } = TranslateTargets.Zh;
     /// <summary>
-    /// Local MT GGUF preference: <c>translategemma-4b-q4</c> (default).
+    /// Local MT GGUF preference: <c>translategemma-4b-q4</c> (default) or <c>murasaki-4b-iq4xs</c>.
     /// </summary>
     public string TranslateModelId { get; set; } = TranslateModels.TranslateGemma4B;
     public string TranslateUrl { get; set; } = "http://127.0.0.1:39281";
@@ -78,6 +78,8 @@ public sealed class AppSettings
     public bool HideChromeInFullscreen { get; set; } = true;
     public double FullscreenHideDelaySec { get; set; } = 2.2;
     public string ScreenshotDir { get; set; } = "";
+    /// <summary>Last folder chosen for stream recording. Empty = default under app data.</summary>
+    public string StreamRecordDir { get; set; } = "";
     /// <summary>When false, newly opened files are not added to <see cref="RecentFiles"/>.</summary>
     public bool RememberRecentFiles { get; set; } = true;
     public int RecentFilesMax { get; set; } = 12;
@@ -145,6 +147,45 @@ public sealed class AppSettings
         var dir = AppPaths.ScreenshotsDir;
         Directory.CreateDirectory(dir);
         return dir;
+    }
+
+    public string ResolveStreamRecordDir()
+    {
+        if (!string.IsNullOrWhiteSpace(StreamRecordDir))
+        {
+            try
+            {
+                Directory.CreateDirectory(StreamRecordDir);
+                return StreamRecordDir;
+            }
+            catch
+            {
+                // fall through
+            }
+        }
+
+        var dir = AppPaths.RecordingsDir;
+        Directory.CreateDirectory(dir);
+        return dir;
+    }
+
+    /// <summary>Remember the folder from a successful Save dialog; no-op if path is empty/invalid.</summary>
+    public void RememberStreamRecordPath(string? outputPath)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath)) return;
+        try
+        {
+            var dir = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+            if (string.IsNullOrWhiteSpace(dir)) return;
+            Directory.CreateDirectory(dir);
+            if (string.Equals(StreamRecordDir, dir, StringComparison.OrdinalIgnoreCase)) return;
+            StreamRecordDir = dir;
+            SaveSoon();
+        }
+        catch
+        {
+            // ignore unusable paths
+        }
     }
 
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -249,6 +290,7 @@ public sealed class AppSettings
         HideChromeInFullscreen = copy.HideChromeInFullscreen;
         FullscreenHideDelaySec = copy.FullscreenHideDelaySec;
         ScreenshotDir = copy.ScreenshotDir;
+        StreamRecordDir = copy.StreamRecordDir;
         RememberRecentFiles = copy.RememberRecentFiles;
         RecentFilesMax = copy.RecentFilesMax;
         RecentFiles = copy.RecentFiles;

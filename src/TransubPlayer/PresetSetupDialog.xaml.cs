@@ -9,6 +9,7 @@ public partial class PresetSetupDialog : Window
     private readonly Func<Action<string>, CancellationToken, Task>? _runAutoInstall;
     private CancellationTokenSource? _installCts;
     private bool _installing;
+    private bool _allowClose;
 
     internal PresetSetupChoice Choice { get; private set; } = PresetSetupChoice.Cancel;
 
@@ -46,8 +47,7 @@ public partial class PresetSetupDialog : Window
         if (_runAutoInstall is null)
         {
             Choice = PresetSetupChoice.AutoInstall;
-            DialogResult = true;
-            Close();
+            FinishAndClose(dialogResult: true);
             return;
         }
 
@@ -62,8 +62,9 @@ public partial class PresetSetupDialog : Window
             await _runAutoInstall(UpdateProgress, _installCts.Token).ConfigureAwait(true);
             Choice = PresetSetupChoice.AutoInstall;
             ProgressLabel.Text = Loc.Get("Main.Deps.InstallDone");
-            DialogResult = true;
-            Close();
+            // Clear before Close — Window_Closing treats _installing as "user abort".
+            _installing = false;
+            FinishAndClose(dialogResult: true);
         }
         catch (OperationCanceledException)
         {
@@ -92,8 +93,7 @@ public partial class PresetSetupDialog : Window
     {
         if (_installing) return;
         Choice = PresetSetupChoice.ManualInstall;
-        DialogResult = true;
-        Close();
+        FinishAndClose(dialogResult: true);
     }
 
     private void Cancel_Click(object sender, RoutedEventArgs e)
@@ -105,8 +105,7 @@ public partial class PresetSetupDialog : Window
         }
 
         Choice = PresetSetupChoice.Cancel;
-        DialogResult = false;
-        Close();
+        FinishAndClose(dialogResult: false);
     }
 
     private void CancelInstall_Click(object sender, RoutedEventArgs e)
@@ -117,11 +116,18 @@ public partial class PresetSetupDialog : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (!_installing) return;
+        if (_allowClose || !_installing) return;
         // Keep window open until cancel finishes; request cancel instead of hard-close.
         e.Cancel = true;
         try { _installCts?.Cancel(); } catch { /* ignore */ }
         ProgressLabel.Text = Loc.Get("Main.Deps.InstallCancelling");
+    }
+
+    private void FinishAndClose(bool dialogResult)
+    {
+        _allowClose = true;
+        DialogResult = dialogResult;
+        Close();
     }
 
     private void SetInstallingUi(bool on)

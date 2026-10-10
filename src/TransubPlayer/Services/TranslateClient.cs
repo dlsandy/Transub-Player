@@ -11,6 +11,14 @@ internal sealed class TranslateClient : IDisposable
         @"^\s*(?:#?\s*)?(\d+)\s*[|．.、:：\-)]\s*(.+?)\s*$",
         RegexOptions.Compiled);
 
+    private static readonly Regex ThinkBlock = new(
+        @"<think>[\s\S]*?</think>",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex ThinkTag = new(
+        @"</?think>",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     /// <summary>Long-lived client shared across MT batches (HttpClient is designed for reuse).</summary>
     private static readonly HttpClient SharedHttp = new() { Timeout = TimeSpan.FromSeconds(90) };
 
@@ -97,12 +105,14 @@ internal sealed class TranslateClient : IDisposable
             throw new InvalidOperationException($"翻译模型 HTTP {(int)res.StatusCode}: {json[..Math.Min(240, json.Length)]}");
 
         using var doc = JsonDocument.Parse(json);
-        return doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+        var content = doc.RootElement.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString() ?? "";
+        return StripReasoning(content);
     }
 
     public static Dictionary<int, string> ParseNumbered(string raw, int expected)
     {
         var map = new Dictionary<int, string>();
+        raw = StripReasoning(raw);
         if (string.IsNullOrWhiteSpace(raw)) return map;
         var lines = raw.Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var line in lines)
@@ -131,9 +141,24 @@ internal sealed class TranslateClient : IDisposable
         return map;
     }
 
+    /// <summary>Drop Murasaki / Qwen CoT blocks so numbered parsing stays reliable.</summary>
+    public static string StripReasoning(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+            return raw ?? "";
+        var s = ThinkBlock.Replace(raw, "");
+        // Unclosed <think>… — drop from the opening tag through end (keep any text before it).
+        var open = s.IndexOf("<think>", StringComparison.OrdinalIgnoreCase);
+        if (open >= 0)
+            s = s[..open];
+        s = ThinkTag.Replace(s, "");
+        return s.Trim();
+    }
+
     private static string SystemPrompt(MtRoute route, string? contentProfile, string? translateModelId)
     {
-        _ = translateModelId;
+        if (TranslateModels.IsMurasaki(translateModelId))
+            return MurasakiPrompt(route, contentProfile);
         return TranslateGemmaPrompt(route, contentProfile);
     }
 
@@ -166,6 +191,26 @@ internal sealed class TranslateClient : IDisposable
                soft +
                " Output only the translations, no explanations." +
                " Strict format per line: index|translation. Do not merge lines. Do not invent names.";
+    }
+
+    /// <summary>
+    /// Murasaki ACGN JA→ZH prompt with CoT disabled for live subtitle latency.
+    /// </summary>
+    private static string MurasakiPrompt(MtRoute route, string? contentProfile)
+    {
+        var tgt = TranslateTargets.Normalize(route.Target);
+        var script = tgt == TranslateTargets.ZhHant
+            ? "请使用繁体中文（繁體），不要使用简体。"
+            : "请使用简体中文，不要使用繁体。";
+        var soft = IsAvSoft(contentProfile)
+            ? "保留成人语气、拟声与语气词，不要回避或净化。"
+            : "";
+        return "你是一位精通中日双语的资深ACGN翻译家，擅长轻小说、动画与游戏台词的日译中。" +
+               script +
+               "将每行日文译为流畅自然的中文，贴合二次元语境与人称。" +
+               soft +
+               "不要使用思维链，不要输出<think>标签、分析或解释，只输出译文。" +
+               "严格按行输出：序号|译文。不要合并行，不要编造人名。";
     }
 
     /// <summary>BCP-47-ish codes TranslateGemma accepts (prefer regionalized Chinese / Korean).</summary>

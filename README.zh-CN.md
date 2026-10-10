@@ -8,7 +8,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 边看边出双语字幕" width="900">
 </p>
 
-> Windows 本地播放器 · 当前版本 1.5.4  
+> Windows 本地播放器 · 当前版本 1.5.5  
 > 从 [GitHub](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) 下载安装程序或便携包即可使用。软件内也可「检查更新」检查并升级至新版本。
 
 ---

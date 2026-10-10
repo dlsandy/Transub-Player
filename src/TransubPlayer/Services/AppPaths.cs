@@ -166,12 +166,19 @@ internal static class AppPaths
             return Path.Combine(ProjectRoot, "data");
 
         if (IsPortable)
-            return Path.Combine(InstallRoot, "data");
+        {
+            var portable = Path.Combine(InstallRoot, "data");
+            // Program Files leftovers can look "portable" but are not writable for normal users.
+            if (TryEnsureWritableDirectory(portable))
+                return portable;
+        }
 
-        return Path.Combine(
+        var installed = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Transub Player",
             "data");
+        Directory.CreateDirectory(installed);
+        return installed;
     }
 
     private static bool DetectPortable()
@@ -184,10 +191,41 @@ internal static class AppPaths
             return true;
 
         // Legacy portable / early beta: side-by-side data without marker.
-        if (Directory.Exists(Path.Combine(root, "data")))
+        // Require a writable data/ — never treat Program Files installs as portable just
+        // because an empty or ACL-locked data folder exists next to the exe.
+        var sideBySide = Path.Combine(root, "data");
+        if (Directory.Exists(sideBySide) && IsDirectoryWritable(sideBySide))
             return true;
 
         return false;
+    }
+
+    private static bool TryEnsureWritableDirectory(string dir)
+    {
+        try
+        {
+            Directory.CreateDirectory(dir);
+            return IsDirectoryWritable(dir);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool IsDirectoryWritable(string dir)
+    {
+        try
+        {
+            var probe = Path.Combine(dir, ".write-probe-" + Guid.NewGuid().ToString("N"));
+            File.WriteAllText(probe, "");
+            File.Delete(probe);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static bool DetectDevTree(string root)
@@ -197,8 +235,25 @@ internal static class AppPaths
     private static string EnsureSub(string name)
     {
         var dir = Path.Combine(AppDataDir, name);
-        Directory.CreateDirectory(dir);
-        return dir;
+        try
+        {
+            Directory.CreateDirectory(dir);
+            return dir;
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
+        {
+            // Cached portable path became unwritable (ACL / Program Files). Fall back once.
+            _appDataDir = null;
+            _isPortable = false;
+            var fallback = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Transub Player",
+                "data",
+                name);
+            Directory.CreateDirectory(fallback);
+            _appDataDir = Path.GetDirectoryName(fallback);
+            return fallback;
+        }
     }
 
     private static string ResolveProjectRoot()

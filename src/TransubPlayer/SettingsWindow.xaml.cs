@@ -109,10 +109,9 @@ public partial class SettingsWindow : Window
         TranslateTargetBox.DisplayMemberPath = nameof(LabeledOption.Label);
         TranslateTargetBox.SelectedValuePath = nameof(LabeledOption.Value);
 
-        TranslateModelBox.ItemsSource = new[]
-        {
-            new LabeledOption(Loc.Get("TranslateModel.TranslateGemma"), TranslateModels.TranslateGemma4B),
-        };
+        TranslateModelBox.ItemsSource = TranslateModels.Selectable
+            .Select(id => new LabeledOption(Loc.Get(TranslateModels.LabelKey(id)), id))
+            .ToArray();
         TranslateModelBox.DisplayMemberPath = nameof(LabeledOption.Label);
         TranslateModelBox.SelectedValuePath = nameof(LabeledOption.Value);
 
@@ -568,7 +567,7 @@ public partial class SettingsWindow : Window
             ModelsStatusLabel.Text = $"{summary.AsrStatus} · {summary.GgufStatus}";
 
         if (TranslateModelHintLabel is not null)
-            TranslateModelHintLabel.Text = Loc.Get("TranslateModel.TranslateGemma.Hint");
+            TranslateModelHintLabel.Text = Loc.Get(TranslateModels.HintKey(_settings.TranslateModelId));
 
         if (AsrCardStatusLabel is not null)
         {

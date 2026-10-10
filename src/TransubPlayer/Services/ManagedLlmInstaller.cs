@@ -28,6 +28,18 @@ internal static class ManagedLlmCatalog
         "约 2.5 GB",
         SizeHintMb: 2490);
 
+    /// <summary>
+    /// Optional JA→ZH ACGN model (CoT off for live subtitles).
+    /// Uses mradermacher quant — official Murasaki-Project GGUF often 404s on hf-mirror.
+    /// </summary>
+    public static readonly ManagedGgufSpec Murasaki4B = new(
+        TranslateModels.Murasaki4B,
+        "Murasaki 4B IQ4_XS",
+        "Murasaki-4B-v0.3.IQ4_XS.gguf",
+        "https://huggingface.co/mradermacher/Murasaki-4B-v0.3-GGUF/resolve/main/Murasaki-4B-v0.3.IQ4_XS.gguf",
+        "约 2.5 GB",
+        SizeHintMb: 2490);
+
     /// <summary>Default download for wizard / one-click.</summary>
     public static ManagedGgufSpec PreferDefault() => TranslateGemma4B;
 
@@ -121,7 +133,7 @@ internal static class ManagedLlmInstaller
     }
 
     /// <summary>
-    /// True when any TranslateGemma GGUF is present.
+    /// True when any managed translation GGUF (TranslateGemma / Murasaki) is present.
     /// Used by wizard completion when the default MT path still applies.
     /// </summary>
     public static bool HasAnyTranslationGguf(string? root = null)
@@ -131,7 +143,7 @@ internal static class ManagedLlmInstaller
         var models = Path.Combine(root, "models");
         if (!Directory.Exists(models)) return false;
         var minPreferred = ManagedLlmCatalog.MinGgufBytes(ManagedLlmCatalog.PreferDefault());
-        foreach (var name in LlamaServerProcess.PreferredModels)
+        foreach (var name in TranslateModels.PreferredFilenames)
         {
             var p = Path.Combine(models, name);
             if (IsCompleteGguf(p, minPreferred) && IsTranslationGguf(p))
@@ -158,7 +170,7 @@ internal static class ManagedLlmInstaller
         if (!Directory.Exists(models)) return false;
         var spec = TranslateModels.ResolveSpec(modelId);
         var minBytes = ManagedLlmCatalog.MinGgufBytes(spec);
-        foreach (var name in TranslateModels.PreferredFilenames)
+        foreach (var name in TranslateModels.PreferredFilenamesFor(modelId))
         {
             var p = Path.Combine(models, name);
             if (IsCompleteGguf(p, minBytes) && TranslateModels.MatchesFamily(p, modelId))
@@ -176,12 +188,14 @@ internal static class ManagedLlmInstaller
         }
     }
 
-    /// <summary>TranslateGemma — not bare chat Instruct / Qwen models.</summary>
+    /// <summary>Managed MT GGUFs only — not bare chat Instruct weights.</summary>
     public static bool IsTranslationGguf(string path)
     {
         var name = Path.GetFileName(path);
-        return !string.IsNullOrWhiteSpace(name)
-               && name.Contains("translategemma", StringComparison.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(name))
+            return false;
+        return name.Contains("translategemma", StringComparison.OrdinalIgnoreCase)
+               || name.Contains("murasaki", StringComparison.OrdinalIgnoreCase);
     }
 
     public static bool IsCompleteGguf(string path, long minBytes)
@@ -244,7 +258,8 @@ internal static class ManagedLlmInstaller
 
             var exe = Directory.EnumerateFiles(extractTemp, "llama-server.exe", SearchOption.AllDirectories).FirstOrDefault()
                 ?? throw new InvalidOperationException("压缩包内未找到 llama-server.exe。");
-            var exeDir = Path.GetDirectoryName(exe)!;
+            var exeDir = Path.GetDirectoryName(exe)
+                ?? throw new InvalidOperationException("无法解析 llama-server.exe 所在目录。");
             foreach (var file in Directory.EnumerateFiles(exeDir, "*", SearchOption.TopDirectoryOnly))
             {
                 var dest = Path.Combine(runtimeDir, Path.GetFileName(file));

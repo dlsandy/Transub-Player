@@ -54,9 +54,11 @@ public partial class EngineLogWindow : Window
     {
         try
         {
+            var dir = AppPaths.LogsDir;
             Process.Start(new ProcessStartInfo
             {
-                FileName = AppPaths.LogsDir,
+                FileName = "explorer.exe",
+                Arguments = "\"" + dir + "\"",
                 UseShellExecute = true,
             });
         }

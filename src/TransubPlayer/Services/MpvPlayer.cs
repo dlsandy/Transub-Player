@@ -427,7 +427,22 @@ internal sealed class MpvPlayer : IDisposable
     public void ReloadSubtitle()
     {
         if (string.IsNullOrWhiteSpace(_currentSub)) return;
-        Command("sub-reload");
+        // Prefer re-add over sub-reload: rewritten/growing preview SRTs sometimes leave
+        // sub-reload serving the first in-memory parse (only the opening cue on screen).
+        var path = _currentSub;
+        Command("sub-remove");
+        if (!TryCommand("sub-add", path, "select"))
+        {
+            // Fall back for builds/tracks that reject a quick re-add.
+            if (!TryCommand("sub-reload"))
+            {
+                Log?.Invoke("mpv 字幕重载失败 · " + Path.GetFileName(path));
+                _currentSub = null;
+                return;
+            }
+        }
+
+        _currentSub = path;
     }
 
     public void SetSubVisible(bool visible, bool showOsd = true)

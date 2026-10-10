@@ -135,7 +135,7 @@ public partial class MainWindow
         _ => Loc.Get("AsrModel.Turbo.Hint"),
     };
 
-    private static string TranslateModelLabel(string id) => Loc.Get("TranslateModel.TranslateGemma");
+    private static string TranslateModelLabel(string id) => Loc.Get(TranslateModels.LabelKey(id));
 
-    private static string TranslateModelHint(string id) => Loc.Get("TranslateModel.TranslateGemma.Hint");
+    private static string TranslateModelHint(string id) => Loc.Get(TranslateModels.HintKey(id));
 }

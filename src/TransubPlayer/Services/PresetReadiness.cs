@@ -216,7 +216,7 @@ internal static class PresetReadiness
                 var dir = string.IsNullOrWhiteSpace(mtModelsDir)
                     ? AppPaths.ResolveAdvancedLlmModelsDir()
                     : mtModelsDir;
-                var detail = $"Google TranslateGemma 4B Q4（{gguf.SizeHint}）。下载后放到 {dir}。";
+                var detail = $"{gguf.DisplayName}（{gguf.SizeHint}）。下载后放到 {dir}。";
                 gaps.Add(new PresetGap(
                     PresetGapKind.GgufModel,
                     gguf.Id,

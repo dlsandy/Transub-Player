@@ -16,7 +16,7 @@ internal sealed class LlamaServerProcess : IDisposable
     public static readonly string DefaultBaseUrl = $"http://127.0.0.1:{DefaultPort}";
 
     /// <summary>
-    /// Preferred TranslateGemma GGUF filenames. Extend via <see cref="TranslateModels.PreferredFilenames"/>.
+    /// All known MT GGUF filenames. Prefer <see cref="TranslateModels.PreferredFilenamesFor"/> at runtime.
     /// </summary>
     public static readonly string[] PreferredModels =
         TranslateModels.PreferredFilenames.ToArray();
@@ -96,53 +96,6 @@ internal sealed class LlamaServerProcess : IDisposable
         }
     }
 
-    private static async Task<List<string>> TryListModelIdsAsync(string baseUrl, CancellationToken ct)
-    {
-        var ids = new List<string>();
-        try
-        {
-            using var res = await LocalHttp.Client
-                .GetAsync($"{baseUrl.TrimEnd('/')}/v1/models", ct)
-                .ConfigureAwait(false);
-            if (!res.IsSuccessStatusCode) return ids;
-            await using var stream = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
-            if (doc.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in data.EnumerateArray())
-                {
-                    if (item.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                    {
-                        var s = id.GetString();
-                        if (!string.IsNullOrWhiteSpace(s))
-                            ids.Add(s);
-                    }
-                }
-            }
-            else if (doc.RootElement.TryGetProperty("models", out var models) && models.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in models.EnumerateArray())
-                {
-                    string? s = null;
-                    if (item.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String)
-                        s = id.GetString();
-                    else if (item.TryGetProperty("model", out var model) && model.ValueKind == JsonValueKind.String)
-                        s = model.GetString();
-                    else if (item.TryGetProperty("name", out var name) && name.ValueKind == JsonValueKind.String)
-                        s = name.GetString();
-                    if (!string.IsNullOrWhiteSpace(s))
-                        ids.Add(s);
-                }
-            }
-        }
-        catch
-        {
-            // treat as unknown — caller may still adopt
-        }
-
-        return ids;
-    }
-
     public async Task EnsureRunningAsync(
         AppSettings settings,
         Action<string>? log,
@@ -168,31 +121,52 @@ internal sealed class LlamaServerProcess : IDisposable
         IReadOnlyList<string>? preferredModels,
         bool preferCpu)
     {
+        var modelId = TranslateModels.Normalize(settings.TranslateModelId);
         var preferred = preferredModels is { Count: > 0 }
             ? preferredModels
-            : TranslateModels.PreferredFilenames;
+            : TranslateModels.PreferredFilenamesFor(modelId);
         var url = string.IsNullOrWhiteSpace(settings.TranslateUrl) ? DefaultBaseUrl : settings.TranslateUrl.Trim().TrimEnd('/');
         BaseUrl = url;
+        var forceNewPort = false;
         if (await IsHealthyAsync(url, ct).ConfigureAwait(false))
         {
-            var remoteIds = await TryListModelIdsAsync(url, ct).ConfigureAwait(false);
-            var remoteMatches = remoteIds.Count == 0
-                || remoteIds.Any(id => NameMatchesPreferred(id, preferred));
-            var localMismatch = ModelPath is not null && !NameMatchesPreferred(ModelPath, preferred);
-            var mismatch = localMismatch || !remoteMatches;
+            // Alias is always "hymt"; match on local ModelPath / filename, not remote id.
+            var mismatch = ModelPath is not null && !NameMatchesPreferred(ModelPath, modelId);
+            var unknownFamily = ModelPath is null;
 
-            if (Spawned && mismatch)
+            if (Spawned && (mismatch || unknownFamily))
             {
-                log?.Invoke($"预设需要另一套翻译模型，正在切换 · 当前 {Path.GetFileName(ModelPath) ?? string.Join(",", remoteIds)}");
+                log?.Invoke(mismatch
+                    ? $"预设需要另一套翻译模型，正在切换 · 当前 {Path.GetFileName(ModelPath)}"
+                    : "已启动的翻译服务模型未知，正在按当前预设重启");
                 Stop();
+            }
+            else if (!mismatch && !unknownFamily)
+            {
+                Spawned = Spawned && _process is { HasExited: false };
+                log?.Invoke($"已连接翻译服务 · {url} · {Path.GetFileName(ModelPath)}");
+                return;
             }
             else
             {
-                if (mismatch)
-                    log?.Invoke("已有翻译服务与当前预设模型不完全匹配，仍先使用现有服务（无法替换外部进程）");
-                Spawned = Spawned && _process is { HasExited: false };
-                log?.Invoke($"已连接翻译服务 · {url}" + (ModelPath is null ? "" : " · " + Path.GetFileName(ModelPath)));
-                return;
+                // External / unknown process on the URL — only adopt when we cannot spawn our GGUF.
+                var adoptRoot = FindAdvancedLlmRoot(settings);
+                var canSpawnPreferred = adoptRoot is not null
+                    && FindServerExe(adoptRoot) is not null
+                    && FindModel(adoptRoot, preferred, modelId) is not null;
+                if (!canSpawnPreferred)
+                {
+                    if (mismatch)
+                        log?.Invoke("已有翻译服务与当前预设模型不完全匹配，仍先使用现有服务（无法替换外部进程）");
+                    Spawned = Spawned && _process is { HasExited: false };
+                    log?.Invoke($"已连接翻译服务 · {url}" + (ModelPath is null ? "" : " · " + Path.GetFileName(ModelPath)));
+                    return;
+                }
+
+                log?.Invoke(unknownFamily
+                    ? "端口上已有翻译服务但模型未知，改用本机 GGUF 启动"
+                    : "端口上已有翻译服务与当前预设不符，改用本机 GGUF 启动");
+                forceNewPort = true;
             }
         }
 
@@ -202,7 +176,7 @@ internal sealed class LlamaServerProcess : IDisposable
                 "未找到 Transub 的 advanced-llm（llama-server + GGUF）。请先在 Transub 下载翻译模型，或手动启动 llama-server。");
 
         ExePath = FindServerExe(root);
-        ModelPath = FindModel(root, preferred);
+        ModelPath = FindModel(root, preferred, modelId);
         if (ExePath is null)
             throw new InvalidOperationException($"未找到 llama-server.exe：{Path.Combine(root, "runtime")}");
         if (ModelPath is null)
@@ -216,16 +190,21 @@ internal sealed class LlamaServerProcess : IDisposable
         }
         catch { /* keep default */ }
 
-        if (await PortBlockedByForeignServiceAsync(url, ct).ConfigureAwait(false))
+        if (forceNewPort || await PortBlockedByForeignServiceAsync(url, ct).ConfigureAwait(false))
         {
             var blocked = port;
             port = FindFreePort();
             url = $"http://127.0.0.1:{port}";
             BaseUrl = url;
-            log?.Invoke($"翻译端口 {blocked} 已被其他程序占用（非 llama-server），改用 {port}");
+            log?.Invoke(forceNewPort
+                ? $"翻译改用空闲端口 {port}（原 {blocked} 上的服务模型未验证）"
+                : $"翻译端口 {blocked} 已被其他程序占用（非 llama-server），改用 {port}");
         }
 
         // Prefer GPU; when ASR already holds VRAM, try CPU first to avoid multi-minute ngl retries.
+        // Locals survive Stop() — Stop only kills the process, not the chosen exe/GGUF paths.
+        var exe = ExePath ?? throw new InvalidOperationException("llama-server 路径未解析");
+        var model = ModelPath ?? throw new InvalidOperationException("翻译 GGUF 路径未解析");
         Exception? last = null;
         var nglOrder = preferCpu ? new[] { 0, 20, 40 } : new[] { 99, 40, 20, 0 };
         foreach (var ngl in nglOrder)
@@ -234,7 +213,7 @@ internal sealed class LlamaServerProcess : IDisposable
             Stop();
             try
             {
-                StartOnce(ExePath, ModelPath, port, ngl, log);
+                StartOnce(exe, model, port, ngl, log);
                 // Shorter waits when we already know GPU is contended.
                 var timeoutSec = preferCpu
                     ? (ngl == 0 ? 120 : 45)
@@ -243,7 +222,9 @@ internal sealed class LlamaServerProcess : IDisposable
                 if (ok)
                 {
                     Spawned = true;
-                    log?.Invoke($"翻译模型已启动 · {Path.GetFileName(ModelPath)} · ngl={ngl} · {url}");
+                    ExePath = exe;
+                    ModelPath = model;
+                    log?.Invoke($"翻译模型已启动 · {Path.GetFileName(model)} · ngl={ngl} · {url}");
                     return;
                 }
 
@@ -260,7 +241,12 @@ internal sealed class LlamaServerProcess : IDisposable
         throw last ?? new InvalidOperationException("无法启动 llama-server");
     }
 
-    public void Dispose() => Stop();
+    public void Dispose()
+    {
+        Stop();
+        ModelPath = null;
+        ExePath = null;
+    }
 
     public void Stop()
     {
@@ -270,10 +256,14 @@ internal sealed class LlamaServerProcess : IDisposable
 
     private void StartOnce(string exe, string model, int port, int ngl, Action<string>? log)
     {
+        if (string.IsNullOrWhiteSpace(exe) || string.IsNullOrWhiteSpace(model))
+            throw new InvalidOperationException("llama-server 或 GGUF 路径为空");
+
         var start = new ProcessStartInfo
         {
             FileName = exe,
-            WorkingDirectory = Path.GetDirectoryName(exe)!,
+            // Same fallback as MpvPlayer — GetDirectoryName can be null for bare filenames.
+            WorkingDirectory = Path.GetDirectoryName(exe) ?? AppContext.BaseDirectory,
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardOutput = true,
@@ -292,13 +282,20 @@ internal sealed class LlamaServerProcess : IDisposable
             start.ArgumentList.Add(a);
         }
 
-        // TranslateGemma ships a strict HF Jinja template (structured content + lang codes) that
-        // llama-server cannot parse at init with OpenAI-style string messages. Use built-in gemma.
-        if (Path.GetFileName(model).Contains("translategemma", StringComparison.OrdinalIgnoreCase))
+        // TranslateGemma ships a strict HF Jinja template that llama-server cannot parse with
+        // OpenAI-style string messages. Murasaki's Qwen/ChatML jinja also needs a built-in template.
+        var fileName = Path.GetFileName(model);
+        if (fileName.Contains("translategemma", StringComparison.OrdinalIgnoreCase))
         {
             start.ArgumentList.Add("--no-jinja");
             start.ArgumentList.Add("--chat-template");
             start.ArgumentList.Add("gemma");
+        }
+        else if (fileName.Contains("murasaki", StringComparison.OrdinalIgnoreCase))
+        {
+            start.ArgumentList.Add("--no-jinja");
+            start.ArgumentList.Add("--chat-template");
+            start.ArgumentList.Add("chatml");
         }
 
         _process = new Process { StartInfo = start, EnableRaisingEvents = true };
@@ -323,9 +320,20 @@ internal sealed class LlamaServerProcess : IDisposable
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
-            if (_process is { HasExited: true })
+            var proc = _process;
+            try
             {
-                log?.Invoke($"llama-server 已退出（代码 {_process.ExitCode}）");
+                if (proc is { HasExited: true })
+                {
+                    var code = 0;
+                    try { code = proc.ExitCode; } catch { /* disposed */ }
+                    log?.Invoke($"llama-server 已退出（代码 {code}）");
+                    return false;
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Includes ObjectDisposedException; process torn down between checks.
                 return false;
             }
 
@@ -530,18 +538,19 @@ internal sealed class LlamaServerProcess : IDisposable
         }
     }
 
-    private static string? FindModel(string root, IReadOnlyList<string>? preferred = null)
+    private static string? FindModel(string root, IReadOnlyList<string>? preferred = null, string? modelId = null)
     {
         var models = Path.Combine(root, "models");
         if (!Directory.Exists(models)) return null;
-        var spec = ManagedLlmCatalog.TranslateGemma4B;
+        var id = TranslateModels.Normalize(modelId);
+        var spec = TranslateModels.ResolveSpec(id);
         var minBytes = ManagedLlmCatalog.MinGgufBytes(spec);
-        var list = preferred ?? PreferredModels;
+        var list = preferred is { Count: > 0 } ? preferred : TranslateModels.PreferredFilenamesFor(id);
         foreach (var name in list)
         {
             var p = Path.Combine(models, name);
             if (ManagedLlmInstaller.IsCompleteGguf(p, minBytes)
-                && TranslateModels.MatchesFamily(p, TranslateModels.TranslateGemma4B))
+                && TranslateModels.MatchesFamily(p, id))
                 return p;
         }
 
@@ -549,7 +558,7 @@ internal sealed class LlamaServerProcess : IDisposable
         {
             return Directory.EnumerateFiles(models, "*.gguf", SearchOption.TopDirectoryOnly)
                 .Where(f => ManagedLlmInstaller.IsCompleteGguf(f, minBytes)
-                            && TranslateModels.MatchesFamily(f, TranslateModels.TranslateGemma4B))
+                            && TranslateModels.MatchesFamily(f, id))
                 .OrderBy(f => new FileInfo(f).Length)
                 .FirstOrDefault();
         }
@@ -559,9 +568,6 @@ internal sealed class LlamaServerProcess : IDisposable
         }
     }
 
-    private static bool NameMatchesPreferred(string modelPath, IReadOnlyList<string> preferred)
-    {
-        _ = preferred;
-        return TranslateModels.MatchesFamily(modelPath, TranslateModels.TranslateGemma4B);
-    }
+    private static bool NameMatchesPreferred(string modelPath, string? modelId)
+        => TranslateModels.MatchesFamily(modelPath, modelId);
 }

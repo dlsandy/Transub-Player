@@ -94,19 +94,23 @@ public partial class MainWindow
             return;
         }
 
-        var defaultName = StreamRecord.DefaultOutputPath(MediaSourceHelper.DisplayName(_preview.MediaPath!));
+        var recordDir = _settings.ResolveStreamRecordDir();
+        var defaultName = StreamRecord.DefaultOutputPath(
+            MediaSourceHelper.DisplayName(_preview.MediaPath!),
+            recordDir);
         var dlg = new SaveFileDialog
         {
             Title = Loc.Get("Main.StreamRecord.SaveTitle"),
             Filter = Loc.Get("Main.StreamRecord.SaveFilter"),
             FileName = Path.GetFileName(defaultName),
-            InitialDirectory = StreamRecord.RecordingsDir,
+            InitialDirectory = recordDir,
             AddExtension = true,
             DefaultExt = ".mp4",
         };
         if (dlg.ShowDialog(this) != true) return;
 
         var output = StreamRecord.EnsureOutputExtension(dlg.FileName);
+        _settings.RememberStreamRecordPath(output);
         try
         {
             SetStatus(Loc.Get("Main.Status.StreamRecordStarting"));
@@ -125,7 +129,7 @@ public partial class MainWindow
 
     private void OpenRecordingsFolder_Click(object sender, RoutedEventArgs e)
     {
-        var dir = StreamRecord.RecordingsDir;
+        var dir = _settings.ResolveStreamRecordDir();
         Directory.CreateDirectory(dir);
         try
         {

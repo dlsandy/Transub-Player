@@ -1115,6 +1115,50 @@ public partial class MainWindow : Window
     private int SeekFineStep() => Math.Max(1, _settings.SeekStepFineSeconds);
     private int SeekLargeStep() => Math.Max(1, _settings.SeekStepLargeSeconds);
 
+    private void SubFileMenu_Click(object sender, RoutedEventArgs e)
+    {
+        var menu = SubFileMenu;
+        if (menu is null || TransubButton is null) return;
+
+        if (AppMenu is { IsOpen: true })
+            AppMenu.IsOpen = false;
+        if (PlayerContextMenu is { IsOpen: true })
+            PlayerContextMenu.IsOpen = false;
+
+        if (menu.IsOpen)
+        {
+            menu.IsOpen = false;
+            return;
+        }
+
+        // Pull-up from the transport bar.
+        menu.Placement = PlacementMode.Top;
+        menu.PlacementTarget = TransubButton;
+        menu.HorizontalOffset = 0;
+        menu.VerticalOffset = -4;
+        menu.IsOpen = true;
+    }
+
+    private void SubFileMenu_Opened(object sender, RoutedEventArgs e)
+    {
+        var mediaPath = _preview?.MediaPath;
+        var hasMedia = !string.IsNullOrWhiteSpace(mediaPath)
+                       && !MediaSourceHelper.IsNonLocalMedia(mediaPath);
+        var hasSource = false;
+        var hasTranslated = false;
+        if (hasMedia && _preview is not null && mediaPath is not null)
+        {
+            hasSource = _preview.CueCount > 0 || File.Exists(PreviewPaths.SourceSrt(mediaPath));
+            hasTranslated = _preview.TranslatedCount > 0
+                || File.Exists(PreviewPaths.TranslatedPreviewSrt(mediaPath, _settings.TranslateTarget));
+        }
+
+        if (ExportSourceSubMenu is not null)
+            ExportSourceSubMenu.IsEnabled = hasSource;
+        if (ExportTranslatedSubMenu is not null)
+            ExportTranslatedSubMenu.IsEnabled = hasTranslated;
+    }
+
     private void Transub_Click(object sender, RoutedEventArgs e)
     {
         var request = new TransubHandoffRequest(
@@ -1138,6 +1182,92 @@ public partial class MainWindow : Window
             MessageBoxImage.Question);
         if (go == MessageBoxResult.Yes)
             FirstRunHelp.OpenTransubSite();
+    }
+
+    private void ExportSourceSub_Click(object sender, RoutedEventArgs e)
+        => ExportSubtitleFile(translated: false);
+
+    private void ExportTranslatedSub_Click(object sender, RoutedEventArgs e)
+        => ExportSubtitleFile(translated: true);
+
+    private void ExportSubtitleFile(bool translated)
+    {
+        var mediaPath = _preview?.MediaPath;
+        if (string.IsNullOrWhiteSpace(mediaPath) || MediaSourceHelper.IsNonLocalMedia(mediaPath))
+        {
+            SetStatus(Loc.Get("Main.SubFile.Export.NoMedia"));
+            return;
+        }
+
+        var cues = _preview!.SnapshotCues();
+        if (cues.Count == 0)
+        {
+            var fallback = translated
+                ? PreviewPaths.TranslatedPreviewSrt(mediaPath, _settings.TranslateTarget)
+                : PreviewPaths.SourceSrt(mediaPath);
+            if (File.Exists(fallback))
+                cues = SubtitleFile.ParseSrt(fallback);
+        }
+
+        if (translated)
+        {
+            cues = cues
+                .Where(c => !PreviewTextSanitize.IsPlaceholderText(c.Zh))
+                .Select(c => new Cue
+                {
+                    Index = c.Index,
+                    Start = c.Start,
+                    End = c.End,
+                    Text = c.Text,
+                    Zh = c.Zh,
+                })
+                .ToList();
+        }
+
+        if (cues.Count == 0)
+        {
+            SetStatus(Loc.Get(translated
+                ? "Main.SubFile.Export.NoTranslated"
+                : "Main.SubFile.Export.NoSource"));
+            return;
+        }
+
+        var stem = Path.GetFileNameWithoutExtension(mediaPath);
+        var suffix = translated
+            ? "." + TranslateTargets.FileSuffix(_settings.TranslateTarget)
+            : "";
+        var initialDir = Path.GetDirectoryName(mediaPath);
+        var dlg = new SaveFileDialog
+        {
+            Title = Loc.Get(translated
+                ? "Main.SubFile.Export.TranslatedTitle"
+                : "Main.SubFile.Export.SourceTitle"),
+            Filter = Loc.Get("Main.SubFile.Export.Filter"),
+            FileName = stem + suffix + ".srt",
+            InitialDirectory = Directory.Exists(initialDir) ? initialDir : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            AddExtension = true,
+            DefaultExt = ".srt",
+        };
+        if (dlg.ShowDialog(this) != true) return;
+
+        try
+        {
+            SubtitleFile.WriteDisplaySrt(
+                dlg.FileName,
+                cues,
+                translated ? SubtitleDisplayMode.Zh : SubtitleDisplayMode.Source);
+            SetStatus(Loc.Format("Main.SubFile.Export.Done", dlg.FileName));
+        }
+        catch (Exception ex)
+        {
+            SetStatus(Loc.Format("Main.SubFile.Export.Failed", ex.Message));
+            MessageBox.Show(
+                this,
+                Loc.Format("Main.SubFile.Export.Failed", ex.Message),
+                "Transub Player",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private void TransubSite_Click(object sender, RoutedEventArgs e)

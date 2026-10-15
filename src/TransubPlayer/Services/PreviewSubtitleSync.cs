@@ -210,6 +210,16 @@ internal sealed class PreviewSubtitleSync : IDisposable
             SubtitleFile.WriteDisplaySrt(_dualSrt, snapshot, SubtitleDisplayMode.Dual);
     }
 
+    /// <summary>Write translation cache so reopen / prefetch can restore Zh without re-MT.</summary>
+    public void PersistTranslationCache(string mediaPath)
+    {
+        if (_usingExistingSub || string.IsNullOrWhiteSpace(mediaPath)) return;
+        List<Cue> snapshot;
+        lock (_cueLock)
+            snapshot = _cues.Select(c => new Cue { Index = c.Index, Start = c.Start, End = c.End, Text = c.Text, Zh = c.Zh }).ToList();
+        PlaylistPrefetch.SaveTranslationCache(mediaPath, _settings.TranslateTarget, snapshot);
+    }
+
     public void MergeZhCache(string mediaPath)
     {
         if (_disposed) return;

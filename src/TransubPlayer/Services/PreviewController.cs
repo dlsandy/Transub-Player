@@ -184,6 +184,9 @@ internal sealed class PreviewController : IDisposable
     public bool IsEnglishSource => SceneProfiles.IsEnglishSource(ActiveScene.Language);
     public int CueCount => _subs.CueCount;
     public int TranslatedCount => _subs.TranslatedCount;
+
+    /// <summary>Live ASR/MT cue snapshot for export / seeding.</summary>
+    public IReadOnlyList<Cue> SnapshotCues() => _subs.SnapshotCues();
     public double SubFrontier => _subs.SubFrontier;
     public double ZhFrontier => _subs.ZhFrontier;
     public bool WaitingForZh => _waitingForFirstZh || _waitingForModeReady;
@@ -1526,10 +1529,11 @@ internal sealed class PreviewController : IDisposable
             await DemoteTranslateGpuForAsrAsync(ct).ConfigureAwait(false);
             ThrowIfStaleMedia(gen);
 
-            // DurationChanged may lag OpenMedia; brief wait so KnownDuration is not 0.
+            // DurationChanged may lag OpenMedia; wait so KnownDuration is not 0.
+            // mpv can still revise length later — GetLiveDurationSec extends the ASR plan.
             if (Duration <= 1)
             {
-                for (var i = 0; i < 10 && Duration <= 1; i++)
+                for (var i = 0; i < 40 && Duration <= 1; i++)
                 {
                     try { await Task.Delay(50, ct).ConfigureAwait(false); }
                     catch (OperationCanceledException) { throw; }
@@ -1545,7 +1549,8 @@ internal sealed class PreviewController : IDisposable
                 ActiveScene.ContentProfile,
                 StartFromSeconds: startFrom,
                 KnownDurationSec: Duration > 1 ? Duration : 0,
-                SeedCues: seedCues);
+                SeedCues: seedCues,
+                GetLiveDurationSec: () => Duration);
             await _engine.StartJobAsync(
                 body,
                 ct,
@@ -1554,10 +1559,16 @@ internal sealed class PreviewController : IDisposable
                     if (!IsCurrentMedia(gen, mediaPath)) return;
                     _subs.OnSourceChanged();
                     if (WantsPreviewMt)
+                    {
                         await EnsureTranslateGpuUpgradeAsync(ct).ConfigureAwait(false);
-                    await _subs.TryTranslatePendingAsync().ConfigureAwait(false);
-                    if (IsCurrentMedia(gen, mediaPath))
-                        PreviewPaths.MarkAsrDone(mediaPath);
+                        // Drain remaining MT so zh/dual sidecars and cache are fully on disk.
+                        await _subs.RetranslateDrainAsync(ct).ConfigureAwait(false);
+                    }
+
+                    if (!IsCurrentMedia(gen, mediaPath)) return;
+                    _subs.PersistTranslatedSidecars();
+                    _subs.PersistTranslationCache(mediaPath);
+                    PreviewPaths.MarkAsrDone(mediaPath);
                     _previewRetryAvailable = false;
                     PublishStatus(BuildStatusLine() + Loc.Get("Main.Status.AsrDone"));
                     MaybeOfferQualityHandoffTip();

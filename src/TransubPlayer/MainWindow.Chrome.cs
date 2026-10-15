@@ -228,8 +228,8 @@ public partial class MainWindow
             SubSourceBox.IsEnabled = on && !stream;
         if (TransubButton is not null)
         {
-            // Local files only — stream URLs cannot be handed off for production subs.
-            // Keep enabled without media so users can still open / install Transub (same as the menu).
+            // Local files only — Transub handoff / export need a file path.
+            // Keep enabled without media so users can still open / install Transub.
             TransubButton.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
             TransubButton.IsEnabled = !stream;
         }

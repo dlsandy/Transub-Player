@@ -2,6 +2,19 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.5.6] — 2026-10-15
+
+### Added
+
+- Control-bar **Subtitle files** button: click for a pull-up menu to generate subtitles with Transub, or export source / translated SRT.
+
+### Fixed
+
+- Setup wizard / model downloads harden HTTPS (TLS 1.2+, system proxy), retry Hugging Face official↔mirror and GitHub release proxies on SSL/connection failures, and show actionable localized errors instead of bare `see inner exception`.
+- ASR follows the player’s live duration as mpv revises length after open (avoids stopping a few seconds before the end); after recognition finishes, the MT queue is drained and translated sidecars/cache are flushed to disk.
+
+---
+
 ## [1.5.5] — 2026-10-10
 
 ### Added

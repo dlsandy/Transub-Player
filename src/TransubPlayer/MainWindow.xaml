@@ -313,12 +313,27 @@
                                           SelectionChanged="SubSourceBox_SelectionChanged"
                                           IsEnabled="False"
                                           ToolTip="{loc:Loc Main.SubSource.Tip}"/>
-                                <!-- 成片：交接到 Transub 生成高质量字幕 -->
+                                <!-- 字幕文件：Transub 成片 / 导出原文·译文 -->
                                 <Button x:Name="TransubButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xF2B7;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
-                                        Click="Transub_Click"
-                                        ToolTip="{loc:Loc Main.Transub.Tip}"
-                                        Margin="2,0,0,0"/>
+                                        Click="SubFileMenu_Click"
+                                        ToolTip="{loc:Loc Main.SubFile.Tip}"
+                                        Margin="2,0,0,0">
+                                    <Button.ContextMenu>
+                                        <!-- Do not inherit icon FontFamily from the button (MDL2 → CJK mojibake). -->
+                                        <ContextMenu x:Name="SubFileMenu" Opened="SubFileMenu_Opened"
+                                                     FontFamily="Segoe UI Variable, Segoe UI">
+                                            <MenuItem Header="{loc:Loc Main.SubFile.Menu.Transub}" Click="Transub_Click"/>
+                                            <Separator/>
+                                            <MenuItem x:Name="ExportSourceSubMenu"
+                                                      Header="{loc:Loc Main.SubFile.Menu.ExportSource}"
+                                                      Click="ExportSourceSub_Click"/>
+                                            <MenuItem x:Name="ExportTranslatedSubMenu"
+                                                      Header="{loc:Loc Main.SubFile.Menu.ExportTranslated}"
+                                                      Click="ExportTranslatedSub_Click"/>
+                                        </ContextMenu>
+                                    </Button.ContextMenu>
+                                </Button>
                             </StackPanel>
 
                             <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">

@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Net.Http;
 
 namespace TransubPlayer.Services;
 
@@ -376,37 +375,11 @@ internal static class ManagedLlmInstaller
         });
     }
 
-    internal static async Task DownloadFileAsync(
+    internal static Task DownloadFileAsync(
         string url,
         string destPath,
         Action<string>? status,
         CancellationToken ct,
         long? minCompleteBytes = null)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-        using var http = new HttpClient { Timeout = TimeSpan.FromHours(2) };
-        using var res = await http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        res.EnsureSuccessStatusCode();
-        var total = res.Content.Headers.ContentLength;
-        await using var input = await res.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
-        await using var output = new FileStream(destPath, FileMode.Create, FileAccess.Write, FileShare.None, 82_000, useAsync: true);
-        await DownloadProgressUi.CopyStreamWithProgressAsync(input, output, status, total, ct).ConfigureAwait(false);
-
-        var actual = new FileInfo(destPath).Length;
-        if (minCompleteBytes is > 0 && actual >= minCompleteBytes.Value)
-            return;
-
-        // HF mirrors often misreport Content-Length; only fail on obvious truncation.
-        if (total is > 0 && actual < (long)(total.Value * 0.95))
-        {
-            throw new InvalidOperationException(
-                $"下载不完整（{DownloadProgressUi.FormatBytes(actual)} / {DownloadProgressUi.FormatBytes(total.Value)}）。请重试。");
-        }
-
-        if (minCompleteBytes is > 0 && actual < minCompleteBytes.Value)
-        {
-            throw new InvalidOperationException(
-                $"下载不完整（{DownloadProgressUi.FormatBytes(actual)} / 期望至少 {DownloadProgressUi.FormatBytes(minCompleteBytes.Value)}）。请重试。");
-        }
-    }
+        => RemoteFileDownloader.DownloadAsync(url, destPath, status, ct, minCompleteBytes);
 }

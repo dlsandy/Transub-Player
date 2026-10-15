@@ -457,23 +457,8 @@ internal sealed class AsrPipeline : IDisposable
             }
 
             // Prefer playing mpv duration — skips a second mpv spawn and avoids the 3600s probe sentinel
-            // overrunning short files (KnownDuration < 3600 would lose with a naive "longer wins" rule).
-            double duration;
-            if (job.KnownDurationSec > 1)
-            {
-                duration = job.KnownDurationSec;
-                _log($"ASR duration: using player={duration:0.#}s");
-            }
-            else
-            {
-                duration = await AsrAudioExtract.ProbeDurationAsync(job.MediaPath, ct).ConfigureAwait(false);
-                if (AsrAudioExtract.IsFallbackDuration(duration))
-                {
-                    // Prefetch / no player duration: do not burn ~1h of Whisper on a failed probe.
-                    throw new InvalidOperationException(
-                        Loc.Format("Main.Status.AsrFailed", $"duration probe failed (assumed {AsrAudioExtract.FallbackDurationSec:0}s)"));
-                }
-            }
+            // overrunning short files. Live GetLiveDurationSec can extend if mpv revises length later.
+            var duration = await ResolveJobDurationAsync(job, ct).ConfigureAwait(false);
             var whisperLang = MapWhisperLanguage(job.Language);
             var chunkStep = ChunkSec - ChunkOverlapSec;
             var totalChunks = Math.Max(1, (int)Math.Ceiling(duration / chunkStep));
@@ -486,16 +471,24 @@ internal sealed class AsrPipeline : IDisposable
                 SubtitleFile.WriteSrt(sourceSrt, cues, chinese: false);
             }
 
-            for (var chunk = firstChunk; chunk < totalChunks; chunk++)
+            var lastExtractRetryStart = double.NaN;
+            for (var chunk = firstChunk; ; chunk++)
             {
                 ct.ThrowIfCancellationRequested();
                 if (shouldAbort?.Invoke() == true)
                     throw new OperationCanceledException(ct);
 
-                var start = chunk * chunkStep;
-                var len = Math.Min(ChunkSec, Math.Max(0.5, duration - start));
-                if (start >= duration - 0.25)
+                // mpv often reports a short demux estimate at open, then grows — keep covering the tail.
+                TryExtendDuration(job, ref duration, ref totalChunks, chunkStep);
+
+                if (chunk >= totalChunks)
                     break;
+
+                var start = chunk * chunkStep;
+                var remaining = duration - start;
+                if (remaining <= 0.05)
+                    break;
+                var len = Math.Min(ChunkSec, Math.Max(0.35, remaining));
 
                 var pct = Math.Clamp((int)Math.Round(100.0 * (chunk + 1) / totalChunks), 1, 99);
                 _status(Loc.Format("Main.Status.AsrProgress", pct, Loc.Get("Main.Status.AsrStageRecognizing")));
@@ -517,6 +510,19 @@ internal sealed class AsrPipeline : IDisposable
                     catch (Exception ex) when (chunk > firstChunk || cues.Count > 0)
                     {
                         // Overestimated duration / EOF: keep cues already written instead of failing the job.
+                        // If the player later reports a longer length, extend once and retry this start.
+                        var alreadyRetried = !double.IsNaN(lastExtractRetryStart)
+                                             && Math.Abs(lastExtractRetryStart - start) < 0.01;
+                        if (!alreadyRetried
+                            && TryExtendDuration(job, ref duration, ref totalChunks, chunkStep)
+                            && start + 0.5 < duration)
+                        {
+                            lastExtractRetryStart = start;
+                            _log($"ASR extract miss at {start:0.#}s · retry after duration extend · {ex.Message}");
+                            chunk--; // retry same index with updated duration/len next iteration
+                            continue;
+                        }
+
                         _log($"ASR extract ended early at {start:0.#}s · {ex.Message}");
                         break;
                     }
@@ -593,6 +599,47 @@ internal sealed class AsrPipeline : IDisposable
             if (string.Equals(_jobId, jobId, StringComparison.Ordinal))
                 _jobId = null;
         }
+    }
+
+    private async Task<double> ResolveJobDurationAsync(AsrJobRequest job, CancellationToken ct)
+    {
+        var known = job.KnownDurationSec;
+        var live = job.GetLiveDurationSec?.Invoke() ?? 0;
+        if (live > known)
+            known = live;
+
+        if (known > 1)
+        {
+            _log($"ASR duration: using player={known:0.#}s");
+            return known;
+        }
+
+        var probed = await AsrAudioExtract.ProbeDurationAsync(job.MediaPath, ct).ConfigureAwait(false);
+        if (AsrAudioExtract.IsFallbackDuration(probed))
+        {
+            // Prefetch / no player duration: do not burn ~1h of Whisper on a failed probe.
+            throw new InvalidOperationException(
+                Loc.Format("Main.Status.AsrFailed", $"duration probe failed (assumed {AsrAudioExtract.FallbackDurationSec:0}s)"));
+        }
+
+        _log($"ASR duration: using probe={probed:0.#}s");
+        return probed;
+    }
+
+    private bool TryExtendDuration(
+        AsrJobRequest job,
+        ref double duration,
+        ref int totalChunks,
+        double chunkStep)
+    {
+        var live = job.GetLiveDurationSec?.Invoke() ?? 0;
+        if (live <= duration + 0.5)
+            return false;
+
+        _log($"ASR duration: extended player={live:0.#}s (was {duration:0.#}s)");
+        duration = live;
+        totalChunks = Math.Max(1, (int)Math.Ceiling(duration / chunkStep));
+        return true;
     }
 
     private void EnsureFactory(string modelPath)

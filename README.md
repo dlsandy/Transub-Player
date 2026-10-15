@@ -11,7 +11,7 @@ Open a video and the picture appears right away; readable subtitles catch up soo
   <img src="docs/images/cover.jpg" alt="Transub Player — live dual subtitles while watching" width="900">
 </p>
 
-> Windows desktop player · v1.5.5  
+> Windows desktop player · v1.5.6  
 > Download the installer or portable zip from [GitHub](https://github.com/dlsandy/Transub-Player/releases) or [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases). You can also use **Check for updates** inside the app.
 
 ---

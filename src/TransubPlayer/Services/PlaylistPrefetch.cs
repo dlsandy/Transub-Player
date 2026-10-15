@@ -377,17 +377,18 @@ internal sealed class PlaylistPrefetch
         SubtitleFile.WriteDisplaySrt(PreviewPaths.TranslatedPreviewSrt(mediaPath, _settings.TranslateTarget), cues, SubtitleDisplayMode.Zh);
         SubtitleFile.WriteDisplaySrt(PreviewPaths.DualSrt(mediaPath), cues, SubtitleDisplayMode.Dual);
         SubtitleFile.WriteDisplaySrt(PreviewPaths.DisplaySrt(mediaPath), cues, SubtitleDisplayMode.Zh);
-        WriteTranslationCache(mediaPath, cues);
+        SaveTranslationCache(mediaPath, _settings.TranslateTarget, cues);
     }
 
-    private void WriteTranslationCache(string mediaPath, List<Cue> cues)
+    public static void SaveTranslationCache(string mediaPath, string? translateTarget, IReadOnlyList<Cue> cues)
     {
         try
         {
-            var path = PreviewPaths.TranslationCachePath(mediaPath, _settings.TranslateTarget);
+            var path = PreviewPaths.TranslationCachePath(mediaPath, translateTarget);
             var lines = cues
                 .Where(c => !string.IsNullOrWhiteSpace(c.Zh))
                 .Select(c => $"{c.Start:0.00}\t{c.Text.Replace('\t', ' ')}\t{c.Zh!.Replace('\t', ' ')}");
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             File.WriteAllLines(path, lines);
         }
         catch

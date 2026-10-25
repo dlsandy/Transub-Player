@@ -556,9 +556,12 @@ internal sealed class LlamaServerProcess : IDisposable
 
         try
         {
+            // Prefer listed 4B filenames; never auto-pick 12B/9B siblings when family is TranslateGemma 4B
+            // (VRAM OOM → canceled start → 译文永不出现).
             return Directory.EnumerateFiles(models, "*.gguf", SearchOption.TopDirectoryOnly)
                 .Where(f => ManagedLlmInstaller.IsCompleteGguf(f, minBytes)
-                            && TranslateModels.MatchesFamily(f, id))
+                            && TranslateModels.MatchesFamily(f, id)
+                            && !IsOversizedTranslateGemmaSibling(f, id))
                 .OrderBy(f => new FileInfo(f).Length)
                 .FirstOrDefault();
         }
@@ -566,6 +569,15 @@ internal sealed class LlamaServerProcess : IDisposable
         {
             return null;
         }
+    }
+
+    private static bool IsOversizedTranslateGemmaSibling(string path, string modelId)
+    {
+        if (!TranslateModels.IsTranslateGemma(modelId)) return false;
+        var name = Path.GetFileName(path).ToLowerInvariant();
+        return name.Contains("12b", StringComparison.Ordinal)
+               || name.Contains("9b", StringComparison.Ordinal)
+               || name.Contains("27b", StringComparison.Ordinal);
     }
 
     private static bool NameMatchesPreferred(string modelPath, string? modelId)

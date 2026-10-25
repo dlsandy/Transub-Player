@@ -1,0 +1,139 @@
+<Window x:Class="TransubPlayer.LanShareWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:TransubPlayer.Localization"
+        Title="{loc:Loc Lan.Window.Title}"
+        Height="620" Width="460"
+        MinHeight="520" MinWidth="400"
+        WindowStartupLocation="CenterOwner"
+        Background="#F3F4F6"
+        Foreground="#111827"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        FontSize="14">
+    <Window.Resources>
+        <Style x:Key="LanSwitch" TargetType="ToggleButton">
+            <Setter Property="Width" Value="44"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Track" Background="#D1D5DB" CornerRadius="12" Width="44" Height="24">
+                            <Ellipse x:Name="Thumb" Width="18" Height="18" Fill="White"
+                                     HorizontalAlignment="Left" Margin="3,0,0,0"
+                                     VerticalAlignment="Center">
+                                <Ellipse.Effect>
+                                    <DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.25"/>
+                                </Ellipse.Effect>
+                            </Ellipse>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#2563EB"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Track" Property="Opacity" Value="0.92"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#E0E7FF"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2563EB"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="IsMouseOver" Value="True"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="Background" Value="#1D4ED8"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <DockPanel Margin="18">
+        <DockPanel DockPanel.Dock="Bottom" Margin="0,14,0,0" LastChildFill="False">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                <ToggleButton x:Name="EnabledBox" Style="{StaticResource LanSwitch}"
+                              Checked="Enabled_Changed" Unchecked="Enabled_Changed"/>
+                <TextBlock Text="{loc:Loc Lan.Window.Enable}" Margin="10,0,0,0"
+                           VerticalAlignment="Center" FontWeight="SemiBold"/>
+            </StackPanel>
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="{loc:Loc Lan.Window.OpenSettings}" MinWidth="96" Margin="0,0,8,0" Click="Settings_Click"/>
+                <Button Content="{loc:Loc Common.Close}" MinWidth="88" IsCancel="True" IsDefault="True" Click="Close_Click"/>
+            </StackPanel>
+        </DockPanel>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="{loc:Loc Lan.Window.Hint}" TextWrapping="Wrap" Foreground="#6B7280" Margin="0,0,0,12"/>
+
+                <TextBlock Text="{loc:Loc Lan.Window.Password}" Foreground="#6B7280" Margin="0,0,0,4"/>
+                <DockPanel Margin="0,0,0,6">
+                    <Button DockPanel.Dock="Right" Content="{loc:Loc Lan.Window.SavePassword}" MinWidth="72" Margin="8,0,0,0"
+                            Click="SavePassword_Click"/>
+                    <PasswordBox x:Name="PasswordBox" Height="34" Padding="10,0" VerticalContentAlignment="Center"/>
+                </DockPanel>
+                <TextBlock Text="{loc:Loc Lan.Window.PasswordHint}" TextWrapping="Wrap" Foreground="#6B7280" Margin="0,0,0,12" FontSize="12"/>
+
+                <Border Background="White" BorderBrush="#E5E7EB" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,12">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Image x:Name="QrImage" Width="220" Height="220" Stretch="Uniform"/>
+                        <TextBlock x:Name="UrlText" TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,12,0,0" FontSize="12" Foreground="#374151"/>
+                        <TextBlock x:Name="PasswordStateText" TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,6,0,0" FontSize="12" Foreground="#6B7280"/>
+                        <TextBlock x:Name="StateText" TextWrapping="Wrap" TextAlignment="Center"
+                                   Margin="0,8,0,0" Foreground="#2563EB" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#EEF2FF" BorderBrush="#C7D2FE" BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="{loc:Loc Lan.Window.SessionTitle}" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                        <TextBlock x:Name="SessionSummaryText" TextWrapping="Wrap" Foreground="#3730A3"/>
+                        <TextBlock x:Name="SessionDetailText" TextWrapping="Wrap" Foreground="#4F46E5" Margin="0,4,0,0" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="{loc:Loc Lan.Window.RootsHint}" TextWrapping="Wrap" Foreground="#6B7280" Margin="0,0,0,6"/>
+                <ListBox x:Name="RootsList" MinHeight="72" MaxHeight="140"
+                         Background="White" BorderBrush="#E5E7EB" BorderThickness="1"
+                         Padding="6"/>
+            </StackPanel>
+        </ScrollViewer>
+    </DockPanel>
+</Window>

@@ -23,9 +23,14 @@ internal static class SubtitleFile
     {
         if (!File.Exists(path)) return [];
         string text;
-        try { text = File.ReadAllText(path, Encoding.UTF8); }
+        try { text = ReadSubtitleText(path); }
         catch { return []; }
         if (string.IsNullOrWhiteSpace(text)) return [];
+
+        var ext = Path.GetExtension(path);
+        if (ext.Equals(".ass", StringComparison.OrdinalIgnoreCase)
+            || ext.Equals(".ssa", StringComparison.OrdinalIgnoreCase))
+            return ParseAssDialogue(text);
 
         var cues = new List<Cue>();
         var blocks = Regex.Split(text.Replace("\r\n", "\n"), @"\n\s*\n");
@@ -46,6 +51,75 @@ internal static class SubtitleFile
         }
 
         return cues;
+    }
+
+    /// <summary>UTF-8 / UTF-16 / GBK(GB18030) — many Chinese sidecars are still ANSI/GBK.</summary>
+    public static string ReadSubtitleText(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        if (bytes.Length == 0) return "";
+
+        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
+        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE)
+            return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
+        if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF)
+            return Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
+
+        try
+        {
+            return new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true)
+                .GetString(bytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            // fall through
+        }
+
+        try
+        {
+            return Encoding.GetEncoding(936).GetString(bytes); // GBK
+        }
+        catch
+        {
+            return Encoding.UTF8.GetString(bytes);
+        }
+    }
+
+    private static readonly Regex AssDialogue = new(
+        @"^Dialogue:\s*\d+,(\d+:\d+:\d+[.:]\d+),(\d+:\d+:\d+[.:]\d+),.*?,.*?,.*?,.*?,.*?,.*?,(.*)$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.Multiline);
+
+    private static List<Cue> ParseAssDialogue(string text)
+    {
+        var cues = new List<Cue>();
+        var n = 0;
+        foreach (Match m in AssDialogue.Matches(text.Replace("\r\n", "\n")))
+        {
+            var start = ParseAssTs(m.Groups[1].Value);
+            var end = ParseAssTs(m.Groups[2].Value);
+            var body = Regex.Replace(m.Groups[3].Value, @"\{[^}]*\}", "").Replace("\\N", "\n").Trim();
+            if (string.IsNullOrWhiteSpace(body)) continue;
+            n++;
+            cues.Add(new Cue { Index = n, Start = start, End = Math.Max(end, start + 0.05), Text = body });
+        }
+
+        return cues;
+    }
+
+    private static double ParseAssTs(string raw)
+    {
+        raw = raw.Trim().Replace('.', ':');
+        // h:mm:ss:cs  or after replace h:mm:ss:cs from h:mm:ss.cs
+        var parts = raw.Split(':');
+        if (parts.Length < 3) return 0;
+        if (!int.TryParse(parts[0], out var h)) return 0;
+        if (!int.TryParse(parts[1], out var m)) return 0;
+        if (!int.TryParse(parts[2], out var s)) return 0;
+        var cs = 0;
+        if (parts.Length >= 4)
+            int.TryParse(parts[3].PadRight(2, '0')[..Math.Min(2, parts[3].Length)], out cs);
+        return h * 3600 + m * 60 + s + cs / 100.0;
     }
 
     public static void WriteSrt(string path, IEnumerable<Cue> cues, bool chinese)
@@ -191,8 +265,8 @@ internal static class SubtitleFile
     }
 
     /// <summary>
-    /// All valid sidecars next to the media: <c>{stem}.srt</c> and <c>{stem}.{tag}.srt</c>
-    /// (e.g. <c>.zh-cn</c>, <c>.en</c>), preference-ordered for auto-pick.
+    /// All valid sidecars next to the media (and common <c>Subs</c>/<c>字幕</c> folders):
+    /// <c>{stem}.srt</c>, <c>{stem}.{tag}.srt</c>, <c>{stem}_{tag}.srt</c>, <c>{stem}-{tag}.srt</c>.
     /// </summary>
     public static IReadOnlyList<SidecarInfo> FindAllExistingSidecars(string mediaPath)
     {
@@ -205,12 +279,17 @@ internal static class SubtitleFile
         try
         {
             found = [];
-            foreach (var (full, nameNoExt, ext, length) in ListSubtitleFilesCached(dir))
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var searchDir in SidecarSearchDirs(dir))
             {
-                if (length <= 40) continue;
-                if (!IsStemSidecarName(stem, nameNoExt)) continue;
-                var tag = SidecarTag(stem, nameNoExt);
-                found.Add(new SidecarInfo(full, tag, ext.TrimStart('.')));
+                foreach (var (full, nameNoExt, ext, length) in ListSubtitleFilesCached(searchDir))
+                {
+                    if (length <= 40) continue;
+                    if (!IsStemSidecarName(stem, nameNoExt)) continue;
+                    if (!seen.Add(full)) continue;
+                    var tag = SidecarTag(stem, nameNoExt);
+                    found.Add(new SidecarInfo(full, tag, ext.TrimStart('.')));
+                }
             }
         }
         catch
@@ -226,6 +305,17 @@ internal static class SubtitleFile
             .ToList();
     }
 
+    private static IEnumerable<string> SidecarSearchDirs(string mediaDir)
+    {
+        yield return mediaDir;
+        foreach (var name in new[] { "Subs", "subs", "Subtitles", "subtitles", "字幕" })
+        {
+            var p = Path.Combine(mediaDir, name);
+            if (Directory.Exists(p))
+                yield return p;
+        }
+    }
+
     /// <summary>Language / role tag between stem and extension; empty for <c>{stem}.srt</c>.</summary>
     public static string SidecarTag(string mediaStem, string fileNameWithoutExtension)
     {
@@ -233,10 +323,14 @@ internal static class SubtitleFile
             return "";
         if (fileNameWithoutExtension.Equals(mediaStem, StringComparison.OrdinalIgnoreCase))
             return "";
-        var prefix = mediaStem + ".";
-        if (!fileNameWithoutExtension.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return "";
-        return fileNameWithoutExtension[prefix.Length..];
+        foreach (var sep in new[] { '.', '_', '-', ' ' })
+        {
+            var prefix = mediaStem + sep;
+            if (fileNameWithoutExtension.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return fileNameWithoutExtension[prefix.Length..];
+        }
+
+        return "";
     }
 
     public static bool IsSidecarExtension(string? ext)
@@ -316,7 +410,38 @@ internal static class SubtitleFile
     {
         if (fileNameWithoutExtension.Equals(mediaStem, StringComparison.OrdinalIgnoreCase))
             return true;
-        return fileNameWithoutExtension.StartsWith(mediaStem + ".", StringComparison.OrdinalIgnoreCase);
+        // Dot tags (mpv-style): movie.chs.srt / movie.zh-cn.srt / movie.简体.srt
+        if (fileNameWithoutExtension.StartsWith(mediaStem + ".", StringComparison.OrdinalIgnoreCase))
+            return true;
+        // Underscore / hyphen / space: only language-like tags (avoid movie vs movie-cut matching).
+        foreach (var sep in new[] { '_', '-', ' ' })
+        {
+            var prefix = mediaStem + sep;
+            if (!fileNameWithoutExtension.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                continue;
+            if (LooksLikeLanguageTag(fileNameWithoutExtension[prefix.Length..]))
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool LooksLikeLanguageTag(string rest)
+    {
+        if (string.IsNullOrWhiteSpace(rest) || rest.Length > 24) return false;
+        var t = rest.Trim().ToLowerInvariant().Replace('_', '-');
+        if (t is "forced" or "sdh" or "cc" or "hi" or "default" or "bilingual" or "dual")
+            return true;
+        if (t is "chs" or "cht" or "chi" or "cn" or "tw" or "sc" or "tc"
+            or "en" or "eng" or "ja" or "jp" or "jpn" or "ko" or "kor" or "zh")
+            return true;
+        if (t.StartsWith("zh", StringComparison.Ordinal)) return true;
+        if (rest.Contains('中', StringComparison.Ordinal)
+            || rest.Contains('简', StringComparison.Ordinal)
+            || rest.Contains('繁', StringComparison.Ordinal)
+            || rest.Contains('英', StringComparison.Ordinal))
+            return true;
+        return Regex.IsMatch(t, @"^[a-z]{2,3}(-[a-z0-9]{2,8}){0,2}$");
     }
 
     /// <summary>Lower is preferred for auto-pick (Transub zh / bilingual / bare / other tags).</summary>

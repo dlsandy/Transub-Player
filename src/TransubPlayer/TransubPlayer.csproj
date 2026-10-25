@@ -13,9 +13,9 @@
     <RootNamespace>TransubPlayer</RootNamespace>
     <Product>Transub Player</Product>
     <AssemblyTitle>Transub Player</AssemblyTitle>
-    <Version>1.5.6</Version>
-    <FileVersion>1.5.6</FileVersion>
-    <InformationalVersion>1.5.6</InformationalVersion>
+    <Version>1.6.0</Version>
+    <FileVersion>1.6.0</FileVersion>
+    <InformationalVersion>1.6.0</InformationalVersion>
     <Authors>Transub</Authors>
     <Description>本地影片边看边出字幕。成片级字幕请用 Transub。</Description>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
@@ -34,6 +34,11 @@
     <Resource Include="Assets\app.png" />
     <Resource Include="Assets\brand-wordmark.png" />
     <Resource Include="Assets\app.ico" />
+    <!-- Also copy beside the exe so tray / shell helpers can load a file path. -->
+    <Content Include="Assets\app.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\app.ico</Link>
+    </Content>
     <None Include="Assets\ja-asr-domain-fixes.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Assets\ja-asr-domain-fixes.json</Link>
@@ -50,6 +55,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Assets\av-actor-glossary.json</Link>
     </None>
+    <None Include="Assets\lan-share\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\lan-share\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -60,6 +69,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.0" />
     <PackageReference Include="Whisper.net" Version="1.8.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
     <PackageReference Include="Whisper.net.Runtime.Vulkan" Version="1.8.1" />

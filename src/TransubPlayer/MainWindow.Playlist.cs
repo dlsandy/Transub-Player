@@ -21,6 +21,8 @@ public partial class MainWindow
     public void HandleExternalOpen(string[] paths)
     {
         if (paths.Length == 0) return;
+        if (_tray?.IsInTray == true)
+            _tray.Restore();
         WindowChromeUtil.ScheduleBringToFront(this);
         if (!IsLoaded || _preview is null)
         {

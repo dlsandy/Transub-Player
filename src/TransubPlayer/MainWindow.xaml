@@ -4,6 +4,7 @@
         xmlns:controls="clr-namespace:TransubPlayer.Controls"
         xmlns:loc="clr-namespace:TransubPlayer.Localization"
         Title="Transub Player"
+        Icon="pack://application:,,,/Assets/app.ico"
         Height="720" Width="1180"
         MinHeight="480" MinWidth="760"
         WindowStyle="None"
@@ -60,6 +61,7 @@
                                             <MenuItem Header="{loc:Loc Main.Playlist.Clear}" Click="PlaylistClear_Click"/>
                                         </MenuItem>
                                         <Separator/>
+                                        <MenuItem Header="{loc:Loc Main.Menu.LanShare}" Click="LanShare_Click"/>
                                         <MenuItem Header="{loc:Loc Main.Menu.Settings}" Click="Settings_Click"/>
                                         <MenuItem Header="{loc:Loc Main.Menu.FileAssociation}" Click="FileAssociation_Click"/>
                                         <MenuItem Header="{loc:Loc Main.Menu.Transub}" Click="Transub_Click"
@@ -106,7 +108,7 @@
                                 <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE713;" FontSize="13"
                                            Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
                             </Button>
-                            <Button Style="{StaticResource CaptionButton}" Click="Min_Click" ToolTip="{loc:Loc Common.Minimize}">
+                            <Button Style="{StaticResource CaptionButton}" Click="Min_Click" ToolTip="{loc:Loc Main.Tray.MinimizeTip}">
                                 <Path Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
                                       StrokeThickness="1.4" Width="10" Height="10"
                                       Data="M0,5 L10,5" Stretch="None"/>
@@ -325,12 +327,14 @@
                                                      FontFamily="Segoe UI Variable, Segoe UI">
                                             <MenuItem Header="{loc:Loc Main.SubFile.Menu.Transub}" Click="Transub_Click"/>
                                             <Separator/>
-                                            <MenuItem x:Name="ExportSourceSubMenu"
-                                                      Header="{loc:Loc Main.SubFile.Menu.ExportSource}"
-                                                      Click="ExportSourceSub_Click"/>
-                                            <MenuItem x:Name="ExportTranslatedSubMenu"
-                                                      Header="{loc:Loc Main.SubFile.Menu.ExportTranslated}"
-                                                      Click="ExportTranslatedSub_Click"/>
+                                            <MenuItem Header="{loc:Loc Main.Menu.ExportSubtitles}">
+                                                <MenuItem x:Name="ExportSourceSubMenu"
+                                                          Header="{loc:Loc Main.SubFile.Menu.ExportSource}"
+                                                          Click="ExportSourceSub_Click"/>
+                                                <MenuItem x:Name="ExportTranslatedSubMenu"
+                                                          Header="{loc:Loc Main.SubFile.Menu.ExportTranslated}"
+                                                          Click="ExportTranslatedSub_Click"/>
+                                            </MenuItem>
                                         </ContextMenu>
                                     </Button.ContextMenu>
                                 </Button>
@@ -348,6 +352,10 @@
                                 <Button x:Name="PlaylistButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xE8FD;" FontFamily="Segoe MDL2 Assets"
                                         Click="TogglePlaylist_Click" ToolTip="播放列表 · L" Margin="0,0,2,0"/>
+                                <Button x:Name="LanShareButton" Style="{StaticResource TransportIconButton}"
+                                        Content="&#xE8EA;" FontFamily="Segoe MDL2 Assets"
+                                        Click="LanShare_Click" ToolTip="{loc:Loc Main.LanShare.Tip}"
+                                        Margin="0,0,2,0"/>
                                 <Button x:Name="ScreenshotButton" Style="{StaticResource TransportIconButton}"
                                         Content="&#xE722;" FontFamily="Segoe MDL2 Assets"
                                         Click="Screenshot_Click" ToolTip="截图 · S" Margin="0,0,2,0" IsEnabled="False"/>
@@ -443,6 +451,14 @@
                                     <MenuItem x:Name="RestartFromPlayheadMenu" Header="{loc:Loc Main.Menu.RestartFromPlayhead}"
                                               Click="RestartFromPlayhead_Click" IsEnabled="False"/>
                                     <MenuItem x:Name="StartPreviewMenu" Header="{loc:Loc Main.Menu.StartPreview}" Click="RePreview_Click" IsEnabled="False" Visibility="Collapsed"/>
+                                </MenuItem>
+                                <MenuItem x:Name="ExportSubtitlesMenu" Header="{loc:Loc Main.Menu.ExportSubtitles}" IsEnabled="False">
+                                    <MenuItem x:Name="CtxExportSourceSubMenu"
+                                              Header="{loc:Loc Main.SubFile.Menu.ExportSource}"
+                                              Click="ExportSourceSub_Click"/>
+                                    <MenuItem x:Name="CtxExportTranslatedSubMenu"
+                                              Header="{loc:Loc Main.SubFile.Menu.ExportTranslated}"
+                                              Click="ExportTranslatedSub_Click"/>
                                 </MenuItem>
                                 <MenuItem x:Name="PresetMenu" Header="{loc:Loc SourceLang.Auto}" IsEnabled="False">
                                     <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>

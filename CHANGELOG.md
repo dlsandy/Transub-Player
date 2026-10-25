@@ -2,6 +2,33 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.6.0] — 2026-10-25
+
+### Added
+
+- **LAN scan-to-play:** control-bar Wi‑Fi entry + shared folders; phone browser picks files. Live subtitles from desktop Whisper / MT with translation / source / bilingual / off. Includes password onboarding, connection/session status, format compatibility hints, same-file cache reuse, and a mobile source/translation frontier bar.
+- **Minimize to tray:** minimizing hides the window in the system tray so LAN and recognition can keep running. Right-click the tray icon to show the window or quit. Opening a file brings the main window back.
+- **Export subtitles from the context menu:** right-click the video → Export subtitles → source or translated; the control-bar subtitle-file menu uses the same hierarchy.
+
+### Improved
+
+- If no finished subtitle sits next to the video, the player no longer stays on a blank “local subtitles only” state and falls back to live recognition and translation.
+- Wider external-subtitle matching: `Subs` / `字幕` folders, and language tags such as `video.chs.srt`, `video_chs.srt`, and `video-chs.srt`. GBK / GB18030 and ASS/SSA files can be read.
+
+### Fixed
+
+- Choosing TranslateGemma 4B no longer loads a larger 9B / 12B / 27B file in the same folder (out-of-memory startup used to leave translations missing).
+
+---
+
+## [1.5.7] — 2026-10-20
+
+### Added
+
+- **Seek bar for non-live streams:** progressive / VOD network media (once duration is known) shows the progress bar and supports drag seek, ←/→, Home/End, and Shift+scroll. Live HLS and screen capture stay without a seek bar.
+
+---
+
 ## [1.5.6] — 2026-10-15
 
 ### Added

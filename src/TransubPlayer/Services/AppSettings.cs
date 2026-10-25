@@ -129,6 +129,18 @@ public sealed class AppSettings
     /// <summary>ISO-8601 UTC of last successful or attempted update check.</summary>
     public string LastUpdateCheckUtc { get; set; } = "";
 
+    // —— 局域网扫码（手机浏览器选片；字幕仍由本机 ASR/MT 生成）——
+    /// <summary>When true, Player listens on LAN so phones can browse whitelisted folders.</summary>
+    public bool LanShareEnabled { get; set; }
+    /// <summary>HTTP port for LAN share (bound to LAN IPv4 + loopback).</summary>
+    public int LanSharePort { get; set; } = 8765;
+    /// <summary>Folders phones may list / stream. Empty = feature starts but library is empty.</summary>
+    public List<string> LanShareRoots { get; set; } = [];
+    /// <summary>Invite token for QR when no password is set. Empty = generated on first enable.</summary>
+    public string LanShareToken { get; set; } = "";
+    /// <summary>Optional access password. When set, the phone must enter it (QR does not embed the password).</summary>
+    public string LanSharePassword { get; set; } = "";
+
     public string ResolveScreenshotDir()
     {
         if (!string.IsNullOrWhiteSpace(ScreenshotDir))
@@ -319,6 +331,11 @@ public sealed class AppSettings
         UpdateSource = AppUpdateEndpoints.Normalize(copy.UpdateSource);
         CheckUpdatesOnStartup = copy.CheckUpdatesOnStartup;
         LastUpdateCheckUtc = copy.LastUpdateCheckUtc;
+        LanShareEnabled = copy.LanShareEnabled;
+        LanSharePort = copy.LanSharePort is > 0 and < 65536 ? copy.LanSharePort : 8765;
+        LanShareRoots = copy.LanShareRoots ?? [];
+        LanShareToken = copy.LanShareToken ?? "";
+        LanSharePassword = copy.LanSharePassword ?? "";
     }
 
     /// <summary>Map old <c>sakuraEnabled</c> / <c>sakuraUrl</c> when new keys are absent.</summary>

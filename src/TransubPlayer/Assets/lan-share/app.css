@@ -1,0 +1,311 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --line: #2a3140;
+  --text: #e8eaed;
+  --muted: #9aa3b2;
+  --accent: #3b82f6;
+  --accent-on: #1d4ed8;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  background: linear-gradient(#0f1115f2, #0f1115cc);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: #fff;
+}
+.status { color: var(--muted); font-size: 13px; text-align: right; max-width: 55%; }
+
+.panel { padding: 12px 16px calc(20px + var(--safe-bottom)); }
+.hidden { display: none !important; }
+
+.crumbs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.crumb {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 4px 0;
+  font: inherit;
+}
+.crumb:disabled { color: var(--muted); }
+
+.list { list-style: none; margin: 0; padding: 0; }
+.list li {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.list button {
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 14px 14px;
+  font: inherit;
+}
+.list .meta { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+.empty { color: var(--muted); padding: 24px 8px; }
+
+.player .back {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  padding: 4px 0 10px;
+  font: inherit;
+}
+.title {
+  margin: 0 0 10px;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.stage {
+  position: relative;
+  background: #000;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+video {
+  display: block;
+  width: 100%;
+  max-height: 56vh;
+  background: #000;
+}
+.sub {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 12%;
+  text-align: center;
+  color: #fff;
+  font-size: clamp(15px, 3.8vw, 22px);
+  font-weight: 650;
+  line-height: 1.35;
+  text-shadow: 0 1px 2px #000, 0 0 10px #000a;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+.wait-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.62);
+  z-index: 3;
+}
+.wait-card {
+  width: min(100%, 360px);
+  background: #1a1a1aee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 22px 20px;
+  text-align: center;
+}
+.wait-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.wait-detail {
+  margin-top: 10px;
+  color: var(--accent);
+  font-size: 14px;
+}
+.wait-hint {
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.wait-skip {
+  margin-top: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  padding: 10px 16px;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.mode {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px 8px;
+  font: inherit;
+  font-weight: 600;
+}
+.mode[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent-on);
+  color: #fff;
+}
+.mode.pending::after { content: "…"; }
+.job {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  min-height: 1.3em;
+}
+
+.gate {
+  max-width: 360px;
+  margin: 24px auto 0;
+}
+.gate-title {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.gate-hint {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.gate-form {
+  display: grid;
+  gap: 10px;
+}
+.gate-form input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 12px 14px;
+  font: inherit;
+}
+.gate-form button {
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  padding: 12px 14px;
+}
+.gate-error {
+  min-height: 1.2em;
+  margin: 10px 0 0;
+  color: #f87171;
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.badge.warn {
+  background: #3b2a12;
+  color: #fbbf24;
+  border: 1px solid #92400e;
+}
+.badge.ok {
+  background: #102316;
+  color: #86efac;
+  border: 1px solid #166534;
+}
+
+.compat-banner {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #3b2a12;
+  color: #fde68a;
+  border: 1px solid #92400e;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.frontier {
+  position: relative;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #1f2430;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.frontier-track {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: #6b7280;
+  transition: width 0.25s ease;
+}
+.frontier-track.zh {
+  background: #3b82f6;
+  opacity: 0.9;
+}
+.frontier-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.leg-src::before,
+.leg-zh::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+.leg-src::before { background: #6b7280; }
+.leg-zh::before { background: #3b82f6; }

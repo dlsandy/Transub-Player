@@ -148,6 +148,20 @@ internal sealed class PreviewController : IDisposable
     public bool IsStreamPlayback
         => !string.IsNullOrWhiteSpace(MediaPath)
            && MediaSourceHelper.IsNonLocalMedia(MediaPath);
+    /// <summary>
+    /// 直播 HLS（light IPC）或桌面采集：无可靠总时长，不显示进度条。
+    /// 点播/直链等非直播流在拿到 duration 后可 seek。
+    /// </summary>
+    public bool IsLiveStreamPlayback
+        => IsStreamPlayback
+           && (MediaSourceHelper.IsScreenCapture(MediaPath) || _mpv.LiveLightIpc);
+    /// <summary>
+    /// 进度条 / 快进退：本地文件始终可；非直播网络流在 duration 已知后可。
+    /// </summary>
+    public bool CanSeek
+        => !string.IsNullOrWhiteSpace(MediaPath)
+           && !IsLiveStreamPlayback
+           && (!IsStreamPlayback || Duration > 1);
     /// <summary>走 ASR/翻译原文提取路径（非成片外挂、非仅本地字幕来源、非流媒体）。</summary>
     public bool ShowPreviewChrome
         => !string.IsNullOrWhiteSpace(MediaPath)
@@ -733,10 +747,18 @@ internal sealed class PreviewController : IDisposable
             var pref = SourcePreference;
 
             string? existing = null;
+            SubtitleFile.InvalidateDirectoryListingCache(Path.GetDirectoryName(path));
             if (pref == SubtitleSourceKind.Local)
                 existing = SubtitleFile.FindExistingSubtitle(path);
             else if (pref == SubtitleSourceKind.Live && _settings.PreferExternalSubtitle)
                 existing = SubtitleFile.FindExistingSubtitle(path);
+            if (existing is null
+                && (pref == SubtitleSourceKind.Local
+                    || (pref == SubtitleSourceKind.Live && _settings.PreferExternalSubtitle)))
+            {
+                _log("同目录未匹配成片字幕 · " + Path.GetFileName(path)
+                     + " · 需与片同名（可带 .chs / _chs / -chs 等）或放在 Subs/字幕 子目录");
+            }
 
             var waitZh = pref == SubtitleSourceKind.Live && ShouldWaitForFirstZh() && existing is null;
             var autoPlay = _settings.AutoPlayOnOpen && !waitZh;
@@ -826,12 +848,14 @@ internal sealed class PreviewController : IDisposable
 
             if (pref == SubtitleSourceKind.Local)
             {
-                EndBootstrap();
-                PublishStatus(Loc.Get("Main.SubSource.LocalOnlyNone"));
-                return;
+                // Sticky "Local" (e.g. after picking a sidecar once) used to dead-end films
+                // with no sidecar — no ASR, no MT. Fall through to live extraction instead.
+                _log("本地字幕来源但无同目录成片 · 回退实时识别/翻译");
+                PublishStatus(Loc.Get("Main.SubSource.LocalFallbackLive"));
+                ShowOsd(Loc.Get("Main.Osd.LocalFallbackLive"), 2400);
+                // continue → live ASR/MT below
             }
-
-            if (pref == SubtitleSourceKind.Online)
+            else if (pref == SubtitleSourceKind.Online)
             {
                 EndBootstrap();
                 PublishStatus(Loc.Get("Main.SubSource.OnlineNone"));
@@ -997,16 +1021,10 @@ internal sealed class PreviewController : IDisposable
 
         if (local is null)
         {
-            UsingExistingSub = false;
-            _subs.SetUsingExistingSub(false);
-            _externalOrigin = ExternalSubOrigin.None;
-            ActiveSubPath = null;
-            _mpv.ClearSubtitle();
-            EndBootstrap();
-            _prefetch?.SetLiveBusy(false);
-            PublishStatus(Loc.Get("Main.SubSource.LocalOnlyNone"));
-            ShowOsd(Loc.Get("Main.SubSource.LocalNone"), 2000);
-            StateChanged?.Invoke();
+            // No sidecar for this file — fall back to live ASR/MT instead of a blank screen.
+            PublishStatus(Loc.Get("Main.SubSource.LocalFallbackLive"));
+            ShowOsd(Loc.Get("Main.Osd.LocalFallbackLive"), 2400);
+            await UseLiveSubtitleAsync(ct, pauseForWait: true).ConfigureAwait(false);
             return;
         }
 
@@ -1894,6 +1912,7 @@ internal sealed class PreviewController : IDisposable
 
     public void Seek(double seconds)
     {
+        if (!CanSeek) return;
         if (Duration > 0)
             seconds = Math.Clamp(seconds, 0, Duration);
         else if (seconds < 0)
@@ -1905,6 +1924,7 @@ internal sealed class PreviewController : IDisposable
 
     public void SeekRelative(double delta)
     {
+        if (!CanSeek) return;
         var target = Position + delta;
         if (Duration > 0)
             target = Math.Clamp(target, 0, Duration);
@@ -1915,6 +1935,7 @@ internal sealed class PreviewController : IDisposable
 
     public void SeekPercent(double percent)
     {
+        if (!CanSeek) return;
         percent = Math.Clamp(percent, 0, 100);
         if (Duration > 0)
             Position = Duration * (percent / 100.0);
@@ -2859,6 +2880,33 @@ internal sealed class PreviewController : IDisposable
     public void StopPlaybackImmediate()
     {
         try { _mpv.StopPlayback(); } catch { /* ignore */ }
+    }
+
+    /// <summary>
+    /// Pause playlist prefetch and release Whisper GPU so a LAN watch session can load its own factory.
+    /// </summary>
+    public async Task BeginLanShareExclusiveAsync(CancellationToken ct)
+    {
+        if (_disposed != 0) return;
+        _prefetch?.SetLiveBusy(true);
+        CancelPlaylistPrefetch();
+        try
+        {
+            await _engine.CancelJobAsync(ct).ConfigureAwait(false);
+            await _engine.WaitUntilIdleAsync(ct).ConfigureAwait(false);
+            await _engine.ReleaseGpuAsync(ct).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _log("LAN yield GPU: " + ex.Message);
+        }
+    }
+
+    /// <summary>Allow playlist prefetch again after the LAN session releases ASR.</summary>
+    public void EndLanShareExclusive()
+    {
+        if (_disposed != 0) return;
+        _prefetch?.SetLiveBusy(false);
     }
 
     /// <summary>

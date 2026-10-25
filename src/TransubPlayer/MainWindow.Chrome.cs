@@ -214,13 +214,15 @@ public partial class MainWindow
     {
         var on = HasMedia;
         var stream = _preview?.IsStreamPlayback == true;
-        SeekBar.IsEnabled = on && !stream;
+        var canSeek = on && _preview?.CanSeek == true;
+        // 直播 / 尚无时长的流隐藏进度条；本地空状态仍保留禁用轨道。
+        SeekBar.IsEnabled = canSeek;
         if (SeekRow is not null)
-            SeekRow.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
+            SeekRow.Visibility = stream && !canSeek ? Visibility.Collapsed : Visibility.Visible;
         PlayButton.IsEnabled = on;
         StopButton.IsEnabled = on;
-        SeekBackButton.IsEnabled = on && !stream;
-        SeekFwdButton.IsEnabled = on && !stream;
+        SeekBackButton.IsEnabled = canSeek;
+        SeekFwdButton.IsEnabled = canSeek;
         ModeZhButton.IsEnabled = on && !stream;
         ModeSrcButton.IsEnabled = on && !stream;
         ModeDualButton.IsEnabled = on && !stream;
@@ -248,6 +250,11 @@ public partial class MainWindow
         FullscreenMenu.IsEnabled = on;
         SubMenu.IsEnabled = on && !stream;
         SubMenu.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
+        if (ExportSubtitlesMenu is not null)
+        {
+            ExportSubtitlesMenu.IsEnabled = on && !stream;
+            ExportSubtitlesMenu.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;
+        }
         FindOnlineSubMenu.IsEnabled = on && !stream;
         PresetMenu.IsEnabled = on && !stream && _presetReady;
         PresetMenu.Visibility = stream ? Visibility.Collapsed : Visibility.Visible;

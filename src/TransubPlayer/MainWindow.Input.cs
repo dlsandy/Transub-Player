@@ -19,6 +19,7 @@ public partial class MainWindow
                     AppMenu.IsOpen = false;
                 RefreshModelMenus();
                 RefreshClipUi();
+                RefreshExportSubtitleMenus();
             };
         PlayerHost.NativeLeftButtonDown += clickCount =>
         {
@@ -37,15 +38,18 @@ public partial class MainWindow
         {
             if (!HasMedia) return;
             if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                _preview!.SeekRelative(delta > 0 ? 2 : -2);
+            {
+                if (_preview?.CanSeek == true)
+                {
+                    _preview.SeekRelative(delta > 0 ? 2 : -2);
+                    NotifySeekPastReady(_preview.Position);
+                }
+            }
             else
             {
                 _preview!.AdjustVolume(delta > 0 ? 5 : -5);
                 SyncVolumeUi();
             }
-
-            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
-                NotifySeekPastReady(_preview.Position);
 
             BumpChrome();
         };
@@ -149,6 +153,7 @@ public partial class MainWindow
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         var shift = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift);
         var stream = _preview?.IsStreamPlayback == true;
+        var canSeek = _preview?.CanSeek == true;
 
         switch (key)
         {
@@ -156,12 +161,12 @@ public partial class MainWindow
                 _preview?.TogglePause();
                 return true;
             case Key.Left:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview?.SeekRelative(ctrl ? -SeekLargeStep() : shift ? -SeekFineStep() : -SeekStep());
                 NotifySeekPastReady(_preview?.Position ?? 0);
                 return true;
             case Key.Right:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview?.SeekRelative(ctrl ? SeekLargeStep() : shift ? SeekFineStep() : SeekStep());
                 NotifySeekPastReady(_preview?.Position ?? 0);
                 return true;
@@ -174,21 +179,21 @@ public partial class MainWindow
                 SyncVolumeUi();
                 return true;
             case Key.PageUp:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview?.SeekRelative(60);
                 NotifySeekPastReady(_preview?.Position ?? 0);
                 return true;
             case Key.PageDown:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview?.SeekRelative(-60);
                 NotifySeekPastReady(_preview?.Position ?? 0);
                 return true;
             case Key.Home:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview?.Seek(0);
                 return true;
             case Key.End when _preview is { Duration: > 0 }:
-                if (stream) return true;
+                if (!canSeek) return true;
                 _preview.Seek(Math.Max(0, _preview.Duration - 1));
                 NotifySeekPastReady(_preview.Position);
                 return true;
@@ -306,9 +311,9 @@ public partial class MainWindow
         if (!HasMedia) return;
         if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift))
         {
-            if (_preview?.IsStreamPlayback != true)
+            if (_preview?.CanSeek == true)
             {
-                _preview!.SeekRelative(e.Delta > 0 ? 2 : -2);
+                _preview.SeekRelative(e.Delta > 0 ? 2 : -2);
                 NotifySeekPastReady(_preview.Position);
             }
         }

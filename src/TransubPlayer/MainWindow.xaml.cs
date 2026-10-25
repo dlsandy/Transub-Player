@@ -19,6 +19,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _uiTimer;
     private readonly DispatcherTimer _hideTimer;
     private PreviewController? _preview;
+    private LanShareHost? _lanShare;
     private EngineLogWindow? _engineLogWindow;
     private bool _seeking;
     private bool _volumeDrag;
@@ -112,6 +113,19 @@ public partial class MainWindow : Window
             _preview.MediaEnded += () => Dispatcher.BeginInvoke(() => OnMediaEnded());
             _preview.VideoSizeChanged += (w, h) => Dispatcher.BeginInvoke(() => FitWindowToVideo(w, h));
             _preview.PrefetchChanged += _ => Dispatcher.BeginInvoke(() => RefreshPlaylistUi());
+            _lanShare = new LanShareHost(
+                _settings,
+                SetStatus,
+                PlayerLog.Write,
+                async ct =>
+                {
+                    if (_preview is not null)
+                        await _preview.BeginLanShareExclusiveAsync(ct).ConfigureAwait(false);
+                },
+                () => _preview?.EndLanShareExclusive(),
+                () => _preview?.MediaPath);
+            _lanShare.Changed += () => Dispatcher.BeginInvoke(RefreshLanShareChrome);
+            RefreshLanShareChrome();
             _presetReady = true;
             RefreshModeButtons();
             RefreshMaxButton();
@@ -571,6 +585,7 @@ public partial class MainWindow : Window
             return;
 
         ApplySettingsFromDisk();
+        SyncLanShareAfterSettings();
         _ = ApplySettingsSideEffectsSafeAsync(
             prevAsrBackend,
             prevModelsPath,
@@ -992,7 +1007,114 @@ public partial class MainWindow : Window
         await RunSetupWizardIfNeededAsync().ConfigureAwait(true);
         RefreshHealthIndicator();
         RefreshPresetUi(probeDeps: true);
+        TryStartLanShareFromSettings();
         await AppUpdateUi.StartupCheckAsync(this, _settings).ConfigureAwait(true);
+    }
+
+    private void TryStartLanShareFromSettings()
+    {
+        if (_lanShare is null || !_settings.LanShareEnabled) return;
+        try
+        {
+            LanShareNet.EnsureToken(_settings);
+            _lanShare.Start();
+        }
+        catch (Exception ex)
+        {
+            PlayerLog.Write("LAN share start: " + ex.Message);
+            SetStatus(Loc.Format("Lan.Error.BindFailed", _settings.LanSharePort, ex.Message));
+        }
+        finally
+        {
+            RefreshLanShareChrome();
+        }
+    }
+
+    private void SyncLanShareAfterSettings()
+    {
+        if (_lanShare is null) return;
+        try
+        {
+            if (_settings.LanShareEnabled)
+            {
+                LanShareNet.EnsureToken(_settings);
+                if (_lanShare.IsRunning
+                    && _lanShare.Port != 0
+                    && _settings.LanSharePort != _lanShare.Port)
+                {
+                    _ = RestartLanShareAsync();
+                }
+                else if (_lanShare.IsRunning)
+                {
+                    _lanShare.RefreshAuthFromSettings();
+                }
+                else
+                {
+                    _lanShare.Start();
+                }
+            }
+            else if (_lanShare.IsRunning)
+            {
+                _ = _lanShare.StopAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            PlayerLog.Write("LAN share sync: " + ex.Message);
+            SetStatus(ex.Message);
+        }
+        finally
+        {
+            RefreshLanShareChrome();
+        }
+    }
+
+    private async Task RestartLanShareAsync()
+    {
+        if (_lanShare is null) return;
+        try
+        {
+            await _lanShare.StopAsync(announcePhoneDisconnect: true).ConfigureAwait(true);
+            if (_settings.LanShareEnabled)
+                _lanShare.Start();
+        }
+        catch (Exception ex)
+        {
+            PlayerLog.Write("LAN share restart: " + ex.Message);
+        }
+        finally
+        {
+            RefreshLanShareChrome();
+        }
+    }
+
+    private void LanShare_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lanShare is null) return;
+        var win = new LanShareWindow(_settings, _lanShare, () => OpenSettings(SettingsWindow.TabLan))
+        {
+            Owner = this,
+        };
+        win.ShowDialog();
+        SyncLanShareAfterSettings();
+        RefreshLanShareChrome();
+    }
+
+    private void RefreshLanShareChrome()
+    {
+        if (LanShareButton is null) return;
+        var on = _lanShare?.IsRunning == true;
+        LanShareButton.Tag = on ? "on" : null;
+        if (!on || _lanShare is null)
+        {
+            LanShareButton.ToolTip = Loc.Get("Main.LanShare.Tip");
+            return;
+        }
+
+        LanShareButton.ToolTip = _lanShare.SummaryStatus;
+        // Keep the status bar in sync while a phone session is active (without stomping other messages too often).
+        if (_lanShare.HasActiveSession || _lanShare.ViewerCount > 0)
+            SetStatus(_lanShare.SummaryStatus);
     }
 
     private Task RunSetupWizardIfNeededAsync()
@@ -1140,6 +1262,9 @@ public partial class MainWindow : Window
     }
 
     private void SubFileMenu_Opened(object sender, RoutedEventArgs e)
+        => RefreshExportSubtitleMenus();
+
+    private void RefreshExportSubtitleMenus()
     {
         var mediaPath = _preview?.MediaPath;
         var hasMedia = !string.IsNullOrWhiteSpace(mediaPath)
@@ -1157,6 +1282,10 @@ public partial class MainWindow : Window
             ExportSourceSubMenu.IsEnabled = hasSource;
         if (ExportTranslatedSubMenu is not null)
             ExportTranslatedSubMenu.IsEnabled = hasTranslated;
+        if (CtxExportSourceSubMenu is not null)
+            CtxExportSourceSubMenu.IsEnabled = hasSource;
+        if (CtxExportTranslatedSubMenu is not null)
+            CtxExportTranslatedSubMenu.IsEnabled = hasTranslated;
     }
 
     private void Transub_Click(object sender, RoutedEventArgs e)
@@ -1357,7 +1486,7 @@ public partial class MainWindow : Window
         Close();
     }
 
-    private void Min_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+    private void Min_Click(object sender, RoutedEventArgs e) => MinToTray_Click(sender, e);
 
     private void Max_Click(object sender, RoutedEventArgs e)
     {
@@ -1374,7 +1503,12 @@ public partial class MainWindow : Window
     {
         RefreshMaxButton();
         if (WindowState == WindowState.Minimized)
+        {
             HideFloatingPopups();
+            // Taskbar minimize → tray so LAN / ASR keep running without a taskbar entry.
+            if (!_shutdownStarted && !_shutdownComplete && _tray?.IsInTray != true)
+                MinToTray_Click(sender, new RoutedEventArgs());
+        }
         else if (IsActive)
         {
             UpdateOpeningOverlay();
@@ -1409,6 +1543,7 @@ public partial class MainWindow : Window
         if (_isFullscreen)
             ExitFullscreen();
 
+        DisposeTray();
         _uiTimer.Stop();
         _hideTimer.Stop();
         _clickTimer.Stop();
@@ -1432,6 +1567,16 @@ public partial class MainWindow : Window
         Hide();
         try
         {
+            if (_lanShare is not null)
+                await _lanShare.StopAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            PlayerLog.Write("退出局域网：" + ex.Message);
+        }
+
+        try
+        {
             if (_preview is not null)
                 await _preview.ShutdownAsync().ConfigureAwait(true);
         }
@@ -1441,6 +1586,8 @@ public partial class MainWindow : Window
         }
         finally
         {
+            try { _lanShare?.Dispose(); } catch { /* ignore */ }
+            _lanShare = null;
             _preview?.Dispose();
             _preview = null;
             ChildProcessLifetime.KillRemaining();

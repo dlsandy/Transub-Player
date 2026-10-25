@@ -16,8 +16,9 @@ public partial class SettingsWindow : Window
     public const int TabPlayback = 1;
     public const int TabSubtitle = 2;
     public const int TabModels = 3;
-    public const int TabAssociation = 4;
-    public const int TabAdvanced = 5;
+    public const int TabLan = 4;
+    public const int TabAssociation = 5;
+    public const int TabAdvanced = 6;
     /// <summary>Obsolete alias — use <see cref="TabModels"/>.</summary>
     public const int TabPresets = TabModels;
 
@@ -226,7 +227,50 @@ public partial class SettingsWindow : Window
         HideDelayLabel.Text = Loc.Format("Settings.HideDelay.Current", HideDelaySlider.Value.ToString("0.#", CultureInfo.CurrentUICulture));
         ModelsPathBox.Text = _settings.ModelsPath;
         AdvancedLlmPathBox.Text = _settings.AdvancedLlmPath;
+        LanShareEnabledBox.IsChecked = _settings.LanShareEnabled;
+        LanSharePasswordBox.Password = _settings.LanSharePassword ?? "";
+        LanSharePortBox.Text = (_settings.LanSharePort is > 0 and < 65536 ? _settings.LanSharePort : 8765).ToString(CultureInfo.InvariantCulture);
+        RefreshLanRootsList();
         UpdateSubPreview();
+    }
+
+    private void RefreshLanRootsList()
+    {
+        LanRootsList.Items.Clear();
+        foreach (var root in LanPathGuard.NormalizedRoots(_settings.LanShareRoots))
+            LanRootsList.Items.Add(root);
+    }
+
+    private void LanAddRoot_Click(object sender, RoutedEventArgs e)
+    {
+        using var dlg = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = Loc.Get("Settings.Lan.AddRoot"),
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = false,
+        };
+        if (dlg.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+            return;
+        try
+        {
+            var full = Path.GetFullPath(dlg.SelectedPath);
+            _settings.LanShareRoots ??= [];
+            if (_settings.LanShareRoots.Any(r => string.Equals(r, full, StringComparison.OrdinalIgnoreCase)))
+                return;
+            _settings.LanShareRoots.Add(full);
+            RefreshLanRootsList();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, ex.Message, Loc.Get("Settings.Lan.Title"), MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    private void LanRemoveRoot_Click(object sender, RoutedEventArgs e)
+    {
+        if (LanRootsList.SelectedItem is not string path) return;
+        _settings.LanShareRoots.RemoveAll(r => string.Equals(r, path, StringComparison.OrdinalIgnoreCase));
+        RefreshLanRootsList();
     }
 
     private void WireSliderLabels()
@@ -401,6 +445,20 @@ public partial class SettingsWindow : Window
         _settings.TranslateUrl = string.IsNullOrWhiteSpace(TranslateUrlBox.Text) ? "http://127.0.0.1:39281" : TranslateUrlBox.Text.Trim();
         _settings.ModelsPath = ModelsPathBox.Text.Trim();
         _settings.AdvancedLlmPath = AdvancedLlmPathBox.Text.Trim();
+        _settings.LanShareEnabled = LanShareEnabledBox.IsChecked == true;
+        _settings.LanSharePassword = LanSharePasswordBox.Password ?? "";
+        if (int.TryParse(LanSharePortBox.Text.Trim(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var lanPort)
+            && lanPort is > 0 and < 65536)
+            _settings.LanSharePort = lanPort;
+        else
+            _settings.LanSharePort = 8765;
+        _settings.LanShareRoots = LanRootsList.Items.Cast<object>()
+            .Select(x => x?.ToString())
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Select(s => s!)
+            .ToList();
+        if (_settings.LanShareEnabled)
+            LanShareNet.EnsureToken(_settings);
         SnapshotAssociationSelections();
     }
 

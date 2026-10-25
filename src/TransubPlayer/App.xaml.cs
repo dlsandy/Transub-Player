@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Text;
+using System.Windows;
 using TransubPlayer.Localization;
 using TransubPlayer.Services;
 
@@ -10,6 +11,9 @@ public partial class App : System.Windows.Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        // GBK / GB18030 sidecars are common next to Chinese media.
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+
         DispatcherUnhandledException += (_, args) =>
         {
             args.Handled = true;

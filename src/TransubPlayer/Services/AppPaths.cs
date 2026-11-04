@@ -78,6 +78,10 @@ internal static class AppPaths
     public static string RecordingsDir => EnsureSub("recordings");
     public static string CacheDir => EnsureSub("cache");
     public static string ModelsDir => EnsureSub("models");
+    /// <summary>Shipped / user-managed .cube LUT presets for video color grading.</summary>
+    public static string LutsDir => EnsureSub("luts");
+    /// <summary>User-saved manual color-grade parameter presets (JSON).</summary>
+    public static string ColorGradesDir => EnsureSub("color-grades");
 
     public static string NativeRoot
     {

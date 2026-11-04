@@ -2,6 +2,23 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.7.0] — 2026-11-04
+
+### Added
+
+- **Color grade & LUT:** right-click the video → Color grade. Manual brightness / contrast / saturation / gamma / hue with live preview and named presets; built-in 3D LUT looks (warm cinema, cool night, vintage film, contrast punch, soft pastel); browse custom `.cube` / `.3dl` / `.hald`; optional auto-apply of a same-stem LUT next to the video.
+
+### Improved
+
+- Whisper recognition caps CPU worker threads (aligned with whisper.cpp CLI) so playback stays responsive; settings/status show the loaded Vulkan/GPU vs CPU library more clearly, with an explicit restart hint when the process already pinned the CPU native library. [[https://github.com/dlsandy/Transub-Player/issues/16](https://github.com/dlsandy/Transub-Player/issues/16)]
+- Check for updates on startup is on by default.
+
+### Fixed
+
+- Subtitle source “Local” no longer silently starts live ASR/MT when no sidecar is present; stays local-only — switch to “Live” if you need recognition.
+
+---
+
 ## [1.6.0] — 2026-10-25
 
 ### Added
@@ -64,18 +81,12 @@
 
 ---
 
-
-
 ## [1.5.4] — 2026-09-22
-
-
 
 ### Added
 
 - **Control-bar Transub button:** the language/translate icon next to the subtitle controls opens Transub to generate high-quality / production subtitles (same handoff as the menu item “Generate high-quality subtitles with Transub”).
 - **Local clip capture:** press `C` to mark the start, press `C` again at the end to save; `Shift+C` cancels. Prefers saving beside the video when the folder is writable; otherwise writes to the clips folder. Uses ffmpeg stream-copy when installed; otherwise re-encodes (may be slower).
-
-
 
 ### Fixed
 
@@ -84,24 +95,16 @@
 
 ---
 
-
-
 ## [1.5.3] — 2026-09-10
-
-
 
 ### Added
 
 - When several local subtitle files sit next to the video (e.g. `video.srt`, `video.zh-cn.srt`), switch among them from the control bar or the Subtitles menu.
 
-
-
 ### Improved
 
 - More stable recognition when switching videos or running playlist prefetch: wait for Whisper to finish releasing before the next job, and free translation GPU when ASR needs Vulkan.
 - Playlist subtitle prefetch only queues the next few items, not the entire remaining list.
-
-
 
 ### Fixed
 
@@ -111,18 +114,12 @@
 
 ---
 
-
-
 ## [1.5.2] — 2026-09-02
-
-
 
 ### Improved
 
 - **Translation + recognition coordination:** translation logic starts on demand while recognition is still running, so translated subtitles appear sooner.
 - **Automatic translation port switch:** if the translation port is in use, the player picks another port so translation does not fail.
-
-
 
 ### Fixed
 
@@ -130,11 +127,7 @@
 
 ---
 
-
-
 ## [1.5.1] — 2026-09-01
-
-
 
 ### Added
 
@@ -142,8 +135,6 @@
 - Switch source / translation / dual subtitles (shortcuts `1` / `2` / `3`); Chinese / Japanese / Korean / English mutual translation.
 - Stream playback and recording; optional GPU acceleration (Vulkan).
 - Multilingual README (English / 简体中文 / 日本語 / 한국어) and product intro image.
-
-
 
 ### Distribution
 

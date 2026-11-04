@@ -2,6 +2,23 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.7.0] — 2026-11-04
+
+### 新增
+
+- **调色与 LUT：** 播放画面右键「调色」。亮度 / 对比度 / 饱和度 / 伽马 / 色相可手动滑块实时预览，并支持命名方案；内置暖调电影、冷调夜景、复古胶片、高对比、柔和淡彩等 3D LUT；可浏览自定义 `.cube` / `.3dl` / `.hald`；可选自动套用视频同目录同名 LUT。
+
+### 优化
+
+- 识别线程数按 whisper.cpp CLI 上限收紧，避免占满整机影响播放；设置/状态更清楚显示 Vulkan/GPU 与已加载运行库，进程已钉死 CPU 库时提示需重启才能切 GPU。[[https://github.com/dlsandy/Transub-Player/issues/16](https://github.com/dlsandy/Transub-Player/issues/16)]
+- 启动时检查更新默认开启。
+
+### BUG修复
+
+- 字幕来源选「本地」时不再在无同目录成片字幕的情况下静默启动实时识别/翻译；保持仅本地，需字幕请改选「实时字幕」。
+
+---
+
 ## [1.6.0] — 2026-10-25
 
 ### 新增

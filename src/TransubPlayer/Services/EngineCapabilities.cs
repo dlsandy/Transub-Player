@@ -45,6 +45,8 @@ internal sealed class EngineCapabilities
             bits.Add(AsrGpuReady
                 ? Loc.Get("Settings.EngineCaps.GpuReady")
                 : Loc.Get("Settings.EngineCaps.GpuCpu"));
+            if (!string.IsNullOrWhiteSpace(GpuName))
+                bits.Add(GpuName);
             if (!string.IsNullOrWhiteSpace(EngineVersion))
                 bits.Add("v" + EngineVersion);
         }

@@ -898,6 +898,8 @@
                                         <StackPanel Style="{StaticResource FieldCell}">
                                             <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.AsrBackend.Label}"/>
                                             <ComboBox x:Name="AsrBackendBox"/>
+                                            <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                       Text="{loc:Loc Settings.AsrBackend.Hint}"/>
                                         </StackPanel>
                                         <StackPanel Style="{StaticResource FieldCell}">
                                             <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.Advanced.HfMirror}"/>

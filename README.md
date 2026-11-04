@@ -11,7 +11,7 @@ Open a video and the picture appears right away; readable subtitles catch up soo
   <img src="docs/images/cover.jpg" alt="Transub Player — live dual subtitles while watching" width="900">
 </p>
 
-> Windows desktop player · v1.6.0  
+> Windows desktop player · v1.7.0  
 > Download the installer or portable zip from [GitHub](https://github.com/dlsandy/Transub-Player/releases) or [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases). You can also use **Check for updates** inside the app.
 
 ---
@@ -30,6 +30,12 @@ More languages are planned.
 
 **Streams play — and record**  
 Open common network stream URLs directly. Want to rewatch later? Record to local storage in one step.
+
+**Scan to play on your phone**  
+Control-bar Wi‑Fi entry plus shared folders; pick files in the phone browser. Live subtitles still come from desktop Whisper / translation — switch translation / source / dual / off on the page. Minimize to tray so LAN and recognition keep running.
+
+**Color grade & LUT**  
+Right-click → Color grade: tweak brightness / contrast / saturation and more with live preview, or save named presets. Built-in 3D LUT looks, browse custom `.cube` / `.3dl`, or auto-apply a same-stem LUT next to the video.
 
 **Deep match with Transub**  
 Generate high-quality subtitles with the Transub subtitle tool; when they’re ready, the player can prompt you to play them.

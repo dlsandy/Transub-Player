@@ -290,6 +290,8 @@ public partial class MainWindow
                 ShowPlaylist(false);
         }
         SpeedMenu.IsEnabled = on;
+        if (ColorGradeMenu is not null)
+            ColorGradeMenu.IsEnabled = on;
         ScreenshotMenu.IsEnabled = on;
         RefreshClipUi();
         RePreviewMenu.IsEnabled = on && !stream && (_preview?.ShowSwitchToPreviewAction == true || _preview?.PreviewRetryAvailable == true);

@@ -21,6 +21,7 @@ internal sealed class AsrPipeline : IDisposable
 
     private WhisperFactory? _factory;
     private string? _loadedModelPath;
+    private bool _factoryGpu;
     private CancellationTokenSource? _jobCts;
     private Task? _runTask;
     private string? _jobId;
@@ -645,13 +646,45 @@ internal sealed class AsrPipeline : IDisposable
     private void EnsureFactory(string modelPath)
     {
         AsrRuntime.Apply(_settings);
+        var preferGpu = AsrRuntime.PreferGpu(_settings);
         if (_factory is not null
-            && string.Equals(_loadedModelPath, modelPath, StringComparison.OrdinalIgnoreCase))
+            && string.Equals(_loadedModelPath, modelPath, StringComparison.OrdinalIgnoreCase)
+            && _factoryGpu == preferGpu)
             return;
 
+        if (AsrRuntime.NeedsRestartForGpu(_settings))
+        {
+            _log(Loc.Get("Main.Status.AsrGpuNeedsRestart"));
+            _status(Loc.Get("Main.Status.AsrGpuNeedsRestart"));
+        }
+
         ReleaseModel();
-        _factory = WhisperFactory.FromPath(modelPath);
+        // UseGpu must match preference: CPU-only selection keeps weights on host even if a
+        // Vulkan-capable DLL was already pinned for this process.
+        var options = new WhisperFactoryOptions
+        {
+            UseGpu = preferGpu,
+        };
+        _factory = WhisperFactory.FromPath(modelPath, options);
         _loadedModelPath = modelPath;
+        _factoryGpu = preferGpu;
+
+        var loaded = AsrRuntime.LoadedLibraryLabel();
+        var threads = AsrRuntime.ResolveThreadCount(preferGpu && AsrRuntime.IsGpuLibraryLoaded());
+        _log(Loc.Format("Main.Status.AsrRuntimeLoaded", loaded, threads));
+        try
+        {
+            var info = WhisperFactory.GetRuntimeInfo();
+            if (!string.IsNullOrWhiteSpace(info))
+                _log("whisper runtime: " + info.Trim());
+        }
+        catch
+        {
+            // optional diagnostic
+        }
+
+        Capabilities = AsrRuntime.EnrichCapabilities(
+            EngineCapabilities.ForEmbedded(_modelsRoot), _settings);
     }
 
     /// <summary>
@@ -669,6 +702,10 @@ internal sealed class AsrPipeline : IDisposable
 
         // Soft / music / silence often triggers stuck phrases; no-context is the standard fix.
         builder = builder.WithNoContext();
+
+        // Cap CPU workers — unset defaults to every logical core and starves the UI/player.
+        var useGpu = _factoryGpu && AsrRuntime.IsGpuLibraryLoaded();
+        builder = builder.WithThreads(AsrRuntime.ResolveThreadCount(useGpu));
         return builder.Build();
     }
 
@@ -677,6 +714,7 @@ internal sealed class AsrPipeline : IDisposable
         try { _factory?.Dispose(); } catch { /* ignore */ }
         _factory = null;
         _loadedModelPath = null;
+        _factoryGpu = false;
     }
 
     /// <summary>

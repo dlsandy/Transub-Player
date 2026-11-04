@@ -1,0 +1,142 @@
+<Window x:Class="TransubPlayer.ColorGradeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:TransubPlayer.Localization"
+        Title="{loc:Loc ColorGrade.Title}"
+        Width="420" SizeToContent="Height"
+        MinWidth="380" MaxWidth="480"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="{StaticResource BgBrush}"
+        Foreground="{StaticResource TextBrush}"
+        FontFamily="Segoe UI Variable, Segoe UI"
+        FocusVisualStyle="{x:Null}">
+    <DockPanel Margin="18,14,18,16">
+        <StackPanel DockPanel.Dock="Bottom" Margin="0,14,0,0">
+            <DockPanel Margin="0,0,0,10">
+                <Button DockPanel.Dock="Right" Content="{loc:Loc ColorGrade.SavePreset}"
+                        Click="SavePreset_Click" Padding="12,5" Margin="8,0,0,0"/>
+                <TextBox x:Name="PresetNameBox" VerticalContentAlignment="Center" Padding="8,5"
+                         ToolTip="{loc:Loc ColorGrade.SavePreset.Tip}"/>
+            </DockPanel>
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button Content="{loc:Loc ColorGrade.Reset}" Click="Reset_Click" Padding="12,5"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="{loc:Loc Common.Close}" Click="Close_Click"
+                            Style="{StaticResource AccentButton}" Padding="16,5"
+                            IsCancel="True" IsDefault="True"/>
+                </StackPanel>
+            </DockPanel>
+        </StackPanel>
+
+        <StackPanel>
+            <TextBlock Text="{loc:Loc ColorGrade.Hint}" TextWrapping="Wrap"
+                       Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,0,0,12"/>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Brightness}" VerticalAlignment="Center"/>
+                <Slider x:Name="BrightnessSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="BrightnessValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Contrast}" VerticalAlignment="Center"/>
+                <Slider x:Name="ContrastSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="ContrastValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Saturation}" VerticalAlignment="Center"/>
+                <Slider x:Name="SaturationSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="SaturationValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Gamma}" VerticalAlignment="Center"/>
+                <Slider x:Name="GammaSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="GammaValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Hue}" VerticalAlignment="Center"/>
+                <Slider x:Name="HueSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"/>
+                <TextBlock x:Name="HueValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid Margin="0,0,0,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Shadows}" VerticalAlignment="Center"
+                           ToolTip="{loc:Loc ColorGrade.Shadows.Tip}"/>
+                <Slider x:Name="ShadowsSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"
+                        ToolTip="{loc:Loc ColorGrade.Shadows.Tip}"/>
+                <TextBlock x:Name="ShadowsValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="72"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="40"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{loc:Loc ColorGrade.Sharpness}" VerticalAlignment="Center"
+                           ToolTip="{loc:Loc ColorGrade.Sharpness.Tip}"/>
+                <Slider x:Name="SharpnessSlider" Grid.Column="1" Minimum="-100" Maximum="100"
+                        TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center"
+                        ValueChanged="Slider_ValueChanged"
+                        ToolTip="{loc:Loc ColorGrade.Sharpness.Tip}"/>
+                <TextBlock x:Name="SharpnessValue" Grid.Column="2" Text="0" HorizontalAlignment="Right"
+                           VerticalAlignment="Center" FontFamily="Consolas, Cascadia Mono"/>
+            </Grid>
+        </StackPanel>
+    </DockPanel>
+</Window>

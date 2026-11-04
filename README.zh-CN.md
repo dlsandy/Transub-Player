@@ -8,7 +8,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 边看边出双语字幕" width="900">
 </p>
 
-> Windows 本地播放器 · 当前版本 1.6.0  
+> Windows 本地播放器 · 当前版本 1.7.0  
 > 从 [GitHub](https://github.com/dlsandy/Transub-Player/releases) 或 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases) 下载安装程序或便携包即可使用。软件内也可「检查更新」检查并升级至新版本。
 
 ---
@@ -27,6 +27,12 @@
 
 **直播也能播，还能录**  
 常见网络流媒体地址直接播放；想稍后回看，可一键录制到本地。
+
+**手机扫码，局域网也能看**  
+控制栏 Wi‑Fi 入口 + 共享文件夹，手机浏览器选片。实时字幕仍由电脑 Whisper / 翻译生成，网页可切译文 / 原文 / 双语 / 关；电脑可最小化到托盘继续跑。
+
+**画面调色与 LUT**  
+右键「调色」：亮度 / 对比度 / 饱和度等滑块实时预览，可保存命名方案；内置多种 3D LUT，也可浏览自定义 `.cube` / `.3dl`，或自动套用视频同目录同名 LUT。
 
 **深度匹配 Transub 字幕生成器**  
 支持用 Transub 字幕生成器生成高质量字幕，字幕生成后播放器自动回应提示播放。

@@ -480,6 +480,9 @@
                                     <MenuItem Header="{loc:Loc Main.Menu.CycleSpeed}" Click="CycleSpeed_Click" InputGestureText="["/>
                                     <MenuItem Header="{loc:Loc Main.Menu.ResetSpeed}" Click="ResetSpeed_Click" InputGestureText="]"/>
                                 </MenuItem>
+                                <MenuItem x:Name="ColorGradeMenu" Header="{loc:Loc Main.Menu.ColorGrade}" IsEnabled="False">
+                                    <MenuItem Header="{loc:Loc Main.Menu.PresetsLoading}" IsEnabled="False"/>
+                                </MenuItem>
                                 <Separator/>
                                 <MenuItem x:Name="ScreenshotMenu" Header="{loc:Loc Main.Menu.Screenshot}" Click="Screenshot_Click" InputGestureText="S" IsEnabled="False"/>
                                 <MenuItem x:Name="ClipMenu" Header="{loc:Loc Main.Menu.Clip}"

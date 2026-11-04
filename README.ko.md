@@ -11,7 +11,7 @@
   <img src="docs/images/cover.jpg" alt="Transub Player — 시청 중 실시간 이중 언어 자막" width="900">
 </p>
 
-> Windows 데스크톱 플레이어 · 현재 버전 1.6.0  
+> Windows 데스크톱 플레이어 · 현재 버전 1.7.0  
 > [GitHub](https://github.com/dlsandy/Transub-Player/releases) 또는 [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases)에서 설치 프로그램이나 포터블 패키지를 받으세요. 앱 안의「업데이트 확인」으로도 업그레이드할 수 있습니다.
 
 ---
@@ -30,6 +30,12 @@
 
 **스트리밍 재생과 녹화**  
 일반적인 네트워크 스트림 URL을 바로 재생합니다. 나중에 다시 보고 싶다면 한 번에 로컬로 녹화할 수 있습니다.
+
+**휴대폰 스캔 재생**  
+컨트롤 바 Wi‑Fi 진입과 공유 폴더. 휴대폰 브라우저에서 영상을 고르면, 실시간 자막은 PC Whisper/번역이 만듭니다. 웹에서 번역/원문/이중/끄기를 전환할 수 있고, 트레이로 최소화해도 LAN과 인식은 계속됩니다.
+
+**컬러 그레이딩 & LUT**  
+우클릭「조색」: 밝기/대비/채도 등을 실시간 조정하고 이름 있는 프리셋으로 저장. 내장 3D LUT, 사용자 `.cube`/`.3dl`, 영상과 같은 이름의 옆 폴더 LUT 자동 적용을 지원합니다.
 
 **Transub 자막 생성기와 깊이 연동**  
 Transub로 고품질 자막을 만들면, 준비된 뒤 플레이어가 재생을 안내합니다.

@@ -49,7 +49,10 @@ public partial class App : System.Windows.Application
         }
 
         // Before MainWindow loads so first paint uses the right pack.
-        Loc.Apply(AppSettings.Load().UiLanguage);
+        var bootSettings = AppSettings.Load();
+        Loc.Apply(bootSettings.UiLanguage);
+        // Pin Whisper runtime order before any WhisperFactory can load a sticky native lib.
+        AsrRuntime.Apply(bootSettings);
 
         if (!SingleInstanceHost.TryBecomePrimary(out var startupArgs))
         {

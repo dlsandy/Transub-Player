@@ -17,6 +17,9 @@ internal sealed class MpvPlayer : IDisposable
     private string _pipeName = "";
     private int _requestId;
     private string? _currentSub;
+    private string? _activeLutPath;
+    private int _shadows;
+    private string _hwDecPreference = "auto";
     private int _volume = 50;
     private bool _muted;
     private double _speed = 1.0;
@@ -82,6 +85,7 @@ internal sealed class MpvPlayer : IDisposable
         _volume = Math.Clamp(settings.Volume, 0, 130);
         _muted = settings.Muted;
         _speed = settings.Speed > 0 ? settings.Speed : 1.0;
+        _hwDecPreference = NormalizeHwDec(settings.HwDec);
         _pipeName = "transub-player-mpv-" + Guid.NewGuid().ToString("N")[..12];
         var ipc = @"\\.\pipe\" + _pipeName;
         var start = new ProcessStartInfo
@@ -586,12 +590,140 @@ internal sealed class MpvPlayer : IDisposable
 
     public void ApplyPlaybackSettings(AppSettings settings)
     {
-        var hw = NormalizeHwDec(settings.HwDec);
-        SetProperty("hwdec", hw);
+        _hwDecPreference = NormalizeHwDec(settings.HwDec);
+        ApplyHwDec();
         ApplyVideoFit(settings.VideoFit);
+        ApplyColorGrade(settings.GetColorGrade());
         SetVolume(Math.Clamp(settings.Volume, 0, 130));
         if (settings.Speed > 0)
             SetSpeed(settings.Speed);
+    }
+
+    /// <summary>
+    /// mpv equalizer + sharpen; shadows go through vf <c>colorlevels</c> (merged with LUT).
+    /// </summary>
+    public void ApplyColorGrade(ColorGradeParams parameters)
+    {
+        parameters.Normalize();
+        SetProperty("brightness", parameters.Brightness);
+        SetProperty("contrast", parameters.Contrast);
+        SetProperty("saturation", parameters.Saturation);
+        SetProperty("gamma", parameters.Gamma);
+        SetProperty("hue", parameters.Hue);
+        SetProperty("sharpen", ColorGradeParams.ToMpvSharpen(parameters.Sharpness));
+        _shadows = parameters.Shadows;
+        ApplyHwDec();
+        RebuildVideoFilters();
+    }
+
+    /// <summary>
+    /// Apply or clear a 3D LUT via mpv <c>lut3d</c> video filter (.cube / .3dl / hald image).
+    /// FFmpeg filters need system-memory frames, so hardware decode switches to a
+    /// <c>*-copy</c> / <c>auto-copy</c> mode while a LUT or shadows filter is active.
+    /// </summary>
+    public bool ApplyLut3d(string? lutPath)
+    {
+        if (string.IsNullOrWhiteSpace(lutPath) || !File.Exists(lutPath))
+        {
+            _activeLutPath = null;
+            ApplyHwDec();
+            return RebuildVideoFilters();
+        }
+
+        string full;
+        try { full = Path.GetFullPath(lutPath); }
+        catch
+        {
+            _activeLutPath = null;
+            ApplyHwDec();
+            RebuildVideoFilters();
+            return false;
+        }
+
+        _activeLutPath = full;
+        ApplyHwDec();
+        var ok = RebuildVideoFilters();
+        if (!ok)
+            Log?.Invoke("LUT vf 下发失败 · " + full);
+        else
+            Log?.Invoke("LUT · " + Path.GetFileName(full) + " · hwdec=" + HwDecForFilters(_hwDecPreference));
+        return ok;
+    }
+
+    private bool NeedsFilterHwDec
+        => !string.IsNullOrWhiteSpace(_activeLutPath) || _shadows != 0;
+
+    private void ApplyHwDec()
+    {
+        var hw = NeedsFilterHwDec
+            ? HwDecForFilters(_hwDecPreference)
+            : _hwDecPreference;
+        SetProperty("hwdec", hw);
+    }
+
+    /// <summary>
+    /// Map preferred hwdec to a copy-back variant so CPU video filters can run.
+    /// </summary>
+    private static string HwDecForFilters(string preferred) => preferred switch
+    {
+        "no" => "no",
+        "d3d11va" => "d3d11va-copy",
+        "dxva2" => "dxva2-copy",
+        "nvdec" => "nvdec-copy",
+        _ => "auto-copy",
+    };
+
+    private bool RebuildVideoFilters()
+    {
+        var filters = new List<object>();
+        if (_shadows != 0)
+            filters.Add(BuildShadowsFilter(_shadows));
+        if (!string.IsNullOrWhiteSpace(_activeLutPath))
+            filters.Add(BuildLutFilter(_activeLutPath));
+        return TryCommand("set_property", "vf", filters.ToArray());
+    }
+
+    private static Dictionary<string, object> BuildLutFilter(string fullPath) => new()
+    {
+        ["name"] = "lut3d",
+        ["params"] = new Dictionary<string, object>
+        {
+            ["file"] = fullPath,
+            ["interp"] = "tetrahedral",
+        },
+    };
+
+    /// <summary>
+    /// Positive = lift dark tones (raise output black); negative = crush (raise input black).
+    /// </summary>
+    private static Dictionary<string, object> BuildShadowsFilter(int shadows)
+    {
+        var t = Math.Clamp(Math.Abs(shadows), 0, 100) / 100.0;
+        var parameters = new Dictionary<string, object>
+        {
+            ["preserve"] = "lum",
+        };
+        if (shadows > 0)
+        {
+            // Lift shadows without blowing highlights.
+            var lift = Math.Round(t * 0.18, 4);
+            parameters["romin"] = lift;
+            parameters["gomin"] = lift;
+            parameters["bomin"] = lift;
+        }
+        else
+        {
+            var crush = Math.Round(t * 0.14, 4);
+            parameters["rimin"] = crush;
+            parameters["gimin"] = crush;
+            parameters["bimin"] = crush;
+        }
+
+        return new Dictionary<string, object>
+        {
+            ["name"] = "colorlevels",
+            ["params"] = parameters,
+        };
     }
 
     /// <summary>
@@ -601,7 +733,7 @@ internal sealed class MpvPlayer : IDisposable
     private static IEnumerable<string> BuildLiveEmbedArgs(IntPtr hwnd, string ipc, AppSettings settings)
     {
         // Exact Covers Download electron/mpv-launch.js buildMpvArgs (minus video-margin for HTML chrome).
-        var hw = NormalizeHwDec(settings.HwDec);
+        var hw = ResolveStartupHwDec(settings);
         if (hw == "auto")
             hw = "d3d11va-auto";
 
@@ -639,7 +771,7 @@ internal sealed class MpvPlayer : IDisposable
         var size = Math.Clamp(settings.SubFontSize, 16, 96);
         var border = Math.Clamp(settings.SubBorderSize, 0, 8);
         var margin = Math.Clamp(settings.SubMarginY, 0, 200);
-        var hw = NormalizeHwDec(settings.HwDec);
+        var hw = ResolveStartupHwDec(settings);
         yield return $"--wid={hwnd.ToInt64()}";
         yield return "--no-border";
         yield return "--no-osc";
@@ -727,6 +859,23 @@ internal sealed class MpvPlayer : IDisposable
             "nvdec" or "cuda" => "nvdec",
             _ => "auto",
         };
+    }
+
+    private static string ResolveStartupHwDec(AppSettings settings)
+    {
+        var hw = NormalizeHwDec(settings.HwDec);
+        var needsCopy = settings.ColorShadows != 0;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(settings.LutPath) && File.Exists(settings.LutPath))
+                needsCopy = true;
+        }
+        catch
+        {
+            // ignore bad path
+        }
+
+        return needsCopy ? HwDecForFilters(hw) : hw;
     }
 
     private void SetProperty(string name, object value)

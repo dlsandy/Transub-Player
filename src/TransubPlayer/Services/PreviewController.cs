@@ -73,6 +73,9 @@ internal sealed class PreviewController : IDisposable
     private int _liveClockPollBusy;
     private readonly SubtitleCoverageTracker _coverage = new();
     private bool _fellBackToSourceThisMedia;
+    /// <summary>LUT currently pushed to mpv for this media session (null/empty = off).</summary>
+    private string? _activeLutPath;
+    private bool _lutFromSidecar;
 
     private enum BootstrapPhase
     {
@@ -539,6 +542,8 @@ internal sealed class PreviewController : IDisposable
                 _mpv.SetMute(true);
             _mpv.SetSpeed(_settings.Speed <= 0 ? 1.0 : _settings.Speed);
             _mpv.ApplySubtitleSettings(_settings);
+            ReapplyActiveLut();
+            ReapplyColorGrade();
         }
 
         ApplyDisplayVisibility();
@@ -768,6 +773,8 @@ internal sealed class PreviewController : IDisposable
             _mpvPlayOsd = null;
             if (!await EnsureLoadIntoMpvAsync(path, autoPlay, subtitlePath: existing).ConfigureAwait(false))
                 throw new InvalidOperationException(Loc.Get("Main.Status.MpvLoadFailed"));
+            ApplyLutForOpenedMedia(path);
+            ReapplyColorGrade();
             Paused = !autoPlay;
             if (sessionPrefs.HasViewPrefs)
             {
@@ -848,14 +855,16 @@ internal sealed class PreviewController : IDisposable
 
             if (pref == SubtitleSourceKind.Local)
             {
-                // Sticky "Local" (e.g. after picking a sidecar once) used to dead-end films
-                // with no sidecar — no ASR, no MT. Fall through to live extraction instead.
-                _log("本地字幕来源但无同目录成片 · 回退实时识别/翻译");
-                PublishStatus(Loc.Get("Main.SubSource.LocalFallbackLive"));
-                ShowOsd(Loc.Get("Main.Osd.LocalFallbackLive"), 2400);
-                // continue → live ASR/MT below
+                // Local = sidecar only. No silent ASR/MT — user can switch to Live explicitly.
+                EndBootstrap();
+                _log("本地字幕来源但无同目录成片 · 不自动原文提取");
+                PublishStatus(Loc.Get("Main.SubSource.LocalOnlyNone"));
+                ShowOsd(Loc.Get("Main.SubSource.LocalNone"), 2400);
+                StateChanged?.Invoke();
+                return;
             }
-            else if (pref == SubtitleSourceKind.Online)
+
+            if (pref == SubtitleSourceKind.Online)
             {
                 EndBootstrap();
                 PublishStatus(Loc.Get("Main.SubSource.OnlineNone"));
@@ -1021,10 +1030,15 @@ internal sealed class PreviewController : IDisposable
 
         if (local is null)
         {
-            // No sidecar for this file — fall back to live ASR/MT instead of a blank screen.
-            PublishStatus(Loc.Get("Main.SubSource.LocalFallbackLive"));
-            ShowOsd(Loc.Get("Main.Osd.LocalFallbackLive"), 2400);
-            await UseLiveSubtitleAsync(ct, pauseForWait: true).ConfigureAwait(false);
+            // Keep Local sticky; do not start ASR — matches SubSource help / LocalOnlyNone.
+            UsingExistingSub = false;
+            _subs.SetUsingExistingSub(false);
+            ActiveSubPath = null;
+            _externalOrigin = ExternalSubOrigin.None;
+            EndBootstrap();
+            PublishStatus(Loc.Get("Main.SubSource.LocalOnlyNone"));
+            ShowOsd(Loc.Get("Main.SubSource.LocalNone"), 2400);
+            StateChanged?.Invoke();
             return;
         }
 
@@ -2028,6 +2042,170 @@ internal sealed class PreviewController : IDisposable
         _settings.Speed = _mpv.Speed;
         _settings.SaveSoon();
     }
+
+    /// <summary>Absolute path of the LUT applied to the current session, or null when off.</summary>
+    public string? ActiveLutPath
+        => string.IsNullOrWhiteSpace(_activeLutPath) ? null : _activeLutPath;
+
+    public bool LutFromSidecar => _lutFromSidecar;
+
+    /// <summary>
+    /// Resolve sidecar (same-stem .cube/.3dl/.hald) or global setting, then apply to mpv.
+    /// </summary>
+    public void ApplyLutForOpenedMedia(string? mediaPath)
+    {
+        _lutFromSidecar = false;
+        string? path = null;
+        if (!string.IsNullOrWhiteSpace(mediaPath)
+            && !MediaSourceHelper.IsNonLocalMedia(mediaPath)
+            && _settings.LutAutoSidecar)
+        {
+            path = LutSidecar.Find(mediaPath);
+            if (path is not null)
+                _lutFromSidecar = true;
+        }
+
+        if (path is null)
+            path = ResolveSettingsLutPath();
+
+        PushLut(path, announce: _lutFromSidecar);
+    }
+
+    /// <summary>User-picked LUT from the 调色 menu. Empty/null clears and clears the saved path.</summary>
+    public void SetLutPath(string? lutPath, bool persist = true)
+    {
+        _lutFromSidecar = false;
+        var path = string.IsNullOrWhiteSpace(lutPath) || !File.Exists(lutPath)
+            ? null
+            : Path.GetFullPath(lutPath);
+        if (persist)
+        {
+            _settings.LutPath = path ?? "";
+            _settings.SaveSoon();
+        }
+
+        PushLut(path, announce: true);
+    }
+
+    public void SetLutAutoSidecar(bool enabled)
+    {
+        if (_settings.LutAutoSidecar == enabled) return;
+        _settings.LutAutoSidecar = enabled;
+        _settings.SaveSoon();
+        if (!string.IsNullOrWhiteSpace(MediaPath) && !MediaSourceHelper.IsNonLocalMedia(MediaPath))
+            ApplyLutForOpenedMedia(MediaPath);
+    }
+
+    private void ReapplyActiveLut()
+    {
+        if (!_mpv.IsRunning) return;
+        try { _mpv.ApplyLut3d(_activeLutPath); }
+        catch (Exception ex) { _log("LUT 重应用失败 · " + ex.Message); }
+    }
+
+    private void ReapplyColorGrade()
+    {
+        if (!_mpv.IsRunning) return;
+        try { _mpv.ApplyColorGrade(_settings.GetColorGrade()); }
+        catch (Exception ex) { _log("色调重应用失败 · " + ex.Message); }
+    }
+
+    public ColorGradeParams GetColorGrade() => _settings.GetColorGrade();
+
+    /// <summary>Live-apply equalizer knobs; persists to settings unless <paramref name="persist"/> is false.</summary>
+    public void SetColorGrade(ColorGradeParams parameters, bool persist = true, bool announce = false)
+    {
+        parameters.Normalize();
+        if (persist)
+            _settings.SetColorGrade(parameters, saveSoon: true);
+        else
+        {
+            // Keep settings in sync for UI even when caller batches Save().
+            _settings.ColorBrightness = parameters.Brightness;
+            _settings.ColorContrast = parameters.Contrast;
+            _settings.ColorSaturation = parameters.Saturation;
+            _settings.ColorGamma = parameters.Gamma;
+            _settings.ColorHue = parameters.Hue;
+            _settings.ColorShadows = parameters.Shadows;
+            _settings.ColorSharpness = parameters.Sharpness;
+        }
+
+        if (_mpv.IsRunning)
+        {
+            try { _mpv.ApplyColorGrade(parameters); }
+            catch (Exception ex) { _log("色调应用失败 · " + ex.Message); }
+        }
+
+        if (announce)
+        {
+            ShowOsd(
+                parameters.IsDefault
+                    ? Loc.Get("Main.Osd.ColorGradeReset")
+                    : Loc.Get("Main.Osd.ColorGradeApplied"),
+                1600);
+        }
+    }
+
+    public void ResetColorGrade(bool announce = true)
+        => SetColorGrade(new ColorGradeParams(), persist: true, announce: announce);
+
+    private string? ResolveSettingsLutPath()
+    {
+        var raw = _settings.LutPath;
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        try
+        {
+            var full = Path.GetFullPath(raw);
+            return File.Exists(full) ? full : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void PushLut(string? path, bool announce)
+    {
+        _activeLutPath = path;
+        if (!_mpv.IsRunning) return;
+
+        try
+        {
+            if (!_mpv.ApplyLut3d(path))
+            {
+                _log("LUT 应用失败 · " + (path ?? "(off)"));
+                if (announce)
+                    ShowOsd(Loc.Get("Main.Osd.LutFailed"), 2200);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            _log("LUT 异常 · " + ex.Message);
+            if (announce)
+                ShowOsd(Loc.Get("Main.Osd.LutFailed"), 2200);
+            return;
+        }
+
+        if (!announce) return;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            ShowOsd(Loc.Get("Main.Osd.LutOff"), 1600);
+            return;
+        }
+
+        var label = LutPresets.IdForPath(path) is { } id
+            ? Loc.Get(LutPresets.Catalog.First(p => p.Id == id).LabelKey)
+            : Path.GetFileName(path);
+        ShowOsd(
+            _lutFromSidecar
+                ? Loc.Format("Main.Osd.LutSidecar", label)
+                : Loc.Format("Main.Osd.LutApplied", label),
+            2000);
+        if (_lutFromSidecar)
+            _log("同目录 LUT · " + path);
+    }
+
     public void ToggleSubVisible()
     {
         if (_displayMode == SubtitleDisplayMode.Off || !_mpv.SubVisible)
@@ -2196,6 +2374,8 @@ internal sealed class PreviewController : IDisposable
     {
         _mpv.ApplySubtitleSettings(_settings);
         _mpv.ApplyPlaybackSettings(_settings);
+        ReapplyActiveLut();
+        // Color grade already applied inside ApplyPlaybackSettings.
         ApplyDisplayVisibility();
         PersistViewPrefs();
     }
@@ -2854,6 +3034,8 @@ internal sealed class PreviewController : IDisposable
         _prefetch?.SetLiveBusy(false);
 
         MediaPath = null;
+        _activeLutPath = null;
+        _lutFromSidecar = false;
         try { _finishedSub.Disarm(); } catch { /* ignore */ }
         _pendingResumeAt = 0;
         UsingExistingSub = false;

@@ -18,6 +18,7 @@ public partial class MainWindow
                 if (AppMenu is { IsOpen: true })
                     AppMenu.IsOpen = false;
                 RefreshModelMenus();
+                RefreshLutMenu();
                 RefreshClipUi();
                 RefreshExportSubtitleMenus();
             };

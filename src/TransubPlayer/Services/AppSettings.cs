@@ -108,6 +108,54 @@ public sealed class AppSettings
     public string HwDec { get; set; } = "auto";
     /// <summary>window | contain | cover | stretch — default window：打开后按视频比例调整窗口</summary>
     public string VideoFit { get; set; } = "window";
+    /// <summary>Absolute path to active LUT (.cube/.3dl/.hald). Empty = off (unless sidecar auto-applies).</summary>
+    public string LutPath { get; set; } = "";
+    /// <summary>When true, same-stem .cube/.3dl/.hald next to the video overrides the global LUT.</summary>
+    public bool LutAutoSidecar { get; set; } = true;
+    /// <summary>mpv brightness (−100…100).</summary>
+    public int ColorBrightness { get; set; }
+    /// <summary>mpv contrast (−100…100).</summary>
+    public int ColorContrast { get; set; }
+    /// <summary>mpv saturation (−100…100).</summary>
+    public int ColorSaturation { get; set; }
+    /// <summary>mpv gamma (−100…100).</summary>
+    public int ColorGamma { get; set; }
+    /// <summary>mpv hue (−100…100).</summary>
+    public int ColorHue { get; set; }
+    /// <summary>Shadow lift/crush (−100…100).</summary>
+    public int ColorShadows { get; set; }
+    /// <summary>Sharpen / soft (−100…100).</summary>
+    public int ColorSharpness { get; set; }
+
+    public ColorGradeParams GetColorGrade()
+    {
+        var p = new ColorGradeParams
+        {
+            Brightness = ColorBrightness,
+            Contrast = ColorContrast,
+            Saturation = ColorSaturation,
+            Gamma = ColorGamma,
+            Hue = ColorHue,
+            Shadows = ColorShadows,
+            Sharpness = ColorSharpness,
+        };
+        p.Normalize();
+        return p;
+    }
+
+    public void SetColorGrade(ColorGradeParams p, bool saveSoon = true)
+    {
+        p.Normalize();
+        ColorBrightness = p.Brightness;
+        ColorContrast = p.Contrast;
+        ColorSaturation = p.Saturation;
+        ColorGamma = p.Gamma;
+        ColorHue = p.Hue;
+        ColorShadows = p.Shadows;
+        ColorSharpness = p.Sharpness;
+        if (saveSoon)
+            SaveSoon();
+    }
 
     // —— 字幕渲染（mpv）——
     public string SubFont { get; set; } = "Microsoft YaHei";
@@ -124,8 +172,8 @@ public sealed class AppSettings
 
     /// <summary>Update mirror: auto (region) | github | gitcode.</summary>
     public string UpdateSource { get; set; } = AppUpdateEndpoints.Auto;
-    /// <summary>When true, quietly check for a newer portable build about once per day.</summary>
-    public bool CheckUpdatesOnStartup { get; set; }
+    /// <summary>When true, quietly check for a newer portable build about once per day. Default on.</summary>
+    public bool CheckUpdatesOnStartup { get; set; } = true;
     /// <summary>ISO-8601 UTC of last successful or attempted update check.</summary>
     public string LastUpdateCheckUtc { get; set; } = "";
 
@@ -320,6 +368,15 @@ public sealed class AppSettings
         SeekStepLargeSeconds = copy.SeekStepLargeSeconds;
         HwDec = copy.HwDec;
         VideoFit = copy.VideoFit;
+        LutPath = copy.LutPath ?? "";
+        LutAutoSidecar = copy.LutAutoSidecar;
+        ColorBrightness = ColorGradeParams.Clamp(copy.ColorBrightness);
+        ColorContrast = ColorGradeParams.Clamp(copy.ColorContrast);
+        ColorSaturation = ColorGradeParams.Clamp(copy.ColorSaturation);
+        ColorGamma = ColorGradeParams.Clamp(copy.ColorGamma);
+        ColorHue = ColorGradeParams.Clamp(copy.ColorHue);
+        ColorShadows = ColorGradeParams.Clamp(copy.ColorShadows);
+        ColorSharpness = ColorGradeParams.Clamp(copy.ColorSharpness);
         SubFont = copy.SubFont;
         SubFontSize = copy.SubFontSize;
         SubBold = copy.SubBold;
@@ -363,6 +420,22 @@ public sealed class AppSettings
 
             if (!root.TryGetProperty("addSameFolderToPlaylist", out _))
                 settings.AddSameFolderToPlaylist = true;
+
+            // Older builds defaulted this off. Opt in once for installs that never chose explicitly,
+            // or that still have the inherited false and never ran a check (#16).
+            if (!root.TryGetProperty("checkUpdatesOnStartup", out _))
+                settings.CheckUpdatesOnStartup = true;
+            else if (!settings.CheckUpdatesOnStartup
+                     && string.IsNullOrWhiteSpace(settings.LastUpdateCheckUtc))
+            {
+                settings.DismissedTips ??= [];
+                if (settings.DismissedTips.All(t =>
+                        !string.Equals(t, "update-startup-optin-16", StringComparison.OrdinalIgnoreCase)))
+                {
+                    settings.CheckUpdatesOnStartup = true;
+                    settings.DismissedTips.Add("update-startup-optin-16");
+                }
+            }
 
             if (!root.TryGetProperty("sourceLanguage", out _)
                 && root.TryGetProperty("presetId", out var presetEl)

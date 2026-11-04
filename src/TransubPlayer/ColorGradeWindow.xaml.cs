@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using TransubPlayer.Localization;
 using TransubPlayer.Services;
 
@@ -9,14 +10,24 @@ public partial class ColorGradeWindow : Window
     private readonly AppSettings _settings;
     private readonly Action<ColorGradeParams> _apply;
     private readonly Action _reset;
+    private readonly DispatcherTimer _applyTimer;
     private bool _suppress;
+    private bool _applyPending;
+    private ColorGradeParams? _lastSent;
 
     public ColorGradeWindow(AppSettings settings, Action<ColorGradeParams> apply, Action reset)
     {
         _settings = settings;
         _apply = apply;
         _reset = reset;
+        _applyTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _applyTimer.Tick += ApplyTimer_Tick;
         InitializeComponent();
+        Closed += (_, _) =>
+        {
+            _applyTimer.Stop();
+            FlushApply();
+        };
         LoadFromSettings();
     }
 
@@ -39,6 +50,9 @@ public partial class ColorGradeWindow : Window
             ShadowsSlider.Value = p.Shadows;
             SharpnessSlider.Value = p.Sharpness;
             RefreshValueLabels();
+            _lastSent = p.Clone();
+            _applyPending = false;
+            _applyTimer.Stop();
         }
         finally
         {
@@ -50,7 +64,27 @@ public partial class ColorGradeWindow : Window
     {
         if (_suppress || !IsLoaded) return;
         RefreshValueLabels();
-        ApplyLive();
+        // Coalesce rapid slider ticks — flooding mpv IPC (esp. sharpen) stutters playback.
+        _applyPending = true;
+        _applyTimer.Stop();
+        _applyTimer.Start();
+    }
+
+    private void ApplyTimer_Tick(object? sender, EventArgs e)
+    {
+        _applyTimer.Stop();
+        FlushApply();
+    }
+
+    private void FlushApply()
+    {
+        if (!_applyPending) return;
+        _applyPending = false;
+        var p = ReadSliders();
+        if (_lastSent is not null && _lastSent.EqualsValues(p))
+            return;
+        _lastSent = p.Clone();
+        _apply(p);
     }
 
     private void RefreshValueLabels()
@@ -75,10 +109,10 @@ public partial class ColorGradeWindow : Window
         Sharpness = ColorGradeParams.FromSlider(SharpnessSlider.Value),
     };
 
-    private void ApplyLive() => _apply(ReadSliders());
-
     private void Reset_Click(object sender, RoutedEventArgs e)
     {
+        _applyTimer.Stop();
+        _applyPending = false;
         _reset();
         LoadFromSettings();
     }
@@ -100,7 +134,9 @@ public partial class ColorGradeWindow : Window
 
         try
         {
+            FlushApply();
             var parameters = ReadSliders();
+            _lastSent = parameters.Clone();
             _apply(parameters);
             ColorGradeStore.Save(name, parameters);
             PresetNameBox.Text = "";

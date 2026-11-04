@@ -19,6 +19,8 @@ internal sealed class MpvPlayer : IDisposable
     private string? _currentSub;
     private string? _activeLutPath;
     private int _shadows;
+    private string? _appliedHwDec;
+    private bool _vfNeedsRebuild = true;
     private string _hwDecPreference = "auto";
     private int _volume = 50;
     private bool _muted;
@@ -601,6 +603,7 @@ internal sealed class MpvPlayer : IDisposable
 
     /// <summary>
     /// mpv equalizer + sharpen; shadows go through vf <c>colorlevels</c> (merged with LUT).
+    /// Equalizer/sharpen are cheap property writes; vf/hwdec only rebuild when shadows change.
     /// </summary>
     public void ApplyColorGrade(ColorGradeParams parameters)
     {
@@ -611,6 +614,11 @@ internal sealed class MpvPlayer : IDisposable
         SetProperty("gamma", parameters.Gamma);
         SetProperty("hue", parameters.Hue);
         SetProperty("sharpen", ColorGradeParams.ToMpvSharpen(parameters.Sharpness));
+
+        // Rebuilding vf / flipping hwdec every slider tick stutters playback badly.
+        if (!_vfNeedsRebuild && _shadows == parameters.Shadows)
+            return;
+
         _shadows = parameters.Shadows;
         ApplyHwDec();
         RebuildVideoFilters();
@@ -658,6 +666,9 @@ internal sealed class MpvPlayer : IDisposable
         var hw = NeedsFilterHwDec
             ? HwDecForFilters(_hwDecPreference)
             : _hwDecPreference;
+        if (string.Equals(_appliedHwDec, hw, StringComparison.Ordinal))
+            return;
+        _appliedHwDec = hw;
         SetProperty("hwdec", hw);
     }
 
@@ -680,12 +691,16 @@ internal sealed class MpvPlayer : IDisposable
             filters.Add(BuildShadowsFilter(_shadows));
         if (!string.IsNullOrWhiteSpace(_activeLutPath))
             filters.Add(BuildLutFilter(_activeLutPath));
-        return TryCommand("set_property", "vf", filters.ToArray());
+        var ok = TryCommand("set_property", "vf", filters.ToArray());
+        if (ok)
+            _vfNeedsRebuild = false;
+        return ok;
     }
 
     private static Dictionary<string, object> BuildLutFilter(string fullPath) => new()
     {
         ["name"] = "lut3d",
+        // mpv IPC filter params must be strings (JSON numbers → "unsupported format").
         ["params"] = new Dictionary<string, object>
         {
             ["file"] = fullPath,
@@ -694,29 +709,43 @@ internal sealed class MpvPlayer : IDisposable
     };
 
     /// <summary>
-    /// Positive = lift dark tones (raise output black); negative = crush (raise input black).
+    /// Positive = lift dark tones; negative = crush shadows.
+    /// Uses FFmpeg <c>colorlevels</c>. Param values must be strings for mpv IPC.
     /// </summary>
     private static Dictionary<string, object> BuildShadowsFilter(int shadows)
     {
         var t = Math.Clamp(Math.Abs(shadows), 0, 100) / 100.0;
-        var parameters = new Dictionary<string, object>
-        {
-            ["preserve"] = "lum",
-        };
+        // Culture-invariant so "0.25" never becomes "0,25".
+        static string F(double v) => v.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture);
+
+        Dictionary<string, object> parameters;
         if (shadows > 0)
         {
-            // Lift shadows without blowing highlights.
-            var lift = Math.Round(t * 0.18, 4);
-            parameters["romin"] = lift;
-            parameters["gomin"] = lift;
-            parameters["bomin"] = lift;
+            // Lift: raise output black + slightly pull input white (ffmpeg “make lighter”).
+            var lift = t * 0.32;
+            var white = 1.0 - t * 0.28;
+            parameters = new Dictionary<string, object>
+            {
+                ["romin"] = F(lift),
+                ["gomin"] = F(lift),
+                ["bomin"] = F(lift),
+                ["rimax"] = F(white),
+                ["gimax"] = F(white),
+                ["bimax"] = F(white),
+                ["preserve"] = "lum",
+            };
         }
         else
         {
-            var crush = Math.Round(t * 0.14, 4);
-            parameters["rimin"] = crush;
-            parameters["gimin"] = crush;
-            parameters["bimin"] = crush;
+            // Crush: raise input black point.
+            var crush = t * 0.28;
+            parameters = new Dictionary<string, object>
+            {
+                ["rimin"] = F(crush),
+                ["gimin"] = F(crush),
+                ["bimin"] = F(crush),
+                ["preserve"] = "lum",
+            };
         }
 
         return new Dictionary<string, object>
@@ -1056,6 +1085,8 @@ internal sealed class MpvPlayer : IDisposable
 
     private void CleanupAfterProcessExit()
     {
+        _appliedHwDec = null;
+        _vfNeedsRebuild = true;
         _readerCts?.Cancel();
         try { _writer?.Dispose(); } catch { /* ignore */ }
         try { _pipe?.Dispose(); } catch { /* ignore */ }

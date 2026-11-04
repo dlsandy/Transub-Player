@@ -75,7 +75,7 @@ public sealed class ColorGradeParams
 
     public static int FromSlider(double value) => Clamp((int)Math.Round(value));
 
-    /// <summary>Map UI sharpness (−100…100) to mpv <c>sharpen</c> (−4…4).</summary>
+    /// <summary>Map UI sharpness (−100…100) to mpv <c>sharpen</c> (−2.5…2.5; higher values are costly).</summary>
     public static double ToMpvSharpen(int sharpness)
-        => Clamp(sharpness) / 100.0 * 4.0;
+        => Clamp(sharpness) / 100.0 * 2.5;
 }

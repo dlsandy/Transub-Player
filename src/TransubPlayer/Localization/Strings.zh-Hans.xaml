@@ -482,7 +482,7 @@
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">尚未加载</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">优先选 Vulkan 以降 CPU 占用。识别线程已限制，避免占满整机；GPU 模式下仍会有少量 CPU（音频预处理）。若进程已加载 CPU 库，需重启后才能切到 GPU。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">优先选 Vulkan 以降 CPU 占用。识别线程已限制，避免占满整机；GPU 模式下仍会有少量 CPU（音频预处理）。若进程已加载 CPU 库，需重启后才能切到 GPU。若其它软件正在用 Intel QSV 转码（如 HandBrake），请改用 CPU 识别或先暂停转码，否则部分 Intel 驱动可能导致整机卡死或蓝屏。</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">识别运行库：{0} · 线程 {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">当前进程已加载 CPU 识别库 · 请重启播放器后再用 Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">内嵌识别 · {0} · 模型目录 {1}</sys:String>

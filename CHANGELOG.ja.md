@@ -2,6 +2,20 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.7.1] — 2026-11-09
+
+### 最適化
+
+- **ハイブリッド構成でディスクリート GPU を優先：** DXGI で独立 GPU を検出したら、mpv の D3D11 と Whisper Vulkan をそちらに寄せ、Intel iGPU を他アプリと奪い合いにくくする。([#19](https://github.com/dlsandy/Transub-Player/issues/19))
+- 認識バックエンドのヒントを拡充：他アプリが Intel QSV でエンコード中（例：HandBrake）のときは CPU 認識に切り替えるか、先にエンコードを止めるよう案内。
+- ライブ字幕の洗浄を強化：名前ループ／汚染語の除去、親族・呼びかけの補正、プロンプト漏れフィルタ拡大、日本語 ASR ドメイン修正語彙の拡充。
+
+### バグ修正
+
+- 言語パック破損（重複 `x:Key` など）で起動クラッシュしない。フォールバック言語のままログに残す。([#20](https://github.com/dlsandy/Transub-Player/issues/20))
+
+---
+
 ## [1.7.0] — 2026-11-04
 
 ### 追加

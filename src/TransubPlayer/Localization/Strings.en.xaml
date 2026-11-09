@@ -252,7 +252,6 @@ Open Settings now?</sys:String>
     <sys:String x:Key="Str.Lan.Status.CacheLoaded">Loaded local subtitle cache</sys:String>
     <sys:String x:Key="Str.Lan.Status.ExternalSub">Using sidecar subtitle · {0}</sys:String>
     <sys:String x:Key="Str.Lan.Status.MtFailed">Translation unavailable · {0}</sys:String>
-    <sys:String x:Key="Str.Lan.Status.MtFailed">Translation unavailable · {0}</sys:String>
     <sys:String x:Key="Str.Lan.Status.ReuseSameFile">Same file as desktop · reusing subtitle cache</sys:String>
     <sys:String x:Key="Str.Lan.Status.DesktopPaused">Phone ASR running · desktop preview paused ({0})</sys:String>
     <sys:String x:Key="Str.Lan.Status.DesktopSameFileAsr">Same file as desktop · finishing extraction</sys:String>
@@ -483,7 +482,7 @@ Continue?</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan (GPU)</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">Not loaded</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">Prefer Vulkan to lower CPU use. Recognition threads are capped so the PC stays responsive; GPU mode still uses a little CPU for audio prep. If this process already loaded the CPU library, restart the player to switch to GPU.</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">Prefer Vulkan to lower CPU use. Recognition threads are capped so the PC stays responsive; GPU mode still uses a little CPU for audio prep. If this process already loaded the CPU library, restart the player to switch to GPU. If another app is encoding with Intel QSV (e.g. HandBrake), switch recognition to CPU or pause that encode first — some Intel drivers can freeze or blue-screen the PC otherwise.</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">ASR runtime: {0} · threads {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">CPU ASR library already loaded · restart the player to use Vulkan (GPU)</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">Embedded ASR · {0} · models {1}</sys:String>

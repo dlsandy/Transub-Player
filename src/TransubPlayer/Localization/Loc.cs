@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using TransubPlayer.Services;
 
 namespace TransubPlayer.Localization;
 
@@ -43,11 +44,25 @@ public static class Loc
                 var app = Application.Current;
                 // Write string keys onto Application.Resources so DynamicResource re-evaluates.
                 // Swapping MergedDictionaries alone does not reliably invalidate existing bindings.
-                ApplyPackKeys(app.Resources, LoadPack(UiLanguages.FallbackTag));
-                if (!tag.Equals(UiLanguages.FallbackTag, StringComparison.OrdinalIgnoreCase))
-                    ApplyPackKeys(app.Resources, LoadPack(tag));
+                var applied = UiLanguages.FallbackTag;
+                if (!TryApplyPack(app.Resources, UiLanguages.FallbackTag))
+                {
+                    PlayerLog.Write($"Loc: fallback pack '{UiLanguages.FallbackTag}' failed to load");
+                    return;
+                }
 
-                _appliedTag = tag;
+                if (!tag.Equals(UiLanguages.FallbackTag, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (TryApplyPack(app.Resources, tag))
+                        applied = tag;
+                    else
+                    {
+                        PlayerLog.Write($"Loc: pack '{tag}' failed; staying on {UiLanguages.FallbackTag}");
+                        culture = UiLanguages.ToCulture(UiLanguages.FallbackTag);
+                    }
+                }
+
+                _appliedTag = applied;
                 Culture = culture;
                 SetThreadCultures(culture);
             }
@@ -97,6 +112,21 @@ public static class Loc
         CultureInfo.DefaultThreadCurrentUICulture = culture;
         // Keep CurrentCulture for numbers/paths on invariant where callers already do;
         // UICulture alone drives resource selection and message formatting via Loc.Format.
+    }
+
+    private static bool TryApplyPack(ResourceDictionary target, string tag)
+    {
+        try
+        {
+            ApplyPackKeys(target, LoadPack(tag));
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Duplicate x:Key / bad XAML must not brick startup (see issue #20).
+            PlayerLog.Write($"Loc: load Strings.{tag}.xaml failed: {ex.GetBaseException().Message}");
+            return false;
+        }
     }
 
     private static ResourceDictionary LoadPack(string tag) =>

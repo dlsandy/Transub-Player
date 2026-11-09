@@ -116,6 +116,10 @@ internal sealed class MpvPlayer : IDisposable
                      : BuildStartupArgs(hwnd, ipc, settings, idle: true, liveHls: false))
             start.ArgumentList.Add(arg);
 
+        var d3dAdapter = GpuAdapterProbe.PreferredMpvD3d11Adapter();
+        if (!string.IsNullOrWhiteSpace(d3dAdapter))
+            Log?.Invoke("mpv d3d11-adapter=" + d3dAdapter + " · " + GpuAdapterProbe.DescribeForLog());
+
         if (httpHeaders is not null && httpHeaders.Count > 0)
         {
             foreach (var arg in BuildHttpHeaderArgs(httpHeaders))
@@ -780,6 +784,8 @@ internal sealed class MpvPlayer : IDisposable
         yield return "--hr-seek=no";
         yield return "--vo=gpu";
         yield return "--gpu-context=d3d11";
+        foreach (var pin in DiscreteD3d11AdapterArgs())
+            yield return pin;
         yield return $"--hwdec={hw}";
         yield return $"--wid={hwnd.ToInt64()}";
         yield return $"--input-ipc-server={ipc}";
@@ -814,6 +820,8 @@ internal sealed class MpvPlayer : IDisposable
         yield return $"--hwdec={hw}";
         yield return "--vo=gpu";
         yield return "--gpu-context=d3d11";
+        foreach (var pin in DiscreteD3d11AdapterArgs())
+            yield return pin;
         yield return "--ytdl=no";
         yield return "--volume-max=130";
         yield return $"--volume={Math.Clamp(settings.Volume, 0, 130)}";
@@ -875,6 +883,18 @@ internal sealed class MpvPlayer : IDisposable
                 yield return "--panscan=0";
                 break;
         }
+    }
+
+    /// <summary>
+    /// On hybrid Intel+discrete laptops, Windows often binds mpv's D3D11 device to the iGPU.
+    /// Pin rendering (and D3D11VA) to the discrete adapter so it does not share igfx with QSV encode.
+    /// </summary>
+    private static IEnumerable<string> DiscreteD3d11AdapterArgs()
+    {
+        var name = GpuAdapterProbe.PreferredMpvD3d11Adapter();
+        if (string.IsNullOrWhiteSpace(name))
+            yield break;
+        yield return "--d3d11-adapter=" + name;
     }
 
     private static string NormalizeHwDec(string? raw)

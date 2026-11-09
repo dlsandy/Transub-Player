@@ -9,33 +9,15 @@ namespace TransubPlayer.Services;
 /// </summary>
 internal static class PreviewTextSanitize
 {
-    private static readonly string[] MultiLoopStems =
-    [
-        "玲奈", "莉奈", "佳奈", "纱奈", "沙奈", "真理", "理子", "绘真", "绘里",
-        "美咲", "结衣", "阳菜", "春奈", "桃子", "琴音", "黄奈", "奏翔", "斗碧",
-        "乃爱", "爱奈", "露娜", "环奈", "花音", "雏子", "真寻", "圣音", "明日香",
-    ];
-
-    private static readonly string[] SingleLoopStems =
-    [
-        "葵", "嬉", "笑", "爱", "愛", "盐", "塩", "鸭", "鴨", "舞", "桃", "玲", "樱", "凛", "花", "月",
-    ];
-
-    private static readonly string[] LoopTokens = MultiLoopStems
-        .Concat(SingleLoopStems)
-        .OrderByDescending(t => t.Length)
-        .ThenBy(t => t, StringComparer.Ordinal)
-        .ToArray();
-
-    private static readonly Regex HonorificRe = new(@"(さん|くん|ちゃん|君|様|氏)", RegexOptions.Compiled);
     private static readonly Regex PunctOnlyRe = new(@"^[…⋅・.\s。！？!?～〜ー\-'""\u3000]*$", RegexOptions.Compiled);
-    private static readonly Regex NameBareRe = new(@"[…⋅・.。！？!?\s～〜\-ー'""\u3000]+", RegexOptions.Compiled);
     private static readonly Regex MultiWs = new(@"[^\S\n]{2,}", RegexOptions.Compiled);
 
     private static readonly Regex PromptLeakMark = new(
         @"将下面|术语表|译名表|请勿删除|不要解释|只输出译文|日译中字幕翻译|汉化组|严禁净化|忠实语气模式|根据以下|无须复译|照译|" +
         @"将以下带序号|注意只需要输出翻译|风格要严格符合|【待翻译文本】|【翻译任务】|行数与顺序必须|" +
-        @"专有名词(?:仅|只)使用原文|禁止臆造角色名|忠实完整传达成人向",
+        @"专有名词(?:仅|只)使用原文|禁止臆造角色名|忠实完整传达成人向|" +
+        @"【重译】|上一版.{0,32}(?:漏译|过短|简短|错译|臆造|省略号)|语气词敷衍|敷衍了事|" +
+        @"(?:不许|禁止).{0,20}省略号.{0,48}(?:语气词|敷衍|空白|代替|替代)|有字就译|不得拒(?:绝)?作?答",
         RegexOptions.Compiled);
 
     private static readonly Regex HonorificEcho = new(
@@ -68,7 +50,7 @@ internal static class PreviewTextSanitize
         var cur = (text ?? "").Trim();
         if (cur.Length == 0) return "";
 
-        cur = StripNameLoops(cur);
+        cur = PreviewSanitizeNames.StripNameLoops(cur);
         if (cur.Length == 0) return "";
 
         cur = StripHallucinationLoops(cur);
@@ -154,7 +136,9 @@ internal static class PreviewTextSanitize
         if (cur.Length == 0 || IsPlaceholderText(cur)) return "";
 
         cur = CollapseHonorificEchoes(cur);
-        cur = StripSpuriousNamePrefixes(cur, src);
+        cur = PreviewSanitizeNames.StripUnjustifiedPollutionNames(cur, src);
+        if (cur.Length == 0 || IsPlaceholderText(cur)) return "";
+        cur = PreviewSanitizeNames.FixKinshipAndAddress(cur, src);
         cur = StripResidualJaInZh(cur);
         cur = MtTrainedRemapLexicon.Apply(cur, src, contentProfile);
         cur = AvGlossaryLexicon.Apply(cur, contentProfile);
@@ -310,51 +294,6 @@ internal static class PreviewTextSanitize
         return $"字幕清洗：开 · 日语域纠错 {n} · 训练 remap {t} · AV术语 {av} · {gPart}";
     }
 
-    private static string StripNameLoops(string text)
-    {
-        var raw = text;
-        var cur = raw;
-        var stripped = false;
-        foreach (var tok in LoopTokens)
-        {
-            var esc = Regex.Escape(tok);
-            var consec = new Regex($@"(?:{esc}){{2,}}");
-            if (consec.IsMatch(cur))
-            {
-                stripped = true;
-                cur = consec.Replace(cur, "");
-            }
-
-            var ellipsis = new Regex($@"(?:{esc})(?:\s*[…⋅・.。]{{1,6}}\s*(?:{esc}))+");
-            if (ellipsis.IsMatch(cur))
-            {
-                stripped = true;
-                cur = ellipsis.Replace(cur, "");
-            }
-
-            // Soft-voice ASR often inserts spaces:「琴音 琴音 琴音…」
-            var spaced = new Regex($@"(?:{esc})(?:[ \t\u3000]+(?:{esc})){{2,}}");
-            if (spaced.IsMatch(cur))
-            {
-                stripped = true;
-                cur = spaced.Replace(cur, "");
-            }
-        }
-
-        cur = MultiWs.Replace(cur, " ").Trim();
-        if (stripped)
-        {
-            cur = Regex.Replace(cur, @"^[…⋅・.。～〜ー\s\-]+|[…⋅・.。～〜ー\s\-]+$", "").Trim();
-            if (PunctOnlyRe.IsMatch(cur))
-                cur = "";
-        }
-
-        if (IsNameOnlyDebris(cur) && !HonorificRe.IsMatch(raw))
-            cur = "";
-
-        return cur;
-    }
-
     /// <summary>
     /// Drop / collapse whisper soft-voice hallucinations that fill the screen
     /// (mono char runs, spaced token loops, low-entropy long cues).
@@ -437,13 +376,6 @@ internal static class PreviewTextSanitize
         return false;
     }
 
-    private static bool IsNameOnlyDebris(string text)
-    {
-        var bare = NameBareRe.Replace((text ?? "").Trim(), "");
-        if (bare.Length == 0 || bare.Length > 4) return false;
-        return MultiLoopStems.Contains(bare) || SingleLoopStems.Contains(bare);
-    }
-
     private static string StripPromptLeak(string text)
     {
         var raw = text;
@@ -506,20 +438,6 @@ internal static class PreviewTextSanitize
     {
         var cur = HonorificEcho.Replace(text, "$1$2");
         cur = BareHonorificEcho.Replace(cur, "$1");
-        return cur;
-    }
-
-    private static string StripSpuriousNamePrefixes(string text, string source)
-    {
-        var cur = Regex.Replace(text, @"到的(?=[\u4e00-\u9fffぁ-んァ-ンー]{1,6}(?:小姐|先生|同学|桑|君|酱)?)", "");
-        if (Regex.IsMatch(source, @"お兄|姉さん|お姉|兄さん"))
-        {
-            cur = cur.Replace("亲爱的奥小姐", "哥哥", StringComparison.Ordinal);
-            cur = cur.Replace("奥小姐", Regex.IsMatch(source, @"お姉|姉さん") ? "姐姐" : "哥哥", StringComparison.Ordinal);
-            cur = cur.Replace("兄小姐", "哥哥", StringComparison.Ordinal);
-            cur = cur.Replace("姉小姐", "姐姐", StringComparison.Ordinal);
-        }
-
         return cur;
     }
 

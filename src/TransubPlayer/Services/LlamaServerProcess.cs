@@ -481,21 +481,22 @@ internal sealed class LlamaServerProcess : IDisposable
         if (File.Exists(programsExe))
             yield return Path.Combine(Path.GetDirectoryName(programsExe)!, "advanced-llm");
 
-        // Sibling Transub next to Player (e.g. F:\Transub beside F:\Transub Player).
-        string? siblingAdvanced = null;
+        // Sibling Transub3 / Transub next to Player (dev).
+        string? siblingParent = null;
         try
         {
-            var parent = Path.GetDirectoryName(AppPaths.ProjectRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
-            if (!string.IsNullOrWhiteSpace(parent))
-                siblingAdvanced = Path.Combine(parent, "Transub", "advanced-llm");
+            siblingParent = Path.GetDirectoryName(AppPaths.ProjectRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
         }
         catch
         {
-            // ignore
+            siblingParent = null;
         }
 
-        if (!string.IsNullOrWhiteSpace(siblingAdvanced))
-            yield return siblingAdvanced;
+        if (!string.IsNullOrWhiteSpace(siblingParent))
+        {
+            foreach (var name in new[] { "Transub3", "Transub" })
+                yield return Path.Combine(siblingParent, name, "advanced-llm");
+        }
 
         // Player-owned install (auto/manual GGUF + llama-server) — last so empty dirs lose.
         yield return AppPaths.AdvancedLlmDir;

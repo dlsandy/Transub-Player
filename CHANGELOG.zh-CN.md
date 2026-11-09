@@ -2,6 +2,20 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.7.1] — 2026-11-09
+
+### 优化
+
+- **混合显卡优先独显：** 探测到独立显卡时，mpv D3D11 与 Whisper Vulkan 尽量钉到独显，减少与其它软件挤占 Intel 核显。([#19](https://github.com/dlsandy/Transub-Player/issues/19))
+- 识别后端提示补充：若其它软件正在用 Intel QSV 转码（如 HandBrake），请改用 CPU 识别或先暂停转码，避免部分 Intel 驱动卡死 / 蓝屏。
+- 实时字幕清洗：加强姓名循环 / 污染词剥离、亲属称谓纠错、更宽的提示词泄漏过滤，并扩充日语 ASR 域纠错词表。
+
+### BUG修复
+
+- 语言包损坏（如重复 `x:Key`）时不再启动即崩溃；回退到默认语言并写入日志。([#20](https://github.com/dlsandy/Transub-Player/issues/20))
+
+---
+
 ## [1.7.0] — 2026-11-04
 
 ### 新增

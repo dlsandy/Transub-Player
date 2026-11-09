@@ -482,7 +482,7 @@
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">未読み込み</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 負荷を下げるには Vulkan を選んでください。認識スレッド数は上限付きです。GPU でも音声前処理でわずかに CPU を使います。CPU ライブラリを既に読み込んだ場合は、GPU 切替に再起動が必要です。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 負荷を下げるには Vulkan を選んでください。認識スレッド数は上限付きです。GPU でも音声前処理でわずかに CPU を使います。CPU ライブラリを既に読み込んだ場合は、GPU 切替に再起動が必要です。他アプリが Intel QSV でエンコード中（HandBrake など）のときは、認識を CPU にするか先にエンコードを止めてください。一部の Intel ドライバではフリーズやブルースクリーンになることがあります。</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">認識ランタイム：{0} · スレッド {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">このプロセスは CPU 認識ライブラリを読み込み済みです · Vulkan（GPU）を使うには再起動してください</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">内蔵 ASR · {0} · モデル {1}</sys:String>

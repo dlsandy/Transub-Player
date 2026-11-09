@@ -24,7 +24,7 @@ Set-Location $root
 $csproj = Join-Path $root "src\TransubPlayer\TransubPlayer.csproj"
 if (-not (Test-Path $csproj)) { throw "Project not found: $csproj" }
 
-$version = "1.7.0"
+$version = "1.7.1"
 Select-Xml -Path $csproj -XPath "//Version" -ErrorAction SilentlyContinue |
     ForEach-Object { if ($_.Node.InnerText) { $version = $_.Node.InnerText.Trim() } }
 
@@ -45,6 +45,22 @@ $wantSetup = $Target -eq "All" -or $Target -eq "Setup"
 function Assert-Dotnet {
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
     if (-not $dotnet) { throw "未找到 dotnet。请先安装 .NET SDK（net10）。" }
+}
+
+function Assert-LocPacks {
+    # Duplicate x:Key in Strings.*.xaml crashes WPF at Loc.Apply (issue #20).
+    $locDir = Join-Path $root "src\TransubPlayer\Localization"
+    $packs = Get-ChildItem (Join-Path $locDir "Strings.*.xaml") -ErrorAction Stop
+    foreach ($pack in $packs) {
+        $keys = Select-String -Path $pack.FullName -Pattern 'x:Key="([^"]+)"' |
+            ForEach-Object { $_.Matches[0].Groups[1].Value }
+        $dupes = $keys | Group-Object | Where-Object { $_.Count -gt 1 }
+        if ($dupes) {
+            $list = ($dupes | ForEach-Object { "$($_.Name) x$($_.Count)" }) -join "; "
+            throw "Localization pack has duplicate x:Key: $($pack.Name) → $list"
+        }
+    }
+    Write-Host ("Loc packs: OK ({0} files, no duplicate keys)" -f $packs.Count)
 }
 
 function Ensure-Native {
@@ -283,6 +299,7 @@ function Show-Summary {
 }
 
 Assert-Dotnet
+Assert-LocPacks
 Ensure-Native
 Publish-App
 Assemble-Stage

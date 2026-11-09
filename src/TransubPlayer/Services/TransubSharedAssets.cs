@@ -100,15 +100,9 @@ internal static class TransubSharedAssets
             Add(Path.Combine(install, "resources", "shared"));
         }
 
-        // Sibling repo next to Player (dev).
-        try
-        {
-            var sibling = Path.Combine(Path.GetDirectoryName(AppPaths.ProjectRoot) ?? "", "Transub", "shared");
-            Add(sibling);
-        }
-        catch { /* ignore */ }
-
-        Add(Path.Combine(AppPaths.ProjectRoot, "..", "Transub", "shared"));
+        // Sibling repos next to Player (dev): prefer Transub3, then Transub.
+        foreach (var root in SiblingRepoRoots())
+            Add(Path.Combine(root, "shared"));
 
         foreach (var d in list)
             yield return d;
@@ -219,18 +213,28 @@ internal static class TransubSharedAssets
         yield return Path.Combine(local, "Transub");
         yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Transub");
 
-        string? sibling = null;
+        foreach (var sibling in SiblingRepoRoots())
+            yield return sibling;
+    }
+
+    /// <summary>Dev trees beside Player: <c>Transub3</c> first, then legacy <c>Transub</c>.</summary>
+    private static IEnumerable<string> SiblingRepoRoots()
+    {
+        string? parent = null;
         try
         {
-            sibling = Path.Combine(Path.GetDirectoryName(AppPaths.ProjectRoot) ?? "", "Transub");
+            parent = Path.GetDirectoryName(AppPaths.ProjectRoot);
         }
         catch
         {
-            sibling = null;
+            parent = null;
         }
 
-        if (!string.IsNullOrWhiteSpace(sibling))
-            yield return sibling;
+        if (string.IsNullOrWhiteSpace(parent))
+            yield break;
+
+        foreach (var name in new[] { "Transub3", "Transub" })
+            yield return Path.Combine(parent, name);
     }
 
     private static bool LooksLikeInstallRoot(string dir)

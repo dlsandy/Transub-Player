@@ -661,9 +661,12 @@ internal sealed class AsrPipeline : IDisposable
         ReleaseModel();
         // UseGpu must match preference: CPU-only selection keeps weights on host even if a
         // Vulkan-capable DLL was already pinned for this process.
+        // GpuDevice: ggml-vulkan lists discrete adapters first — pin index 0 when PreferGpu.
+        var gpuDevice = preferGpu ? GpuAdapterProbe.PreferredWhisperGpuDevice() : 0;
         var options = new WhisperFactoryOptions
         {
             UseGpu = preferGpu,
+            GpuDevice = gpuDevice,
         };
         _factory = WhisperFactory.FromPath(modelPath, options);
         _loadedModelPath = modelPath;
@@ -674,6 +677,9 @@ internal sealed class AsrPipeline : IDisposable
         _log(Loc.Format("Main.Status.AsrRuntimeLoaded", loaded, threads));
         try
         {
+            _log(GpuAdapterProbe.DescribeForLog());
+            var preferName = GpuAdapterProbe.PreferredDiscrete?.Description ?? "(default / iGPU)";
+            _log($"ASR GPU · adapter={preferName} · GpuDevice={gpuDevice} · lib={loaded}");
             var info = WhisperFactory.GetRuntimeInfo();
             if (!string.IsNullOrWhiteSpace(info))
                 _log("whisper runtime: " + info.Trim());

@@ -2,6 +2,20 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.7.1] — 2026-11-09
+
+### Improved
+
+- **Prefer discrete GPU on hybrid laptops:** mpv D3D11 and Whisper Vulkan pin to a discrete adapter when DXGI finds one, so playback / recognition are less likely to share the Intel iGPU with other apps. ([#19](https://github.com/dlsandy/Transub-Player/issues/19))
+- ASR backend hint warns when another app is encoding with Intel QSV (e.g. HandBrake): switch recognition to CPU or pause that encode first on affected Intel drivers.
+- Live subtitle cleanup: stronger name-loop / pollution stripping, kinship and address fixes, wider prompt-leak filters, and an expanded Japanese ASR domain-fix lexicon.
+
+### Fixed
+
+- A broken localization pack (e.g. duplicate `x:Key`) no longer crashes startup; the player stays on the fallback language and logs the failure. ([#20](https://github.com/dlsandy/Transub-Player/issues/20))
+
+---
+
 ## [1.7.0] — 2026-11-04
 
 ### Added

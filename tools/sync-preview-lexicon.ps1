@@ -1,5 +1,5 @@
 # Sync Transub training lexicon into Player preview assets (ja-soft / av_soft).
-# Requires sibling Transub repo or TRANSUB_HOME.
+# Requires sibling Transub3/Transub repo or TRANSUB_HOME.
 param(
     [string]$TransubRoot = $env:TRANSUB_HOME
 )
@@ -7,11 +7,17 @@ param(
 $ErrorActionPreference = 'Stop'
 $playerRoot = Split-Path -Parent $PSScriptRoot
 if (-not $TransubRoot) {
-    $guess = Join-Path (Split-Path -Parent $playerRoot) 'Transub'
-    if (Test-Path $guess) { $TransubRoot = $guess }
+    $parent = Split-Path -Parent $playerRoot
+    foreach ($name in @('Transub3', 'Transub')) {
+        $guess = Join-Path $parent $name
+        if (Test-Path (Join-Path $guess 'shared')) {
+            $TransubRoot = $guess
+            break
+        }
+    }
 }
 if (-not $TransubRoot -or -not (Test-Path $TransubRoot)) {
-    throw "Set TRANSUB_HOME or place Transub beside SubPlayer."
+    throw "Set TRANSUB_HOME or place Transub3 (or Transub) beside Transub Player."
 }
 
 $assets = Join-Path $playerRoot 'src\TransubPlayer\Assets'

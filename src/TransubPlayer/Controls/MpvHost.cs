@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
+using TransubPlayer.Platform;
 
 namespace TransubPlayer.Controls;
 
@@ -15,7 +16,7 @@ namespace TransubPlayer.Controls;
 /// right-click / left-click / wheel / move / keys to the app.
 /// </para>
 /// </summary>
-internal sealed class MpvHost : HwndHost
+internal sealed class MpvHost : HwndHost, IVideoSurface
 {
     private const int WsChild = 0x40000000;
     private const int WsVisible = 0x10000000;
@@ -48,6 +49,16 @@ internal sealed class MpvHost : HwndHost
     private DispatcherTimer? _childHookTimer;
 
     public IntPtr Hwnd => _hwnd;
+
+    IntPtr IVideoSurface.NativeHandle => _hwnd;
+
+    bool IVideoSurface.CheckAccess() => Dispatcher.CheckAccess();
+
+    Task IVideoSurface.InvokeAsync(Action action)
+        => Dispatcher.InvokeAsync(action).Task;
+
+    void IVideoSurface.Post(Action action)
+        => Dispatcher.BeginInvoke(action);
 
     /// <summary>Right mouse button released over the video surface.</summary>
     public event Action? NativeRightButtonUp;

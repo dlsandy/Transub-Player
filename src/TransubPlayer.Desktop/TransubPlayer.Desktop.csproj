@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RootNamespace>TransubPlayer.Desktop</RootNamespace>
+    <AssemblyName>TransubPlayer</AssemblyName>
+    <Product>Transub Player</Product>
+    <Version>1.6.0</Version>
+    <RuntimeIdentifiers>osx-arm64;osx-x64;linux-x64</RuntimeIdentifiers>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <ApplicationId>com.transub.player</ApplicationId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TransubPlayer.Core\TransubPlayer.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.6" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.6" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">
+      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\native\mpv\**\*" Condition="Exists('..\..\native\mpv\mpv')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>mpv\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+</Project>

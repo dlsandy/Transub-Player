@@ -1,5 +1,5 @@
 using System.IO;
-using TransubPlayer.Controls;
+using TransubPlayer.Platform;
 using TransubPlayer.Localization;
 
 namespace TransubPlayer.Services;
@@ -9,7 +9,7 @@ internal sealed class PreviewController : IDisposable
     private readonly AppSettings _settings;
     private readonly Action<string> _status;
     private readonly Action<string> _log;
-    private readonly MpvHost _host;
+    private readonly IVideoSurface _host;
     private readonly MpvPlayer _mpv = new();
     private readonly PreviewSubtitleSync _subs;
     private readonly AsrPipeline _engine;
@@ -312,7 +312,7 @@ internal sealed class PreviewController : IDisposable
     /// <summary>English UI + English source: true=install MT, false=ASR only, null=dismiss.</summary>
     public Func<Task<bool?>>? OfferEnglishSourceChoiceAsync { get; set; }
 
-    public PreviewController(AppSettings settings, MpvHost host, Action<string> status, Action<string> log)
+    public PreviewController(AppSettings settings, IVideoSurface host, Action<string> status, Action<string> log)
     {
         _settings = settings;
         _host = host;
@@ -526,10 +526,10 @@ internal sealed class PreviewController : IDisposable
         var mpv = MpvLocator.Find()
             ?? throw new MpvMissingException();
         _host.EnsureHandle();
-        await _host.Dispatcher.InvokeAsync(() => { });
-        await _mpv.StartAsync(mpv, _host.Hwnd, _settings, CancellationToken.None, initialMedia, httpHeaders, autoPlay)
+        await _host.InvokeAsync(() => { });
+        await _mpv.StartAsync(mpv, _host.NativeHandle, _settings, CancellationToken.None, initialMedia, httpHeaders, autoPlay)
             .ConfigureAwait(false);
-        await _host.Dispatcher.InvokeAsync(() => _host.HookEmbeddedChildren());
+        await _host.InvokeAsync(() => _host.HookEmbeddedChildren());
         // Live spawn already has volume/speed on argv + local fields synced in StartAsync.
         // Avoid extra IPC right after open (light-IPC live path is demuxer-sensitive).
         if (string.IsNullOrWhiteSpace(initialMedia))
@@ -729,7 +729,7 @@ internal sealed class PreviewController : IDisposable
                 _log("直播 URL → " + playPath);
                 if (!await EnsureLoadIntoMpvAsync(playPath, streamAutoPlay, _streamHeaders, osdName).ConfigureAwait(false))
                     throw new InvalidOperationException(Loc.Get("Main.Status.MpvLoadFailed"));
-                await _host.Dispatcher.InvokeAsync(() => _host.HookEmbeddedChildren());
+                await _host.InvokeAsync(() => _host.HookEmbeddedChildren());
                 if (streamAutoPlay)
                     _mpv.SetPause(false);
                 Paused = !streamAutoPlay;
@@ -3433,13 +3433,13 @@ internal sealed class PreviewController : IDisposable
 
     private Task FinishWaitForFirstZhOnUiAsync(bool play, string? osdMessage = null)
     {
-        if (_host.Dispatcher.CheckAccess())
+        if (_host.CheckAccess())
         {
             FinishWaitForFirstZh(play, osdMessage);
             return Task.CompletedTask;
         }
 
-        return _host.Dispatcher.InvokeAsync(() => FinishWaitForFirstZh(play, osdMessage)).Task;
+        return _host.InvokeAsync(() => FinishWaitForFirstZh(play, osdMessage));
     }
 
     private void StartPlaybackAfterSubtitleReady()

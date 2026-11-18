@@ -755,7 +755,7 @@ public partial class MainWindow : Window
         {
             RevertSourceLangBoxSelection();
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
 
         RefreshPresetUi();
@@ -876,7 +876,7 @@ public partial class MainWindow : Window
         {
             RevertTranslateTargetBoxSelection(prev);
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 
@@ -945,7 +945,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 
@@ -981,7 +981,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 
@@ -997,7 +997,7 @@ public partial class MainWindow : Window
         catch (Exception ex)
         {
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 

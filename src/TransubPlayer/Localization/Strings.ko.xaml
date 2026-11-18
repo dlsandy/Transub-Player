@@ -1175,4 +1175,8 @@ EN / 원문 / 이중 1/2/3 (번역 언어=영어일 때) · 자막 V/0 · 동기
 배속 순환/초기화 [ / ] · 전체 화면 F/F11/Enter · 항상 위 T · 도움말 F1</sys:String>
 
 
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMl">Apple 가속(Core ML)</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMlShort">Apple</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">—</sys:String>
+    <sys:String x:Key="Str.Settings.Association.MacInfoPlist">Mac에서는 .app의 Info.plist로 파일 연결을 선언합니다.</sys:String>
 </ResourceDictionary>

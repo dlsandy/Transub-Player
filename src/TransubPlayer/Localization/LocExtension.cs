@@ -32,12 +32,8 @@ public sealed class LocExtension : MarkupExtension
             && pvt.TargetObject is not DependencyObject)
             return this;
 
-        return new DynamicResourceExtension(ToResourceKey(Key)).ProvideValue(serviceProvider);
+        return new DynamicResourceExtension(Loc.ToResourceKey(Key)).ProvideValue(serviceProvider);
     }
 
-    public static string ToResourceKey(string key)
-    {
-        key = key.Trim();
-        return key.StartsWith("Str.", StringComparison.Ordinal) ? key : "Str." + key;
-    }
+    public static string ToResourceKey(string key) => Loc.ToResourceKey(key);
 }

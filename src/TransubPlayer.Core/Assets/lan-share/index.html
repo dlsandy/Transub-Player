@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="theme-color" content="#0f1115"/>
+  <title>Transub Player</title>
+  <link rel="icon" type="image/png" href="/logo.png"/>
+  <link rel="stylesheet" href="app.css"/>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <img class="brand-logo" src="/logo.png" alt="" width="28" height="28"/>
+      <span>Transub Player</span>
+    </div>
+    <div id="status" class="status">…</div>
+  </header>
+
+  <section id="gate" class="panel gate hidden">
+    <h1 class="gate-title">访问密码</h1>
+    <p class="gate-hint">请输入电脑端设置的访问密码</p>
+    <form id="gateForm" class="gate-form">
+      <input id="password" type="password" autocomplete="current-password" placeholder="密码" required/>
+      <button type="submit">进入</button>
+    </form>
+    <p id="gateError" class="gate-error"></p>
+  </section>
+
+  <main id="browse" class="panel hidden">
+    <div id="crumbs" class="crumbs"></div>
+    <ul id="list" class="list"></ul>
+    <p id="empty" class="empty hidden">暂无可访问目录。请在电脑端设置 → 局域网 添加文件夹。</p>
+  </main>
+
+  <section id="player" class="panel player hidden">
+    <button type="button" id="back" class="back">← 返回列表</button>
+    <h1 id="title" class="title"></h1>
+    <p id="compatBanner" class="compat-banner hidden"></p>
+    <div class="stage">
+      <video id="video" playsinline controls></video>
+      <div id="sub" class="sub" aria-live="polite"></div>
+      <div id="waitOverlay" class="wait-overlay hidden" role="dialog" aria-live="polite">
+        <div class="wait-card">
+          <div id="waitTitle" class="wait-title"></div>
+          <div id="waitDetail" class="wait-detail"></div>
+          <div id="waitHint" class="wait-hint"></div>
+          <button type="button" id="waitSkip" class="wait-skip"></button>
+        </div>
+      </div>
+    </div>
+    <div class="frontier" aria-hidden="true">
+      <div id="subTrack" class="frontier-track"></div>
+      <div id="zhTrack" class="frontier-track zh"></div>
+    </div>
+    <div class="frontier-legend">
+      <span class="leg-src">原文</span>
+      <span class="leg-zh">译文</span>
+    </div>
+    <div class="modes" role="group" aria-label="字幕模式">
+      <button type="button" data-mode="zh" class="mode">译文</button>
+      <button type="button" data-mode="src" class="mode">原文</button>
+      <button type="button" data-mode="dual" class="mode">双语</button>
+      <button type="button" data-mode="off" class="mode">关</button>
+    </div>
+    <p id="job" class="job"></p>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -8,14 +8,17 @@ internal static class AsrBackends
     public const string Auto = "auto";
     public const string Cpu = "cpu";
     public const string Vulkan = "vulkan";
+    public const string CoreMl = "coreml";
 
-    public static IReadOnlyList<string> Selectable { get; } = [Auto, Cpu, Vulkan];
+    public static IReadOnlyList<string> Selectable { get; } =
+        OperatingSystem.IsMacOS() ? [Auto, Cpu, CoreMl] : [Auto, Cpu, Vulkan];
 
     public static string Normalize(string? raw)
     {
         var id = (raw ?? "").Trim();
         if (string.Equals(id, Cpu, StringComparison.OrdinalIgnoreCase)) return Cpu;
         if (string.Equals(id, Vulkan, StringComparison.OrdinalIgnoreCase)) return Vulkan;
+        if (string.Equals(id, CoreMl, StringComparison.OrdinalIgnoreCase)) return CoreMl;
         return Auto;
     }
 
@@ -24,6 +27,7 @@ internal static class AsrBackends
         {
             Cpu => Loc.Get("Settings.AsrBackend.Cpu"),
             Vulkan => Loc.Get("Settings.AsrBackend.Vulkan"),
+            CoreMl => Loc.Get("Settings.AsrBackend.CoreMl"),
             _ => Loc.Get("Settings.AsrBackend.Auto"),
         };
 }

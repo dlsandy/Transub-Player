@@ -1,4 +1,3 @@
-using System.Windows;
 using TransubPlayer.Localization;
 
 namespace TransubPlayer.Services;
@@ -16,11 +15,5 @@ internal static class UserFacingErrors
                 ? Loc.Get("Errors.Generic")
                 : ex.Message,
         };
-    }
-
-    public static void Show(Window owner, Exception ex, string title = "Transub Player")
-    {
-        System.Windows.MessageBox.Show(owner, Message(ex), title,
-            System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
     }
 }

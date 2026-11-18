@@ -1,0 +1,55 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:TransubPlayer.Desktop.Controls"
+        x:Class="TransubPlayer.Desktop.MainWindow"
+        Title="Transub Player"
+        Width="1100" Height="720"
+        MinWidth="720" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="12,8" Background="#161A22">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Text="Transub Player" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+          <TextBlock x:Name="TaglineText" Text="字幕播放器" Opacity="0.7" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button x:Name="OpenButton" Content="打开" Click="OnOpenClick"/>
+          <Button x:Name="OpenUrlButton" Content="打开 URL" Click="OnOpenUrlClick"/>
+          <Button x:Name="PlaylistButton" Content="播放列表" Click="OnPlaylistClick"/>
+          <Button x:Name="FavoritesButton" Content="收藏" Click="OnFavoritesClick"/>
+          <Button x:Name="LanShareButton" Content="局域网" Click="OnLanShareClick"/>
+          <Button x:Name="RecordButton" Content="录制" Click="OnRecordClick"/>
+          <Button x:Name="ClipButton" Content="剪辑" Click="OnClipClick"/>
+          <Button x:Name="TransubButton" Content="Transub" Click="OnTransubClick"/>
+          <Button x:Name="SettingsButton" Content="设置" Click="OnSettingsClick"/>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Padding="12,8" Background="#12151C">
+      <StackPanel Spacing="6">
+        <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+          <Button x:Name="PlayPauseButton" Content="播放" Width="72" Click="OnPlayPauseClick"/>
+          <Slider x:Name="SeekSlider" Grid.Column="1" Minimum="0" Maximum="1" Margin="12,0"
+                  PropertyChanged="OnSeekChanged"/>
+          <TextBlock x:Name="TimeText" Grid.Column="2" VerticalAlignment="Center" Margin="8,0"
+                     Text="00:00 / 00:00"/>
+          <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="6">
+            <Button Content="字幕" Click="OnSubtitleMenuClick"/>
+            <Button Content="全屏" Click="OnFullscreenClick"/>
+          </StackPanel>
+        </Grid>
+        <TextBlock x:Name="StatusText" Text="就绪" Opacity="0.85" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+
+    <Grid>
+      <controls:MpvVideoSurface x:Name="VideoHost"/>
+      <Border x:Name="DropHint" HorizontalAlignment="Center" VerticalAlignment="Center"
+              IsHitTestVisible="False" Opacity="0.55">
+        <TextBlock Text="打开本地影片，边看边出字幕" FontSize="20"/>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

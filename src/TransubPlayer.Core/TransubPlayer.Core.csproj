@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>TransubPlayer</RootNamespace>
+    <AssemblyName>TransubPlayer.Core</AssemblyName>
+    <Description>Cross-platform services for Transub Player (ASR, mpv IPC, translate).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TransubPlayer" />
+    <InternalsVisibleTo Include="TransubPlayer.Desktop" />
+    <InternalsVisibleTo Include="PresetProbe" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\Strings.*.xaml" LogicalName="TransubPlayer.Localization.%(Filename)%(Extension)" />
+    <None Include="Assets\**\*" Condition="Exists('Assets')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="Whisper.net" Version="1.8.1" />
+    <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
+    <PackageReference Include="Whisper.net.Runtime.CoreML" Version="1.8.1" />
+  </ItemGroup>
+
+</Project>

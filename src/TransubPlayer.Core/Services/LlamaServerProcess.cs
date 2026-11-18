@@ -12,6 +12,10 @@ namespace TransubPlayer.Services;
 /// </summary>
 internal sealed class LlamaServerProcess : IDisposable
 {
+    private static string LlamaServerFileName
+        => OperatingSystem.IsWindows() ? LlamaServerFileName : "llama-server";
+
+
     public const int DefaultPort = 39281;
     public static readonly string DefaultBaseUrl = $"http://127.0.0.1:{DefaultPort}";
 
@@ -178,7 +182,7 @@ internal sealed class LlamaServerProcess : IDisposable
         ExePath = FindServerExe(root);
         ModelPath = FindModel(root, preferred, modelId);
         if (ExePath is null)
-            throw new InvalidOperationException($"未找到 llama-server.exe：{Path.Combine(root, "runtime")}");
+            throw new InvalidOperationException($"未找到 llama-server：{Path.Combine(root, "runtime")}");
         if (ModelPath is null)
             throw new InvalidOperationException($"未找到可用 GGUF：{Path.Combine(root, "models")}");
 
@@ -525,11 +529,11 @@ internal sealed class LlamaServerProcess : IDisposable
 
     private static string? FindServerExe(string root)
     {
-        var direct = Path.Combine(root, "runtime", "llama-server.exe");
+        var direct = Path.Combine(root, "runtime", LlamaServerFileName);
         if (File.Exists(direct)) return direct;
         try
         {
-            return Directory.EnumerateFiles(Path.Combine(root, "runtime"), "llama-server.exe", SearchOption.AllDirectories)
+            return Directory.EnumerateFiles(Path.Combine(root, "runtime"), LlamaServerFileName, SearchOption.AllDirectories)
                 .FirstOrDefault();
         }
         catch

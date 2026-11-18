@@ -1,20 +1,20 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using TransubPlayer.Localization;
+using TransubPlayer.Platform;
 
 namespace TransubPlayer.Services;
 
 internal sealed class MpvPlayer : IDisposable
 {
     private Process? _process;
-    private NamedPipeClientStream? _pipe;
+    private IMpvIpcTransport? _ipc;
     private StreamWriter? _writer;
     private CancellationTokenSource? _readerCts;
-    private string _pipeName = "";
+    private string _ipcEndpoint = "";
     private int _requestId;
     private string? _currentSub;
     private int _volume = 50;
@@ -82,8 +82,8 @@ internal sealed class MpvPlayer : IDisposable
         _volume = Math.Clamp(settings.Volume, 0, 130);
         _muted = settings.Muted;
         _speed = settings.Speed > 0 ? settings.Speed : 1.0;
-        _pipeName = "transub-player-mpv-" + Guid.NewGuid().ToString("N")[..12];
-        var ipc = @"\\.\pipe\" + _pipeName;
+        _ipcEndpoint = PlatformServices.MpvIpc.CreateServerEndpoint();
+        var ipc = _ipcEndpoint;
         var start = new ProcessStartInfo
         {
             FileName = mpvPath,
@@ -103,6 +103,7 @@ internal sealed class MpvPlayer : IDisposable
                             || initialMedia.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase));
 
         _liveLightIpc = isLiveHls;
+        ChildProcessLifetime.PrepareStartInfo(start);
 
         // Live: same argv style as opening mpv.exe directly / Covers embed (URL on command line).
         foreach (var arg in isLiveHls
@@ -909,9 +910,9 @@ internal sealed class MpvPlayer : IDisposable
     {
         _readerCts?.Cancel();
         try { _writer?.Dispose(); } catch { /* ignore */ }
-        try { _pipe?.Dispose(); } catch { /* ignore */ }
+        try { _ipc?.Dispose(); } catch { /* ignore */ }
         _writer = null;
-        _pipe = null;
+        _ipc = null;
         _readerCts?.Dispose();
         _readerCts = null;
         _currentSub = null;
@@ -926,11 +927,9 @@ internal sealed class MpvPlayer : IDisposable
             ct.ThrowIfCancellationRequested();
             try
             {
-                var pipe = new NamedPipeClientStream(".", _pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-                await pipe.ConnectAsync(400, ct).ConfigureAwait(false);
-                pipe.ReadMode = PipeTransmissionMode.Byte;
-                _pipe = pipe;
-                _writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, leaveOpen: true)
+                var transport = await PlatformServices.MpvIpc.ConnectAsync(_ipcEndpoint, ct).ConfigureAwait(false);
+                _ipc = transport;
+                _writer = new StreamWriter(transport.Stream, new UTF8Encoding(false), 4096, leaveOpen: true)
                 {
                     AutoFlush = true,
                     NewLine = "\n",
@@ -995,8 +994,8 @@ internal sealed class MpvPlayer : IDisposable
 
     private async Task ReadLoop(CancellationToken ct)
     {
-        if (_pipe is null) return;
-        using var reader = new StreamReader(_pipe, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, 4096, leaveOpen: true);
+        if (_ipc is null) return;
+        using var reader = new StreamReader(_ipc.Stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, 4096, leaveOpen: true);
         while (!ct.IsCancellationRequested)
         {
             string? line;

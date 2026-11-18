@@ -555,7 +555,7 @@ public partial class MainWindow
         }
         catch (Exception ex)
         {
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
         finally
         {

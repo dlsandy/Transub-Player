@@ -1175,4 +1175,8 @@ EN / source / dual 1/2/3 (when translation target = English) · sub V/0 · sync 
 Playlist L · prev/next P/N · mute M · screenshot S · clip C
 loop/reset speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
 
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMl">Apple acceleration (Core ML)</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMlShort">Apple</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">—</sys:String>
+    <sys:String x:Key="Str.Settings.Association.MacInfoPlist">On Mac, file associations are declared in Info.plist after installing the .app.</sys:String>
 </ResourceDictionary>

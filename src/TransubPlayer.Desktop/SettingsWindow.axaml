@@ -1,0 +1,43 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TransubPlayer.Desktop.SettingsWindow"
+        Title="设置"
+        Width="560" Height="640"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,12,0,0">
+      <Button Content="下载 Whisper turbo" Click="OnDownloadAsrClick"/>
+      <Button Content="保存" Click="OnSaveClick"/>
+      <Button Content="关闭" Click="OnCloseClick"/>
+    </StackPanel>
+    <ScrollViewer>
+      <StackPanel Spacing="14">
+        <TextBlock Text="识别 / 翻译" FontSize="16" FontWeight="SemiBold"/>
+        <TextBlock Text="ASR 后端"/>
+        <ComboBox x:Name="AsrBackendBox" Width="280"/>
+        <TextBlock Text="译文目标"/>
+        <ComboBox x:Name="TranslateTargetBox" Width="280"/>
+        <CheckBox x:Name="TranslateEnabledBox" Content="启用翻译（可降级为原文）"/>
+        <TextBlock x:Name="AsrModelStatus" TextWrapping="Wrap" Opacity="0.85"/>
+
+        <TextBlock Text="界面" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+        <TextBlock Text="界面语言"/>
+        <ComboBox x:Name="UiLanguageBox" Width="280"/>
+
+        <TextBlock Text="播放" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+        <TextBlock Text="硬件解码"/>
+        <ComboBox x:Name="HwDecBox" Width="280">
+          <ComboBoxItem Content="auto"/>
+          <ComboBoxItem Content="no"/>
+          <ComboBoxItem Content="auto-safe"/>
+        </ComboBox>
+
+        <TextBlock Text="系统" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0"/>
+        <Button Content="注册播放关联（Mac：Info.plist）" Click="OnAssocClick" HorizontalAlignment="Left"/>
+        <Button Content="检查更新" Click="OnUpdateClick" HorizontalAlignment="Left"/>
+        <TextBlock x:Name="PackStatus" TextWrapping="Wrap" Opacity="0.8"/>
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

@@ -132,18 +132,10 @@ internal static class SetupWizard
 
     public static FileAssociationApplyResult ApplyPlaybackAssociations(AppSettings settings)
     {
-        var r = FileAssociationService.Apply(MediaFileTypes.PlaybackExtensions, associate: true);
-        if (r.Succeeded > 0)
-        {
-            var set = new HashSet<string>(
-                settings.AssociatedExtensions.Select(MediaFileTypes.NormalizeExtension),
-                StringComparer.OrdinalIgnoreCase);
-            foreach (var ext in MediaFileTypes.PlaybackExtensions)
-                set.Add(MediaFileTypes.NormalizeExtension(ext));
-            settings.AssociatedExtensions = [..set];
-        }
-
-        return r;
+        var os = Platform.PlatformServices.Os;
+        if (os is null)
+            return new FileAssociationApplyResult(0, 0, "OS integration not registered");
+        return os.ApplyPlaybackAssociations(settings);
     }
 }
 

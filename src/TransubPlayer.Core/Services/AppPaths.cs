@@ -173,10 +173,7 @@ internal static class AppPaths
                 return portable;
         }
 
-        var installed = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Transub Player",
-            "data");
+        var installed = Path.Combine(ResolveOsAppDataRoot(), "data");
         Directory.CreateDirectory(installed);
         return installed;
     }
@@ -245,15 +242,24 @@ internal static class AppPaths
             // Cached portable path became unwritable (ACL / Program Files). Fall back once.
             _appDataDir = null;
             _isPortable = false;
-            var fallback = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "Transub Player",
-                "data",
-                name);
+            var fallback = Path.Combine(ResolveOsAppDataRoot(), "data", name);
             Directory.CreateDirectory(fallback);
             _appDataDir = Path.GetDirectoryName(fallback);
             return fallback;
         }
+    }
+
+    private static string ResolveOsAppDataRoot()
+    {
+        if (OperatingSystem.IsMacOS())
+        {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(home, "Library", "Application Support", "Transub Player");
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Transub Player");
     }
 
     private static string ResolveProjectRoot()

@@ -11,7 +11,7 @@ Open a video and the picture appears right away; readable subtitles catch up soo
   <img src="docs/images/cover.jpg" alt="Transub Player — live dual subtitles while watching" width="900">
 </p>
 
-> Windows desktop player · v1.6.0  
+> Windows (WPF) · macOS (Avalonia) · v1.6.0  
 > Download the installer or portable zip from [GitHub](https://github.com/dlsandy/Transub-Player/releases) or [GitCode](https://gitcode.com/AndyDai/Transub-Player/releases). You can also use **Check for updates** inside the app.
 
 ---
@@ -35,6 +35,16 @@ Open common network stream URLs directly. Want to rewatch later? Record to local
 Generate high-quality subtitles with the Transub subtitle tool; when they’re ready, the player can prompt you to play them.
 
 ---
+
+## macOS (Avalonia)
+
+```bash
+bash tools/fetch-mpv-mac.sh
+dotnet run --project src/TransubPlayer.Desktop/TransubPlayer.Desktop.csproj
+bash tools/pack-mac.sh osx-arm64
+```
+
+Shared services live in `src/TransubPlayer.Core`. Windows keeps the WPF shell.
 
 ## Who it’s for
 

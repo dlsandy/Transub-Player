@@ -189,4 +189,3 @@ internal static class FileAssociationService
     private static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 }
 
-internal sealed record FileAssociationApplyResult(int Succeeded, int Failed, string? LastError);

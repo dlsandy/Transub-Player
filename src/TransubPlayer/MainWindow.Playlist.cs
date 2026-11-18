@@ -165,13 +165,13 @@ public partial class MainWindow
         {
             if (gen != Volatile.Read(ref _openGen)) return;
             SetStatus(ex.Message);
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
         catch (Exception ex)
         {
             if (gen != Volatile.Read(ref _openGen)) return;
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
         finally
         {

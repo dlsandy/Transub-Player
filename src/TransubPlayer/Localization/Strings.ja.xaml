@@ -1174,4 +1174,8 @@ EN／原文／二か国語 1/2/3（訳文ターゲット＝英語時）· 字幕
 プレイリスト L · 前／次 P/N · ミュート M · スクリーンショット S · 区間切り出し C
 速度ループ／リセット [ / ] · フルスクリーン F/F11/Enter · 最前面 T · ヘルプ F1</sys:String>
 
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMl">Apple 加速（Core ML）</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.CoreMlShort">Apple</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">—</sys:String>
+    <sys:String x:Key="Str.Settings.Association.MacInfoPlist">Mac では .app の Info.plist でファイル関連付けを宣言します。</sys:String>
 </ResourceDictionary>

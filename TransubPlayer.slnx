@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/TransubPlayer.Core/TransubPlayer.Core.csproj" />
     <Project Path="src/TransubPlayer/TransubPlayer.csproj" />
+    <Project Path="src/TransubPlayer.Desktop/TransubPlayer.Desktop.csproj" />
   </Folder>
 </Solution>

@@ -2,6 +2,7 @@
 using System.Windows;
 using TransubPlayer.Localization;
 using TransubPlayer.Services;
+using TransubPlayer.Platform.Windows;
 
 namespace TransubPlayer;
 
@@ -48,8 +49,11 @@ public partial class App : System.Windows.Application
             // ignore — must not block launch
         }
 
+        LocWpf.Hook();
+        var settings = AppSettings.Load();
+        WindowsPlatformBootstrap.Register(settings, () => Current.MainWindow);
         // Before MainWindow loads so first paint uses the right pack.
-        Loc.Apply(AppSettings.Load().UiLanguage);
+        Loc.Apply(settings.UiLanguage);
 
         if (!SingleInstanceHost.TryBecomePrimary(out var startupArgs))
         {

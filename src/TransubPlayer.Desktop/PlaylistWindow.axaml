@@ -1,0 +1,15 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="TransubPlayer.Desktop.PlaylistWindow"
+        Title="播放列表"
+        Width="520" Height="420"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="12">
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+      <Button Content="播放所选" Click="OnPlay"/>
+      <Button Content="清空" Click="OnClear"/>
+      <Button Content="关闭" Click="OnClose" HorizontalAlignment="Right"/>
+    </StackPanel>
+    <ListBox x:Name="List" DoubleTapped="OnDoubleTap"/>
+  </DockPanel>
+</Window>

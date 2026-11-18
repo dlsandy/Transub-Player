@@ -96,7 +96,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 
@@ -119,7 +119,7 @@ public partial class MainWindow
         catch (Exception ex)
         {
             SetStatus(UserFacingErrors.Message(ex));
-            UserFacingErrors.Show(this, ex);
+            UserFacingErrorsUi.Show(this, ex);
         }
     }
 

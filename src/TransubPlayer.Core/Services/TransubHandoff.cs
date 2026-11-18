@@ -184,9 +184,12 @@ internal static class TransubHandoff
         return sb.ToString();
     }
 
-    /// <summary>True when Windows has a <c>transub://</c> handler (HKCU or HKLM).</summary>
+    /// <summary>True when the OS has a <c>transub://</c> handler.</summary>
     public static bool IsProtocolRegistered()
     {
+        if (!OperatingSystem.IsWindows())
+            return true; // macOS LaunchServices / Linux xdg — try protocol; CLI fallback remains.
+
         try
         {
             using var hkcu = Registry.CurrentUser.OpenSubKey(@"Software\Classes\" + ProtocolScheme);

@@ -149,3 +149,13 @@ powershell -ExecutionPolicy Bypass -File tools\pack-release.ps1
 ## 一句话
 
 > 打开就能看，字幕随后到。
+
+## macOS（Avalonia）
+
+```bash
+bash tools/fetch-mpv-mac.sh
+dotnet run --project src/TransubPlayer.Desktop/TransubPlayer.Desktop.csproj
+bash tools/pack-mac.sh osx-arm64
+```
+
+共享逻辑在 `src/TransubPlayer.Core`；Windows 仍用 WPF。

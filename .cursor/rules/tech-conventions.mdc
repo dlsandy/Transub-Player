@@ -1,0 +1,16 @@
+---
+description: Tech stack conventions for Transub Player
+globs:
+alwaysApply: true
+---
+
+# Tech conventions
+
+- **Windows UI**: WPF (`src/TransubPlayer`, `net*-windows`). Do not migrate Windows shell to Avalonia unless explicitly asked.
+- **macOS UI**: Avalonia (`src/TransubPlayer.Desktop`). **No Electron.**
+- **Shared logic**: `src/TransubPlayer.Core` — ASR, mpv IPC, translate, settings, paths.
+- **Video**: mpv via `--wid` + JSON IPC (`IMpvIpcFactory`: named pipe on Windows, Unix socket on Mac).
+- **ASR**: Whisper.net; Windows Vulkan, Mac CoreML → CPU. Models downloaded on demand (not in default package).
+- **Translate**: llama-server + GGUF (Metal on Mac). Optional / degradable.
+- **Lifecycle**: register platform adapters at startup (`PlatformServices`); on exit kill only processes this app spawned.
+- **Anti-monolith**: keep platform adapters, UI shells, and Core services in separate files/projects.

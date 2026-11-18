@@ -13,10 +13,15 @@
     <InternalsVisibleTo Include="TransubPlayer" />
     <InternalsVisibleTo Include="TransubPlayer.Desktop" />
     <InternalsVisibleTo Include="PresetProbe" />
+    <InternalsVisibleTo Include="MacCoreSmoke" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Localization\Strings.*.xaml" LogicalName="TransubPlayer.Localization.%(Filename)%(Extension)" />
+    <!-- WithCulture=false: filenames like Strings.en.xaml must NOT become satellite assemblies. -->
+    <EmbeddedResource Include="Localization\Strings.*.xaml">
+      <LogicalName>TransubPlayer.Localization.%(Filename)%(Extension)</LogicalName>
+      <WithCulture>false</WithCulture>
+    </EmbeddedResource>
     <None Include="Assets\**\*" Condition="Exists('Assets')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
@@ -27,7 +32,6 @@
     <PackageReference Include="QRCoder" Version="1.6.0" />
     <PackageReference Include="Whisper.net" Version="1.8.1" />
     <PackageReference Include="Whisper.net.Runtime" Version="1.8.1" />
-    <PackageReference Include="Whisper.net.Runtime.CoreML" Version="1.8.1" />
   </ItemGroup>
 
 </Project>

@@ -27,7 +27,14 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <!-- Mac ASR acceleration; keep off Core so Linux/Windows publish does not collide on ggml-metal.metal -->
+    <PackageReference Include="Whisper.net.Runtime.CoreML" Version="1.8.1" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <!-- Runtime + CoreML both ship ggml-metal.metal; last writer wins for non-Mac builds. -->
+    <ErrorOnDuplicatePublishOutputFiles>false</ErrorOnDuplicatePublishOutputFiles>
+  </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\..\native\mpv\**\*" Condition="Exists('..\..\native\mpv\mpv')">

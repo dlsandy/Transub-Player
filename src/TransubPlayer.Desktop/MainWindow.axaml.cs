@@ -76,10 +76,18 @@ internal partial class MainWindow : Window
 
     private async void OnOpenUrlClick(object? sender, RoutedEventArgs e)
     {
-        var dlg = new OpenUrlWindow();
-        var url = await dlg.ShowDialog<string?>(this);
-        if (string.IsNullOrWhiteSpace(url)) return;
-        await OpenPathAsync(url.Trim());
+        try
+        {
+            var dlg = new OpenUrlWindow();
+            var url = await dlg.ShowDialog<string?>(this);
+            if (string.IsNullOrWhiteSpace(url)) return;
+            await OpenPathAsync(url.Trim());
+        }
+        catch (Exception ex)
+        {
+            StatusText.Text = UserFacingErrors.Message(ex);
+            PlayerLog.Write("OpenUrl: " + ex);
+        }
     }
 
     private async void OnPlaylistClick(object? sender, RoutedEventArgs e)

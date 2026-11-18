@@ -62,12 +62,7 @@ public partial class MainWindow : Window
         _uiTimer.Start();
 
         _hideTimer = new DispatcherTimer();
-        _hideTimer.Tick += (_, _) =>
-        {
-            if (!_isFullscreen || !_settings.HideChromeInFullscreen) return;
-            // Keep chrome while the pointer is still on the bar / hit strip / bottom hot zone.
-            UpdateFullscreenChromeVisibility();
-        };
+        _hideTimer.Tick += (_, _) => HideTimer_Tick();
         ApplyHideTimerInterval();
         _clickTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(280) };
         _clickTimer.Tick += (_, _) =>
@@ -85,10 +80,11 @@ public partial class MainWindow : Window
             NudgeResumeOfferPopup();
             NudgeFinishedSubPopup();
         };
-        // WaitZh / LagAction 用 Popup（独立 HWND），失活时必须关掉，否则会挡住其它窗口
-        Deactivated += (_, _) => HideFloatingPopups();
+        // WaitZh / LagAction / 全屏底栏 用 Popup（独立 HWND），失活时必须关掉，否则会挡住其它窗口
+        Deactivated += (_, _) => OnShellDeactivated();
         Activated += (_, _) =>
         {
+            OnShellActivated();
             UpdateOpeningOverlay();
             UpdateWaitZhOverlay();
             MaybeShowSubtitleLagOsd();
@@ -100,6 +96,8 @@ public partial class MainWindow : Window
         Loaded += (_, _) =>
         {
             WireMpvHostInput();
+            EnsureBottomBarDocked();
+            SetChromeVisible(true);
             _preview = new PreviewController(_settings, PlayerHost, SetStatus, PlayerLog.Write);
             _preview.IsFullscreenProvider = () => _isFullscreen;
             _preview.OfferPresetSetupAsync = OfferPresetSetupAsync;
@@ -265,6 +263,7 @@ public partial class MainWindow : Window
         _preview?.ApplyPlayerSettings();
         _preview?.SetDisplayMode(SubtitleDisplayModeUtil.Parse(_settings.SubtitleMode));
         RefreshModeButtons();
+        RefreshVideoEnhanceMenu();
         RefreshMaxButton();
         RefreshRecentMenu();
         RefreshFavoritesMenu();
@@ -572,6 +571,7 @@ public partial class MainWindow : Window
     private void OpenSettings(int selectedTab = 0)
     {
         var prevAsrBackend = _settings.AsrBackend;
+        var prevAsrGpuDevice = _settings.AsrGpuDevice;
         var prevModelsPath = _settings.ModelsPath;
         var prevAdvancedLlmPath = _settings.AdvancedLlmPath;
         var prevTranslateUrl = _settings.TranslateUrl;
@@ -588,6 +588,7 @@ public partial class MainWindow : Window
         SyncLanShareAfterSettings();
         _ = ApplySettingsSideEffectsSafeAsync(
             prevAsrBackend,
+            prevAsrGpuDevice,
             prevModelsPath,
             prevAdvancedLlmPath,
             prevTranslateUrl,
@@ -599,6 +600,7 @@ public partial class MainWindow : Window
 
     private async Task ApplySettingsSideEffectsSafeAsync(
         string prevAsrBackend,
+        string prevAsrGpuDevice,
         string prevModelsPath,
         string prevAdvancedLlmPath,
         string prevTranslateUrl,
@@ -612,6 +614,7 @@ public partial class MainWindow : Window
         {
             var osdParts = await _preview.ApplySettingsSideEffectsAsync(
                 prevAsrBackend,
+                prevAsrGpuDevice,
                 prevModelsPath,
                 prevAdvancedLlmPath,
                 prevTranslateUrl,
@@ -865,6 +868,7 @@ public partial class MainWindow : Window
         {
             await _preview.ApplySettingsSideEffectsAsync(
                 _settings.AsrBackend,
+                _settings.AsrGpuDevice,
                 _settings.ModelsPath,
                 _settings.AdvancedLlmPath,
                 _settings.TranslateUrl,
@@ -953,9 +957,9 @@ public partial class MainWindow : Window
         => await RetryPreviewCoreAsync();
 
     private async void RestartFromPlayhead_Click(object sender, RoutedEventArgs e)
-        => await RestartFromPlayheadCoreAsync();
+        => await RestartFromPlayheadCoreAsync(confirm: true);
 
-    private async Task RestartFromPlayheadCoreAsync()
+    private async Task RestartFromPlayheadCoreAsync(bool confirm = true)
     {
         if (_preview is null || !HasMedia || !_preview.CanRestartFromPlayhead)
             return;
@@ -963,14 +967,17 @@ public partial class MainWindow : Window
         if (TryBlockSubtitlePipelineChange())
             return;
 
-        var result = MessageBox.Show(
-            this,
-            Loc.Format("Main.RestartFromPlayhead.Confirm.Message", MediaTimeFormat.Format(_preview.Position)),
-            Loc.Get("Main.RestartFromPlayhead.Confirm.Title"),
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Question);
-        if (result != MessageBoxResult.Yes)
-            return;
+        if (confirm)
+        {
+            var result = MessageBox.Show(
+                this,
+                Loc.Format("Main.RestartFromPlayhead.Confirm.Message", MediaTimeFormat.Format(_preview.Position)),
+                Loc.Get("Main.RestartFromPlayhead.Confirm.Title"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return;
+        }
 
         try
         {
@@ -1137,7 +1144,7 @@ public partial class MainWindow : Window
         // Wizard may change engine paths — rebind. Do not fake a translate toggle:
         // llama starts only when opening media that needs MT (ApplyTranslateEnabledAsync).
         _ = ApplySettingsSideEffectsSafeAsync(
-            "\0", "\0", "\0",
+            "\0", "\0", "\0", "\0",
             _settings.TranslateUrl ?? "",
             _settings.TranslateEnabled,
             _settings.TranslateTarget);
@@ -1552,6 +1559,10 @@ public partial class MainWindow : Window
         CancelVideoClip();
         _openCts?.Dispose();
         _openCts = null;
+        HideSeekPreview();
+        try { _seekThumbs.Dispose(); } catch { /* ignore */ }
+        BottomBarPopup.IsOpen = false;
+        FullscreenHitPopup.IsOpen = false;
         WaitZhPopup.IsOpen = false;
         OpeningPopup.IsOpen = false;
         LagActionPopup.IsOpen = false;

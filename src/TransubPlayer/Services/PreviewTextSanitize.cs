@@ -93,7 +93,8 @@ internal static class PreviewTextSanitize
 
         return tgt switch
         {
-            TranslateTargets.En => han >= 2 && han * 2 >= len / 3 && latin < han,
+            TranslateTargets.En or TranslateTargets.Es
+                => han >= 2 && han * 2 >= len / 3 && latin < han,
             TranslateTargets.Ko => hangul == 0 && han >= 2 && han * 2 >= len / 3,
             TranslateTargets.Ja => kana == 0 && han == 0 && latin * 2 >= len / 3,
             TranslateTargets.Zh or TranslateTargets.ZhHant

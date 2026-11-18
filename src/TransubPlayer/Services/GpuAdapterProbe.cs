@@ -66,15 +66,11 @@ internal static class GpuAdapterProbe
     }
 
     /// <summary>
-    /// Whisper.net <see cref="Whisper.net.WhisperFactoryOptions.GpuDevice"/> index.
-    /// ggml-vulkan lists discrete devices first, then iGPU — so 0 is the preferred discrete when present.
+    /// Whisper.net <c>GpuDevice</c> after <see cref="VulkanGpuProbe.ApplyAsrDeviceFilter"/>.
+    /// Filter pins one Vulkan physical device (auto = NVIDIA/AMD over Intel Arc).
     /// </summary>
-    public static int PreferredWhisperGpuDevice()
-    {
-        // Discrete present → ggml device 0 is that GPU. Intel-only → still 0 (only choice).
-        _ = PreferredDiscrete;
-        return 0;
-    }
+    public static int PreferredWhisperGpuDevice(string? preference = null)
+        => VulkanGpuProbe.ApplyAsrDeviceFilter(preference);
 
     /// <summary>One-line diagnostic for logs (adapters + preferred).</summary>
     public static string DescribeForLog()
@@ -89,11 +85,11 @@ internal static class GpuAdapterProbe
             var a = _adapters[i];
             sb.Append(' ').Append(i).Append('=')
                 .Append(a.Description)
-                .Append(a.IsDiscrete ? "[d]" : a.IsIntel ? "[i]" : "");
+                .Append(a.IsNvidia || a.IsAmd ? "[d]" : a.IsIntel ? "[Intel]" : "");
         }
 
         if (_preferredDiscrete is not null)
-            sb.Append(" · prefer=").Append(_preferredDiscrete.Description);
+            sb.Append(" · DXGI prefer=").Append(_preferredDiscrete.Description);
         return sb.ToString();
     }
 

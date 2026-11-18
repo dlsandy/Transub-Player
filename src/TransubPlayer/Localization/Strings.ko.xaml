@@ -70,6 +70,9 @@
     <sys:String x:Key="Str.Main.SubSource.OnlineNone">온라인 검색 결과 없음 · 자동 인식 없음</sys:String>
     <sys:String x:Key="Str.Main.SubSource.OffOpen">자막 끔 · 자동 인식/번역/온라인 검색 없음</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">실시간 자막</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveNoExternal">같은 폴더 자막 없음 · 실시간 인식으로 전환</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LiveNoExternal">같은 폴더 자막 없음 · 실시간 인식</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveActiveTip">실시간 자막 · 시청하며 인식; 로컬/온라인/끄기로 전환 가능</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">자막 소스: 끄기 / 온라인 / 로컬 파일 / 실시간 인식</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Default">기본</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Tip">같은 폴더의 자막 파일 전환</sys:String>
@@ -139,26 +142,26 @@
     <sys:String x:Key="Str.Main.Status.StreamPlaybackOnly">스트리밍 재생 · 실시간 원문 추출 불가</sys:String>
     <sys:String x:Key="Str.Main.Status.ScreenCapture">화면 캡처 · 실시간 원문 추출 불가</sys:String>
     <sys:String x:Key="Str.OpenUrl.Title">스트림 URL 열기</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Prompt">URL 또는 Stripchat 스트리머 ID를 입력하세요</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Hint">HLS(.m3u8), 직접 링크, Stripchat 페이지 URL 또는 사용자명/숫자 ID, 일반 라이브 스트림을 지원합니다. 끌어다 놓거나 붙여넣으세요.</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Prompt">URL 또는 라이브 스트리머 ID를 입력하세요</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Hint">HLS(.m3u8), 직접 링크, 라이브 페이지 URL 또는 사용자명/숫자 ID, 일반 라이브 스트림을 지원합니다. 끌어다 놓거나 붙여넣으세요.</sys:String>
     <sys:String x:Key="Str.OpenUrl.Open">열기</sys:String>
     <sys:String x:Key="Str.OpenUrl.AddFavorite">즐겨찾기에도 추가</sys:String>
     <sys:String x:Key="Str.OpenUrl.Invalid">주소를 인식하지 못했습니다. 형식을 확인한 뒤 다시 시도하세요.</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Desktop">화면 캡처 (데스크톱)</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Capture">화면 캡처</sys:String>
-    <sys:String x:Key="Str.MediaSource.Stripchat.User">Stripchat / {0}</sys:String>
+    <sys:String x:Key="Str.MediaSource.Live.User">라이브 / {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.ResolvingStream">스트림 URL 해석 중…</sys:String>
-    <sys:String x:Key="Str.Main.Status.StripchatPlaying">Stripchat 라이브 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.LivePlaying">라이브 · {0}</sys:String>
     <sys:String x:Key="Str.StreamResolve.InvalidUrl">주소를 인식하지 못했습니다.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.NotFound">이 페이지에서 Stripchat 스트림 정보를 찾지 못했습니다.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Offline">모델 {0}은(는) 오프라인입니다.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Blocked">이 미러에서 스트림 정보를 가져오지 못했습니다. 네트워크를 확인하거나 나중에 다시 시도하세요.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Private">모델 {0}은(는) 프라이빗 쇼 중이라 재생할 수 없습니다.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.GroupShow">모델 {0}은(는) 그룹 쇼 중이라 재생할 수 없습니다.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Restricted">모델 {0}은(는) 현재 지역에서 이용할 수 없습니다(지역 제한).</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.ModelNotFound">모델 {0}을(를) 찾지 못했습니다. 사용자명을 확인하세요.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Unavailable">모델 {0} 방을 이용할 수 없습니다(카메라 미준비).</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.StatusUnknown">모델 {0} 상태가 「{1}」이라 재생할 수 없습니다.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.NotFound">이 페이지에서 라이브 정보를 찾지 못했습니다.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Offline">모델 {0}은(는) 오프라인입니다.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Blocked">이 미러에서 스트림 정보를 가져오지 못했습니다. 네트워크를 확인하거나 나중에 다시 시도하세요.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Private">모델 {0}은(는) 프라이빗 쇼 중이라 재생할 수 없습니다.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.GroupShow">모델 {0}은(는) 그룹 쇼 중이라 재생할 수 없습니다.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Restricted">모델 {0}은(는) 현재 지역에서 이용할 수 없습니다(지역 제한).</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.ModelNotFound">모델 {0}을(를) 찾지 못했습니다. 사용자명을 확인하세요.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Unavailable">모델 {0} 방을 이용할 수 없습니다(카메라 미준비).</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.StatusUnknown">모델 {0} 상태가 「{1}」이라 재생할 수 없습니다.</sys:String>
     <sys:String x:Key="Str.Main.Menu.Recent">최근 파일</sys:String>
     <sys:String x:Key="Str.Main.Menu.Favorites">즐겨찾기</sys:String>
     <sys:String x:Key="Str.Main.Menu.Playlist">재생 목록</sys:String>
@@ -458,7 +461,7 @@
     <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">폴더에서 인식 모델 가져오기</sys:String>
     <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">수동 설치 (현재 설정)</sys:String>
     <sys:String x:Key="Str.Settings.UiLanguage">인터페이스 언어</sys:String>
-    <sys:String x:Key="Str.Settings.UiLanguage.Hint">저장 시 바로 적용됩니다. 중국어/영어/일본어/한국어 UI를 지원합니다.</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">저장 시 바로 적용됩니다. 중국어/영어/스페인어/일본어/한국어 UI를 지원합니다.</sys:String>
     <sys:String x:Key="Str.Settings.Section.Interface">인터페이스</sys:String>
     <sys:String x:Key="Str.Settings.Section.SubtitleSource">자막 소스</sys:String>
     <sys:String x:Key="Str.Settings.Section.Window">창</sys:String>
@@ -482,7 +485,14 @@
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan (GPU)</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">미로드</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 사용량을 낮추려면 Vulkan을 선택하세요. 인식 스레드 수는 제한됩니다. GPU 모드에서도 오디오 전처리에 CPU를 약간 씁니다. 이미 CPU 라이브러리를 로드했다면 GPU로 바꾸려면 재시작이 필요합니다. 다른 앱이 Intel QSV로 인코딩 중이면(예: HandBrake) 인식을 CPU로 바꾸거나 먼저 인코딩을 멈추세요. 일부 Intel 드라이버에서는 시스템이 멈추거나 블루스크린이 날 수 있습니다.</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 사용량을 낮추려면 Vulkan을 선택하세요(듀얼 GPU에서는 Intel Arc를 피하고 NVIDIA/AMD를 우선). 인식 스레드는 제한됩니다. GPU 모드에서도 오디오 전처리에 CPU를 약간 씁니다. 이미 CPU 라이브러리를 로드했다면 재시작이 필요합니다. 다른 앱이 Intel QSV로 인코딩 중이면(예: HandBrake): 외장 GPU가 있으면 자동/Vulkan을 유지하세요. CPU 인식은 인코더와 코어를 争夺해 멈출 수 있으니, 먼저 인코딩을 멈추는 방법도 있습니다.</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Label">인식 GPU</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Auto">자동 (NVIDIA/AMD 우선, Intel 회피)</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Hint">GPU가 여러 개일 때 Whisper가 쓸 장치를 고를 수 있습니다. HandBrake가 Intel Arc QSV를 쓰는 중이면 NVIDIA를 고르고 Arc는 피하세요. 이미 GPU 인식 라이브러리를 로드했다면 변경 후 재시작이 필요합니다.</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrGpuDeviceNeedsRestart">인식 GPU 변경됨 · 플레이어를 다시 시작하세요</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceNeedsRestart">인식 GPU 저장됨 · 플레이어를 다시 시작하세요</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceRestart">인식 GPU 변경 · 다시 추출 중…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceSaved">인식 GPU 저장됨 · 파일을 열면 적용</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">인식 런타임: {0} · 스레드 {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">이 프로세스에 CPU 인식 라이브러리가 이미 로드됨 · Vulkan(GPU)을 쓰려면 플레이어를 다시 시작하세요</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">내장 인식 · {0} · 모델 {1}</sys:String>
@@ -657,6 +667,9 @@
     <sys:String x:Key="Str.Main.Lag.JumpReady">준비된 위치로 이동</sys:String>
     <sys:String x:Key="Str.Main.Lag.SwitchSource">원문으로 계속</sys:String>
     <sys:String x:Key="Str.Main.Lag.ContinueWait">계속 보기</sys:String>
+    <sys:String x:Key="Str.Main.Lag.RestartFromHere">여기서 인식</sys:String>
+    <sys:String x:Key="Str.Main.Status.AutoRestartFromPlayhead">자막이 많이 늦음 · 재생 위치부터 다시 인식</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AutoRestartFromPlayhead">재생 위치부터 다시 인식</sys:String>
     <sys:String x:Key="Str.Main.Menu.Subtitles">자막</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayLater">자막 0.5초 늦게</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">자막 0.5초 이르게</sys:String>
@@ -673,6 +686,16 @@
     <sys:String x:Key="Str.Main.Menu.Presets">프리셋</sys:String>
     <sys:String x:Key="Str.Main.Menu.PresetsLoading">(불러오는 중)</sys:String>
     <sys:String x:Key="Str.Main.Menu.Speed">배속</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance">화질 향상</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhanceCurrent">화질: {0}</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Off">끄기</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Light">가볍게</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Enhance">향상</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Cycle">순환 전환</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Tip">실시간 샤픈·디밴딩·고품질 스케일링. 1:1에서도 윤곽이 더 선명해집니다. 기본은 끔. E로 순환. 끊기면 끄기/가볍게로.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Off">화질 향상 · 끄기</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Light">화질 향상 · 가볍게 (샤픈+디밴딩)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Enhance">화질 향상 · 향상 (강한 샤픈+디밴딩)</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGrade">색보정</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeCurrent">색보정: {0}</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeAdjust">수동 조정…</sys:String>
@@ -951,10 +974,13 @@
     <sys:String x:Key="Str.Main.Status.Build.PreviewJa">생성 중 · {0} · 중국어 원문</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtNotReady">원문 표시 · 번역 미준비 · {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtFailed">원문 표시 · 번역 시작 실패 · {0}</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.Generating">생성 중 · {0} · 원문 표시 (영상보다 늦음) · 회색/파란 막대</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">인식 중 · {0} · 원문 표시 (영상보다 늦음) · 회색/파란 막대</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceThenMt">인식 중 · {0} · 원문 {1}까지 · 번역 보완 중</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtCatchingUp">번역 중 · {0} · 번역 {1} · 원문 {2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.PreviewMt">생성 중 · {0} · 번역 {1}/{2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.StartingMt">자막 생성 중 (영상보다 늦음) · 번역 모델 시작</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">생성 중 · {0} · 원문만</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">인식 중 · {0} · 원문만</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnlyFrontier">인식 중 · {0} · 원문만 · {1}까지</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.TranslateOff">생성 중 · {0} · 번역 끔 · 원문 표시</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailed">생성 실패 · 동영상은 계속 재생</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">재생 중 · 생성 실패: {0}</sys:String>
@@ -1005,7 +1031,7 @@
     <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">끄기: 재생만 — 원문 추출, 번역, 온라인 검색 없음.
 온라인: 제목으로 SubtitleCat / 迅雷 검색. 실패해도 자동 원문 추출 없음.
 로컬: 같은 폴더의 .srt / .ass만. 없으면 자동 원문 추출 없음.
-실시간 자막: 외부 자막이 있으면 우선, 없으면 자동 원문 추출(기본 경로).</sys:String>
+실시간 자막: 「같은 폴더 우선」에서 찾으면 사용, 없으면 안내 후 실시간 인식. 원문이 먼저 나오고 번역은 재생 위치 근처에서 보완.</sys:String>
     <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">열기 Ctrl+O · 스트림 Ctrl+Shift+O · 재생/일시정지 Space · 탐색 ← →
 미세 Shift+←→ · 크게 Ctrl+←→ · ±60초 PageUp/Down
 처음/끝 Home/End · 프레임 , .
@@ -1027,28 +1053,32 @@
     <sys:String x:Key="Str.Settings.AutoPreview">외부 자막이 없으면 자동으로 인식 시작</sys:String>
     <sys:String x:Key="Str.Settings.Translate">번역: 로컬 모델이 있으면 사용, 없으면 원문부터</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget">번역 언어</sys:String>
-    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">기본값은 UI 언어를 따릅니다. 언제든 바꿀 수 있습니다. 간체/번체/영어/일본어/한국어는 같은 번역 모델을 쓰며 기본 패키지에 없습니다.</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">기본값은 UI 언어를 따릅니다. 언제든 바꿀 수 있습니다. 간체/번체/영어/스페인어/일본어/한국어는 같은 번역 모델을 쓰며 기본 패키지에 없습니다.</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Zh">중국어 간체</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.ZhHant">중국어 번체</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.En">영어</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Es">스페인어</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ja">일본어</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ko">한국어</sys:String>
     <!-- Control-bar short labels (closed + dropdown) -->
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Zh">간체</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.ZhHant">번체</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.En">영어</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ja">일본어</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ko">한국어</sys:String>
     <sys:String x:Key="Str.SourceLang.Auto">자동</sys:String>
     <sys:String x:Key="Str.SourceLang.Ja">일본어</sys:String>
     <sys:String x:Key="Str.SourceLang.Ko">한국어</sys:String>
     <sys:String x:Key="Str.SourceLang.En">영어</sys:String>
+    <sys:String x:Key="Str.SourceLang.Es">스페인어</sys:String>
     <sys:String x:Key="Str.SourceLang.Zh">중국어</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Auto">자동</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.AutoResolved">자동·{0}</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ja">JA</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ko">KO</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.En">EN</sys:String>
+    <sys:String x:Key="Str.SourceLang.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">품질 우선</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
@@ -1067,7 +1097,9 @@
     <sys:String x:Key="Str.Settings.TextSanitize.Hint">플레이어 쪽 가벼운 정리입니다. 완성 파이프라인은 Transub에 있습니다.</sys:String>
     <sys:String x:Key="Str.Settings.WaitFirstZh">더 기다리기: 번역이 목표 시간에 닿을 때까지 재생하지 않음</sys:String>
     <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen">열면 바로 재생 (번역을 기다리지 않음)</sys:String>
-    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">기본적으로 번역/이중 모드는 첫 번역 자막이 준비될 때까지 일시정지합니다. 이것을 켜면 바로 재생합니다 (번역이 따라오는 동안 원문 표시).</sys:String>
+    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">기본 켜짐: 바로 재생하고, 번역/이중은 따라잡을 때까지 원문 표시. 끄면 첫 번역까지 일시정지.</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging">많이 늦으면 재생 위치부터 자동 재인식</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging.Hint">아직 없는 구간으로 이동해 몇 초 머물면, 선형 추격을 기다리지 않고 재생 위치부터 다시 인식합니다.</sys:String>
     <sys:String x:Key="Str.Settings.WaitZhMinutes">번역이 닿아야 하는 시간 (분)</sys:String>
     <sys:String x:Key="Str.Settings.WaitZh.DepHint">번역, 자동 원문 추출, 열면 자동 재생, 기본 모드 번역/이중이 필요합니다. 「바로 재생」이 꺼져 있으면 열 때 첫 번역 배치를 기다립니다. 아래 옵션을 켜면 더 오래 기다립니다.</sys:String>
     <sys:String x:Key="Str.Settings.FullscreenQuietOsd">전체 화면에서 지연 안내를 줄임</sys:String>
@@ -1097,7 +1129,9 @@
     <sys:String x:Key="Str.Settings.SeekLarge">큰 간격 (Ctrl + ← →)</sys:String>
     <sys:String x:Key="Str.Settings.HwDec">하드웨어 디코드</sys:String>
     <sys:String x:Key="Str.Settings.VideoFit">영상 배율</sys:String>
-    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">하드웨어 디코드는 mpv에 바로 쓰입니다. 화면이 바뀌지 않으면 파일을 다시 여세요. 「창을 영상에 맞춤」은 열 때 창 크기를 바꿉니다 (1:1 픽셀, 화면에 맞춤. 최대화/전체 화면에서는 건너뜀).</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance">화질 향상</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance.Tip">실시간 샤픈·디밴딩·고품질 스케일링. 기본은 끔. 우클릭 또는 E로도 전환. 끊기면 끄기/가볍게로.</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">하드웨어 디코드는 mpv에 바로 쓰입니다. 화면이 바뀌지 않으면 파일을 다시 여세요. 「창을 영상에 맞춤」은 열 때 창 크기를 바꿉니다 (1:1 픽셀, 화면에 맞춤. 최대화/전체 화면에서는 건너뜀). 화질 향상은 바로 적용됩니다.</sys:String>
     <sys:String x:Key="Str.Settings.Subtitle.Hint">자막 모양과 동기입니다. 원문 추출 스위치는 일반에 있습니다.</sys:String>
     <sys:String x:Key="Str.Settings.SubDefaultMode">기본 표시</sys:String>
     <sys:String x:Key="Str.Settings.SubFont">글꼴 (편집 가능)</sys:String>

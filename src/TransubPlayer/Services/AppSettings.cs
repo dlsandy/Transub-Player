@@ -11,6 +11,11 @@ public sealed class AppSettings
     public string TransubInstallPath { get; set; } = "";
     /// <summary>Whisper.cpp backend: auto (Vulkan→CPU) | cpu | vulkan.</summary>
     public string AsrBackend { get; set; } = AsrBackends.Auto;
+    /// <summary>
+    /// Whisper Vulkan GPU: <c>auto</c> (NVIDIA/AMD over Intel) or a Vulkan physical-device index
+    /// (see settings picker when multiple GPUs are present). Sticky until process restart.
+    /// </summary>
+    public string AsrGpuDevice { get; set; } = AsrGpuDevices.Auto;
     /// <summary>ASR models root (contains <c>asr/</c>). Empty = <c>data/models</c>.</summary>
     public string ModelsPath { get; set; } = "";
     /// <summary>
@@ -23,11 +28,11 @@ public sealed class AppSettings
     public string AsrModel { get; set; } = ModelPicker.Auto;
     /// <summary>Legacy JSON only — superseded by <see cref="SourceLanguage"/>.</summary>
     public string Language { get; set; } = "auto";
-    /// <summary>UI language: auto (OS) | zh-Hans | en | ja | ko | … See <c>Localization.UiLanguages</c>.</summary>
+    /// <summary>UI language: auto (OS) | zh-Hans | en | es | ja | ko | … See <c>Localization.UiLanguages</c>.</summary>
     public string UiLanguage { get; set; } = "auto";
     /// <summary>Legacy JSON only — superseded by <see cref="SourceLanguage"/>; kept so old settings round-trip.</summary>
     public string PresetId { get; set; } = "auto-speed";
-    /// <summary>ASR source language: auto | ja | ko | en | zh. Filename may guess when auto.</summary>
+    /// <summary>ASR source language: auto | ja | ko | en | es | zh. Filename may guess when auto.</summary>
     public string SourceLanguage { get; set; } = SourceLanguages.Auto;
     /// <summary>Legacy JSON only — always normalized to turbo tier (<see cref="AsrQualities.Better"/>).</summary>
     public string AsrQuality { get; set; } = AsrQualities.Better;
@@ -35,7 +40,7 @@ public sealed class AppSettings
     public string SubtitleMode { get; set; } = "zh";
     /// <summary>Incremental preview MT via local translation model. Default on; falls back to source if llama-server is down.</summary>
     public bool TranslateEnabled { get; set; } = true;
-    /// <summary>Preview translation language: zh (default) | en | ja | ko.</summary>
+    /// <summary>Preview translation language: zh (default) | zh-Hant | en | es | ja | ko.</summary>
     public string TranslateTarget { get; set; } = TranslateTargets.Zh;
     /// <summary>
     /// Local MT GGUF preference: <c>translategemma-4b-q4</c> (default) or <c>murasaki-4b-iq4xs</c>.
@@ -45,8 +50,15 @@ public sealed class AppSettings
     public bool AutoStartPreview { get; set; } = true;
     /// <summary>Pause after open until translated subtitle frontier covers WaitForZhMinutes.</summary>
     public bool WaitForFirstZhBeforePlay { get; set; }
-    /// <summary>When true, skip the open-path wait and play immediately (source may show while MT catches up).</summary>
-    public bool PlayImmediatelyOnOpen { get; set; }
+    /// <summary>
+    /// When true (default), skip the open-path wait and play immediately
+    /// (source may show while MT catches up near the playhead).
+    /// </summary>
+    public bool PlayImmediatelyOnOpen { get; set; } = true;
+    /// <summary>
+    /// When playhead stays far ahead of the ASR frontier, automatically re-recognize from the playhead.
+    /// </summary>
+    public bool AutoRestartAsrWhenLagging { get; set; } = true;
     /// <summary>Minutes of translated subtitle timeline required before auto-play (0 = first batch).</summary>
     public double WaitForZhMinutes { get; set; } = 1;
     /// <summary>When a sidecar SRT/ASS exists, load it instead of starting preview ASR.</summary>
@@ -76,7 +88,7 @@ public sealed class AppSettings
     public double WindowWidth { get; set; } = 1180;
     public double WindowHeight { get; set; } = 720;
     public bool HideChromeInFullscreen { get; set; } = true;
-    public double FullscreenHideDelaySec { get; set; } = 2.2;
+    public double FullscreenHideDelaySec { get; set; } = 3;
     public string ScreenshotDir { get; set; } = "";
     /// <summary>Last folder chosen for stream recording. Empty = default under app data.</summary>
     public string StreamRecordDir { get; set; } = "";
@@ -108,6 +120,8 @@ public sealed class AppSettings
     public string HwDec { get; set; } = "auto";
     /// <summary>window | contain | cover | stretch — default window：打开后按视频比例调整窗口</summary>
     public string VideoFit { get; set; } = "window";
+    /// <summary>off | light | enhance — real-time picture enhance (mpv scalers/deband). Default off.</summary>
+    public string VideoEnhance { get; set; } = VideoEnhanceModes.Off;
     /// <summary>Absolute path to active LUT (.cube/.3dl/.hald). Empty = off (unless sidecar auto-applies).</summary>
     public string LutPath { get; set; } = "";
     /// <summary>When true, same-stem .cube/.3dl/.hald next to the video overrides the global LUT.</summary>
@@ -153,6 +167,16 @@ public sealed class AppSettings
         ColorHue = p.Hue;
         ColorShadows = p.Shadows;
         ColorSharpness = p.Sharpness;
+        if (saveSoon)
+            SaveSoon();
+    }
+
+    public VideoEnhanceMode GetVideoEnhanceMode()
+        => VideoEnhanceModes.Parse(VideoEnhance);
+
+    public void SetVideoEnhanceMode(VideoEnhanceMode mode, bool saveSoon = true)
+    {
+        VideoEnhance = VideoEnhanceModes.ToSetting(mode);
         if (saveSoon)
             SaveSoon();
     }
@@ -317,6 +341,7 @@ public sealed class AppSettings
         ModelsPath = copy.ModelsPath;
         AdvancedLlmPath = copy.AdvancedLlmPath;
         AsrBackend = AsrBackends.Normalize(copy.AsrBackend);
+        AsrGpuDevice = AsrGpuDevices.Normalize(copy.AsrGpuDevice);
         HfEndpoint = copy.HfEndpoint;
         AsrModel = ModelPicker.Normalize(copy.AsrModel);
         Language = copy.Language;
@@ -332,6 +357,7 @@ public sealed class AppSettings
         AutoStartPreview = copy.AutoStartPreview;
         WaitForFirstZhBeforePlay = copy.WaitForFirstZhBeforePlay;
         PlayImmediatelyOnOpen = copy.PlayImmediatelyOnOpen;
+        AutoRestartAsrWhenLagging = copy.AutoRestartAsrWhenLagging;
         WaitForZhMinutes = copy.WaitForZhMinutes;
         PreferExternalSubtitle = copy.PreferExternalSubtitle;
         FetchSubtitleFromSubtitleCat = copy.FetchSubtitleFromSubtitleCat;
@@ -368,6 +394,7 @@ public sealed class AppSettings
         SeekStepLargeSeconds = copy.SeekStepLargeSeconds;
         HwDec = copy.HwDec;
         VideoFit = copy.VideoFit;
+        VideoEnhance = VideoEnhanceModes.ToSetting(VideoEnhanceModes.Parse(copy.VideoEnhance));
         LutPath = copy.LutPath ?? "";
         LutAutoSidecar = copy.LutAutoSidecar;
         ColorBrightness = ColorGradeParams.Clamp(copy.ColorBrightness);
@@ -447,6 +474,8 @@ public sealed class AppSettings
             settings.SourceLanguage = SourceLanguages.Normalize(settings.SourceLanguage);
             settings.AsrQuality = AsrQualities.Normalize(settings.AsrQuality);
             settings.AsrModel = ModelPicker.Normalize(settings.AsrModel);
+            settings.AsrBackend = AsrBackends.Normalize(settings.AsrBackend);
+            settings.AsrGpuDevice = AsrGpuDevices.Normalize(settings.AsrGpuDevice);
             settings.TranslateModelId = TranslateModels.Normalize(settings.TranslateModelId);
             if (!root.TryGetProperty("translateTarget", out _))
                 settings.TranslateTarget = TranslateTargets.FromUiLanguage(settings.UiLanguage);

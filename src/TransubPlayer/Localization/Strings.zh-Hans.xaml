@@ -70,6 +70,9 @@
     <sys:String x:Key="Str.Main.SubSource.OnlineNone">在线字幕无匹配 · 不自动原文提取</sys:String>
     <sys:String x:Key="Str.Main.SubSource.OffOpen">字幕已关闭 · 不自动原文提取/翻译/在线查找</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">实时字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveNoExternal">无同目录字幕 · 已改用实时识别</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LiveNoExternal">无同目录字幕 · 实时识别</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveActiveTip">实时字幕 · 边看边识别；可切本地/在线/关闭</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">选择字幕来源：关闭 / 在线 / 本地 / 实时字幕</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Default">默认</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Tip">切换同目录字幕文件</sys:String>
@@ -146,19 +149,19 @@
     <sys:String x:Key="Str.OpenUrl.Invalid">无法识别该地址，请检查格式后重试。</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Desktop">屏幕捕获（桌面）</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Capture">屏幕捕获</sys:String>
-    <sys:String x:Key="Str.MediaSource.Stripchat.User">Stripchat / {0}</sys:String>
+    <sys:String x:Key="Str.MediaSource.Live.User">直播 / {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.ResolvingStream">正在解析直播地址…</sys:String>
-    <sys:String x:Key="Str.Main.Status.StripchatPlaying">直播 · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.LivePlaying">直播 · {0}</sys:String>
     <sys:String x:Key="Str.StreamResolve.InvalidUrl">无法识别该地址。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.NotFound">未在页面中找到直播信息。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Offline">主播 {0} 当前离线，未开播。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Blocked">无法从镜像站获取直播信息，请检查网络或稍后重试。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Private">主播 {0} 正在进行私密直播，无法播放。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.GroupShow">主播 {0} 正在进行团体秀，无法播放。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Restricted">主播 {0} 的直播在当前地区不可用（地区限制）。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.ModelNotFound">未找到主播 {0}，请检查用户名是否正确。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Unavailable">主播 {0} 房间暂不可用（摄像头未就绪）。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.StatusUnknown">主播 {0} 当前状态为「{1}」，无法播放。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.NotFound">未在页面中找到直播信息。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Offline">主播 {0} 当前离线，未开播。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Blocked">无法从镜像站获取直播信息，请检查网络或稍后重试。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Private">主播 {0} 正在进行私密直播，无法播放。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.GroupShow">主播 {0} 正在进行团体秀，无法播放。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Restricted">主播 {0} 的直播在当前地区不可用（地区限制）。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.ModelNotFound">未找到主播 {0}，请检查用户名是否正确。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Unavailable">主播 {0} 房间暂不可用（摄像头未就绪）。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.StatusUnknown">主播 {0} 当前状态为「{1}」，无法播放。</sys:String>
     <sys:String x:Key="Str.Main.Menu.Recent">最近打开</sys:String>
     <sys:String x:Key="Str.Main.Menu.Favorites">收藏</sys:String>
     <sys:String x:Key="Str.Main.Menu.Playlist">播放列表</sys:String>
@@ -458,7 +461,7 @@
     <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">从文件夹导入识别模型</sys:String>
     <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">手动安装（当前设置）</sys:String>
     <sys:String x:Key="Str.Settings.UiLanguage">界面语言</sys:String>
-    <sys:String x:Key="Str.Settings.UiLanguage.Hint">保存后立即切换。界面文案已支持中/英/日/韩；若发现遗漏请反馈。</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">保存后立即切换。界面文案已支持中/英/西/日/韩；若发现遗漏请反馈。</sys:String>
     <sys:String x:Key="Str.Settings.Section.Interface">界面</sys:String>
     <sys:String x:Key="Str.Settings.Section.SubtitleSource">字幕来源</sys:String>
     <sys:String x:Key="Str.Settings.Section.Window">窗口</sys:String>
@@ -482,7 +485,14 @@
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">尚未加载</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">优先选 Vulkan 以降 CPU 占用。识别线程已限制，避免占满整机；GPU 模式下仍会有少量 CPU（音频预处理）。若进程已加载 CPU 库，需重启后才能切到 GPU。若其它软件正在用 Intel QSV 转码（如 HandBrake），请改用 CPU 识别或先暂停转码，否则部分 Intel 驱动可能导致整机卡死或蓝屏。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">优先选 Vulkan 以降 CPU 占用（双显时会尽量避开 Intel Arc，改走 NVIDIA/AMD）。识别线程已限制；GPU 模式仍有少量 CPU（音频预处理）。若进程已加载 CPU 库，需重启后才能切到 GPU。若其它软件正在用 Intel QSV 转码（如 HandBrake）：有独显时请用「自动/Vulkan」；仅 CPU 识别会与转码争抢 CPU，可能导致卡顿甚至需硬重启——也可先暂停转码再识别。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Label">识别 GPU</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Auto">自动（优先 NVIDIA/AMD，避开 Intel）</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Hint">检测到多块显卡时可手动指定 Whisper 使用哪一张。HandBrake 占用 Intel Arc QSV 时请选 NVIDIA，勿选 Arc。更改后若本进程已加载过 GPU 识别库，需重启播放器才生效。</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrGpuDeviceNeedsRestart">识别 GPU 已切换 · 请重启播放器后生效</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceNeedsRestart">识别 GPU 已保存 · 请重启播放器</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceRestart">识别 GPU 已更改 · 重新提取中…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceSaved">识别 GPU 已保存 · 打开文件后生效</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">识别运行库：{0} · 线程 {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">当前进程已加载 CPU 识别库 · 请重启播放器后再用 Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">内嵌识别 · {0} · 模型目录 {1}</sys:String>
@@ -657,6 +667,9 @@
     <sys:String x:Key="Str.Main.Lag.JumpReady">跳回已生成处</sys:String>
     <sys:String x:Key="Str.Main.Lag.SwitchSource">切原文继续</sys:String>
     <sys:String x:Key="Str.Main.Lag.ContinueWait">继续观看</sys:String>
+    <sys:String x:Key="Str.Main.Lag.RestartFromHere">从这里识别</sys:String>
+    <sys:String x:Key="Str.Main.Status.AutoRestartFromPlayhead">字幕落后较多 · 已从当前位置重新识别</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AutoRestartFromPlayhead">已从当前位置重新识别</sys:String>
     <sys:String x:Key="Str.Main.Menu.Subtitles">字幕显示</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayLater">字幕延后 0.5 秒</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">字幕提前 0.5 秒</sys:String>
@@ -673,6 +686,16 @@
     <sys:String x:Key="Str.Main.Menu.Presets">预设</sys:String>
     <sys:String x:Key="Str.Main.Menu.PresetsLoading">（加载中）</sys:String>
     <sys:String x:Key="Str.Main.Menu.Speed">倍速</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance">画质增强</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhanceCurrent">画质：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Off">关闭</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Light">轻量</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Enhance">增强</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Cycle">循环切换</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Tip">实时锐化、去色带与高质量缩放；1:1 显示也能看出边缘更清晰。默认关闭。快捷键 E 循环切换。卡顿时改回关闭或轻量。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Off">画质增强 · 关闭</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Light">画质增强 · 轻量（锐化+去色带）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Enhance">画质增强 · 增强（强锐化+去色带）</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGrade">调色</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeCurrent">调色：{0}</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeAdjust">手动调整…</sys:String>
@@ -951,10 +974,13 @@
     <sys:String x:Key="Str.Main.Status.Build.PreviewJa">生成中 · {0} · 中文片源</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtNotReady">暂显原文 · 翻译模型未就绪 · {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtFailed">暂显原文 · 翻译模型启动失败 · {0}</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.Generating">生成中 · {0} · 暂显原文（会落后画面）· 灰条原文 · 蓝条译文</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">识别中 · {0} · 暂显原文（会落后画面）· 灰条原文 · 蓝条译文</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceThenMt">识别中 · {0} · 原文已到 {1} · 译文补齐中</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtCatchingUp">翻译中 · {0} · 译文到 {1} · 原文到 {2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.PreviewMt">生成中 · {0} · 译文 {1}/{2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.StartingMt">字幕生成中（会落后画面）· 正在启动翻译模型</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">生成中 · {0} · 仅原文</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">识别中 · {0} · 仅原文</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnlyFrontier">识别中 · {0} · 仅原文 · 已到 {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.TranslateOff">生成中 · {0} · 翻译已关 · 暂显原文</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailed">生成失败 · 影片仍可播放</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">影片已在播放 · 生成失败：{0}</sys:String>
@@ -1005,7 +1031,7 @@
     <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">关闭：只播放，不识别、不翻译、不搜在线字幕。
 在线：按片名搜索 SubtitleCat / 迅雷并选择下载；失败不会自动原文提取。
 本地：仅加载同目录 .srt / .ass；没有则不自动原文提取。
-实时字幕：优先同目录成片（若开启），否则自动原文提取（默认路径）。</sys:String>
+实时字幕：若开启「优先同目录字幕」且找到成片则直接用；找不到会提示并自动原文提取。打开后默认原文先上屏，译文在播放头附近补齐。</sys:String>
     <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">打开 Ctrl+O · 流媒体 Ctrl+Shift+O · 播放/暂停 Space · 快退/快进 ← →
 精细 Shift+←→ · 大步 Ctrl+←→ · ±60 秒 PageUp/Down
 片头/片尾 Home/End · 逐帧 , .
@@ -1027,28 +1053,32 @@
     <sys:String x:Key="Str.Settings.AutoPreview">无成片字幕时，打开后自动开始原文提取</sys:String>
     <sys:String x:Key="Str.Settings.Translate">翻译：自动使用本机翻译模型；没有则先显示原文</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget">译文语言</sys:String>
-    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">默认可跟界面语言；也可单独改。简/繁/英/日/韩译文共用同一翻译模型，不进默认包。</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">默认可跟界面语言；也可单独改。简/繁/英/西/日/韩译文共用同一翻译模型，不进默认包。</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Zh">简体中文</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.ZhHant">繁体中文</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Es">西班牙语</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ja">日语</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ko">韩语</sys:String>
     <!-- 底栏短标签：闭合态与下拉共用 -->
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Zh">简体</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.ZhHant">繁体</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.En">英语</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Short.Es">西语</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ja">日语</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ko">韩语</sys:String>
     <sys:String x:Key="Str.SourceLang.Auto">自动</sys:String>
     <sys:String x:Key="Str.SourceLang.Ja">日语</sys:String>
     <sys:String x:Key="Str.SourceLang.Ko">韩语</sys:String>
     <sys:String x:Key="Str.SourceLang.En">英语</sys:String>
+    <sys:String x:Key="Str.SourceLang.Es">西班牙语</sys:String>
     <sys:String x:Key="Str.SourceLang.Zh">中文</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Auto">自动</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.AutoResolved">自动·{0}</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ja">日语</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ko">韩语</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.En">英语</sys:String>
+    <sys:String x:Key="Str.SourceLang.Short.Es">西语</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Zh">中文</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">品质优先</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
@@ -1067,7 +1097,9 @@
     <sys:String x:Key="Str.Settings.TextSanitize.Hint">播放器侧轻量清洗；成片级清洗请用 Transub。</sys:String>
     <sys:String x:Key="Str.Settings.WaitFirstZh">等待更长时间：译文覆盖到指定时长后再播放</sys:String>
     <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen">打开后立即播放（不等译文）</sys:String>
-    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">默认在译文/双语模式下会先暂停，等首批译文就绪再播；勾选此项则立即播放（暂显原文）。</sys:String>
+    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">默认开启：立即播放，译文/双语模式下暂显原文，译文在播放头附近补齐。取消勾选则会先暂停等首批译文。</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging">字幕落后较多时自动从当前位置识别</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging.Hint">快进到尚未生成的位置并停留数秒后，自动从播放头重新识别，而不用干等到线性追赶。</sys:String>
     <sys:String x:Key="Str.Settings.WaitZhMinutes">译文至少覆盖到（分钟）</sys:String>
     <sys:String x:Key="Str.Settings.WaitZh.DepHint">需开启翻译、自动原文提取、打开后自动播放，且默认字幕为译文/双语。未勾选「立即播放」时，打开后会先等首批译文；勾选下方选项可改为等待更长时间。</sys:String>
     <sys:String x:Key="Str.Settings.FullscreenQuietOsd">全屏时减少字幕追赶提示（少打扰）</sys:String>
@@ -1097,7 +1129,9 @@
     <sys:String x:Key="Str.Settings.SeekLarge">大步长（Ctrl + ← →）</sys:String>
     <sys:String x:Key="Str.Settings.HwDec">硬件解码</sys:String>
     <sys:String x:Key="Str.Settings.VideoFit">画面缩放</sys:String>
-    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">更改硬件解码后会立即写入 mpv；若画面未切换，请重新打开影片。可靠切换解码器时建议重开当前片。「窗口适应视频」会在打开影片后按片源分辨率调整窗口（1:1 像素，超出屏幕则缩小；全屏/最大化时不改）。</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance">画质增强</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance.Tip">实时锐化、去色带与高质量缩放。默认关闭；右键菜单或按 E 也可切换。卡顿时请改回关闭或轻量。</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">更改硬件解码后会立即写入 mpv；若画面未切换，请重新打开影片。可靠切换解码器时建议重开当前片。「窗口适应视频」会在打开影片后按片源分辨率调整窗口（1:1 像素，超出屏幕则缩小；全屏/最大化时不改）。画质增强会立即生效。</sys:String>
     <sys:String x:Key="Str.Settings.Subtitle.Hint">字幕外观与同步。原文提取开关请到「常用」。</sys:String>
     <sys:String x:Key="Str.Settings.SubDefaultMode">默认显示</sys:String>
     <sys:String x:Key="Str.Settings.SubFont">字体（可输入）</sys:String>

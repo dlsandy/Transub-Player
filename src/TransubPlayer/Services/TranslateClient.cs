@@ -179,6 +179,8 @@ internal sealed class TranslateClient : IDisposable
         {
             TranslateTargets.Ko =>
                 " Target language is Korean. Write Hangul (한글) only — never Chinese characters, never Japanese.",
+            TranslateTargets.Es =>
+                " Target language is Spanish. Write Spanish in Latin script only — never Chinese, Japanese, or Korean characters.",
             TranslateTargets.Zh =>
                 " Target language is Simplified Chinese (简体). Use simplified characters only — never Traditional Chinese.",
             TranslateTargets.ZhHant =>
@@ -225,6 +227,7 @@ internal sealed class TranslateClient : IDisposable
                 TranslateTargets.Ja => "ja",
                 TranslateTargets.Ko => "ko-KR",
                 TranslateTargets.En => "en",
+                TranslateTargets.Es => "es",
                 TranslateTargets.ZhHant => "zh-TW",
                 TranslateTargets.Zh => "zh-CN",
                 _ => "en",
@@ -236,6 +239,7 @@ internal sealed class TranslateClient : IDisposable
             SourceLanguages.Ja => "ja",
             SourceLanguages.Ko => "ko",
             SourceLanguages.En => "en",
+            SourceLanguages.Es => "es",
             SourceLanguages.Zh => "zh-CN",
             _ => "en",
         };

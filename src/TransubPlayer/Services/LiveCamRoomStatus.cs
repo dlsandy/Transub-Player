@@ -2,8 +2,8 @@ using TransubPlayer.Localization;
 
 namespace TransubPlayer.Services;
 
-/// <summary>Maps Stripchat cam API / preload room state to user-facing resolve errors.</summary>
-internal enum StripchatRoomKind
+/// <summary>Maps live-cam API / preload room state to user-facing resolve errors.</summary>
+internal enum LiveCamRoomKind
 {
     Public,
     Offline,
@@ -15,7 +15,7 @@ internal enum StripchatRoomKind
     Unknown,
 }
 
-internal static class StripchatRoomStatus
+internal static class LiveCamRoomStatus
 {
     private static readonly HashSet<string> PrivateStatuses = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -66,7 +66,7 @@ internal static class StripchatRoomStatus
         return available || camActive || isLive;
     }
 
-    public static StripchatRoomKind Classify(
+    public static LiveCamRoomKind Classify(
         string? status,
         bool available,
         bool isLive,
@@ -76,60 +76,60 @@ internal static class StripchatRoomStatus
         string? apiError = null)
     {
         if (isDeleted || IsNotFoundError(apiError))
-            return StripchatRoomKind.NotFound;
+            return LiveCamRoomKind.NotFound;
         if (isGeoBanned)
-            return StripchatRoomKind.Restricted;
+            return LiveCamRoomKind.Restricted;
 
         if (GroupShowStatuses.Contains(status ?? ""))
-            return StripchatRoomKind.GroupShow;
+            return LiveCamRoomKind.GroupShow;
         if (PrivateStatuses.Contains(status ?? ""))
-            return StripchatRoomKind.Private;
+            return LiveCamRoomKind.Private;
         if (IsOffline(status) || (!isLive && !available && !camActive && !IsPublic(status)))
-            return StripchatRoomKind.Offline;
+            return LiveCamRoomKind.Offline;
 
         if (IsPublic(status))
         {
             if (available && camActive)
-                return StripchatRoomKind.Public;
-            return StripchatRoomKind.Unavailable;
+                return LiveCamRoomKind.Public;
+            return LiveCamRoomKind.Unavailable;
         }
 
         if (!string.IsNullOrWhiteSpace(status))
-            return StripchatRoomKind.Unknown;
+            return LiveCamRoomKind.Unknown;
 
         if (!isLive && !available && !camActive)
-            return StripchatRoomKind.Offline;
+            return LiveCamRoomKind.Offline;
 
-        return StripchatRoomKind.Unknown;
+        return LiveCamRoomKind.Unknown;
     }
 
-    public static bool IsDefinitiveUnplayable(StripchatRoomKind kind)
-        => kind is StripchatRoomKind.Offline
-            or StripchatRoomKind.Private
-            or StripchatRoomKind.GroupShow
-            or StripchatRoomKind.Restricted
-            or StripchatRoomKind.NotFound
-            or StripchatRoomKind.Unavailable;
+    public static bool IsDefinitiveUnplayable(LiveCamRoomKind kind)
+        => kind is LiveCamRoomKind.Offline
+            or LiveCamRoomKind.Private
+            or LiveCamRoomKind.GroupShow
+            or LiveCamRoomKind.Restricted
+            or LiveCamRoomKind.NotFound
+            or LiveCamRoomKind.Unavailable;
 
-    public static StreamResolveException ToException(StripchatRoomKind kind, string username, string? rawStatus = null)
+    public static StreamResolveException ToException(LiveCamRoomKind kind, string username, string? rawStatus = null)
     {
         var name = string.IsNullOrWhiteSpace(username) ? "?" : username.Trim();
         return kind switch
         {
-            StripchatRoomKind.Private => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.Private", name), StreamResolveKind.Private),
-            StripchatRoomKind.GroupShow => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.GroupShow", name), StreamResolveKind.Private),
-            StripchatRoomKind.Restricted => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.Restricted", name), StreamResolveKind.Restricted),
-            StripchatRoomKind.NotFound => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.ModelNotFound", name), StreamResolveKind.NotFound),
-            StripchatRoomKind.Unavailable => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.Unavailable", name), StreamResolveKind.Offline),
-            StripchatRoomKind.Unknown when !string.IsNullOrWhiteSpace(rawStatus) => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.StatusUnknown", name, rawStatus), StreamResolveKind.Generic),
+            LiveCamRoomKind.Private => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.Private", name), StreamResolveKind.Private),
+            LiveCamRoomKind.GroupShow => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.GroupShow", name), StreamResolveKind.Private),
+            LiveCamRoomKind.Restricted => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.Restricted", name), StreamResolveKind.Restricted),
+            LiveCamRoomKind.NotFound => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.ModelNotFound", name), StreamResolveKind.NotFound),
+            LiveCamRoomKind.Unavailable => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.Unavailable", name), StreamResolveKind.Offline),
+            LiveCamRoomKind.Unknown when !string.IsNullOrWhiteSpace(rawStatus) => new StreamResolveException(
+                Loc.Format("StreamResolve.Live.StatusUnknown", name, rawStatus), StreamResolveKind.Generic),
             _ => new StreamResolveException(
-                Loc.Format("StreamResolve.Stripchat.Offline", name), StreamResolveKind.Offline),
+                Loc.Format("StreamResolve.Live.Offline", name), StreamResolveKind.Offline),
         };
     }
 
@@ -148,12 +148,12 @@ internal static class StripchatRoomStatus
             return null;
 
         var kind = Classify(status, available, isLive, camActive, isDeleted, isGeoBanned, apiError);
-        if (!IsDefinitiveUnplayable(kind) && kind != StripchatRoomKind.Unknown)
+        if (!IsDefinitiveUnplayable(kind) && kind != LiveCamRoomKind.Unknown)
             return null;
-        if (kind == StripchatRoomKind.Unknown && string.IsNullOrWhiteSpace(status) && string.IsNullOrWhiteSpace(apiError))
+        if (kind == LiveCamRoomKind.Unknown && string.IsNullOrWhiteSpace(status) && string.IsNullOrWhiteSpace(apiError))
             return null;
 
-        return ToException(kind == StripchatRoomKind.Public ? StripchatRoomKind.Unavailable : kind, username, status);
+        return ToException(kind == LiveCamRoomKind.Public ? LiveCamRoomKind.Unavailable : kind, username, status);
     }
 
     public static bool IsNotFoundError(string? error)

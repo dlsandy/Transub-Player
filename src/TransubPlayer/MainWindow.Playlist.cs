@@ -308,7 +308,7 @@ public partial class MainWindow
         PlaylistButton.ToolTip = visible ? Loc.Get("Main.Playlist.ShowTip") : Loc.Get("Main.Playlist.HideTip");
         RefreshPlaylistUi();
         if (_isFullscreen)
-            UpdateFullscreenChromeVisibility();
+            RevealFullscreenChrome();
     }
 
     private string _playlistReadySig = "";

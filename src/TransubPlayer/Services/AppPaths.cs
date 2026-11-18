@@ -82,6 +82,8 @@ internal static class AppPaths
     public static string LutsDir => EnsureSub("luts");
     /// <summary>User-saved manual color-grade parameter presets (JSON).</summary>
     public static string ColorGradesDir => EnsureSub("color-grades");
+    /// <summary>Built-in / user GLSL hooks for picture enhance (written on first use).</summary>
+    public static string ShadersDir => EnsureSub("shaders");
 
     public static string NativeRoot
     {

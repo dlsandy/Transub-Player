@@ -70,6 +70,9 @@
     <sys:String x:Key="Str.Main.SubSource.OnlineNone">オンライン検索に一致なし · 自動 ASR なし</sys:String>
     <sys:String x:Key="Str.Main.SubSource.OffOpen">字幕オフ · 自動 ASR/MT/オンライン検索なし</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">ライブ字幕</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveNoExternal">サイドカーなし · ライブ認識に切替</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LiveNoExternal">サイドカーなし · ライブ認識</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveActiveTip">ライブ字幕 · 視聴しながら認識；ローカル／オンライン／オフに切替可</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">字幕ソース：オフ／オンライン／ローカルファイル／ライブ ASR</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Default">デフォルト</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Tip">同フォルダの字幕ファイルを切替</sys:String>
@@ -139,26 +142,26 @@
     <sys:String x:Key="Str.Main.Status.StreamPlaybackOnly">ストリーミング再生 · ライブ原文抽出は利用不可</sys:String>
     <sys:String x:Key="Str.Main.Status.ScreenCapture">画面キャプチャ · ライブ原文抽出は利用不可</sys:String>
     <sys:String x:Key="Str.OpenUrl.Title">ストリーム URL を開く</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Prompt">URL または Stripchat ストリーマー ID を入力</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Hint">HLS（.m3u8）、直リンク、Stripchat ページ URL またはユーザー名／数値 ID、一般的なライブストリームに対応。ドラッグまたは貼り付け。</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Prompt">URL またはライブ配信の配信者 ID を入力</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Hint">HLS（.m3u8）、直リンク、ライブページ URL またはユーザー名／数値 ID、一般的なライブストリームに対応。ドラッグまたは貼り付け。</sys:String>
     <sys:String x:Key="Str.OpenUrl.Open">開く</sys:String>
     <sys:String x:Key="Str.OpenUrl.AddFavorite">同時にお気に入りへ追加</sys:String>
     <sys:String x:Key="Str.OpenUrl.Invalid">認識できないアドレスです。形式を確認して再試行してください。</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Desktop">画面キャプチャ（デスクトップ）</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Capture">画面キャプチャ</sys:String>
-    <sys:String x:Key="Str.MediaSource.Stripchat.User">Stripchat / {0}</sys:String>
+    <sys:String x:Key="Str.MediaSource.Live.User">ライブ / {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.ResolvingStream">ストリーム URL を解決中…</sys:String>
-    <sys:String x:Key="Str.Main.Status.StripchatPlaying">Stripchat ライブ · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.LivePlaying">ライブ · {0}</sys:String>
     <sys:String x:Key="Str.StreamResolve.InvalidUrl">認識できないアドレスです。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.NotFound">このページに Stripchat ストリーム情報が見つかりません。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Offline">モデル {0} はオフラインです。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Blocked">このミラーからストリーム情報を取得できません。ネットワークを確認するか、後でもう一度お試しください。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Private">モデル {0} はプライベートショー中のため再生できません。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.GroupShow">モデル {0} はグループショー中のため再生できません。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Restricted">モデル {0} はお住まいの地域では利用できません（地域制限）。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.ModelNotFound">モデル {0} が見つかりません。ユーザー名を確認してください。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Unavailable">モデル {0} のルームは利用できません（カメラ未準備）。</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.StatusUnknown">モデル {0} の状態は「{1}」のため再生できません。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.NotFound">このページにライブ情報が見つかりません。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Offline">モデル {0} はオフラインです。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Blocked">このミラーからストリーム情報を取得できません。ネットワークを確認するか、後でもう一度お試しください。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Private">モデル {0} はプライベートショー中のため再生できません。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.GroupShow">モデル {0} はグループショー中のため再生できません。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Restricted">モデル {0} はお住まいの地域では利用できません（地域制限）。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.ModelNotFound">モデル {0} が見つかりません。ユーザー名を確認してください。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Unavailable">モデル {0} のルームは利用できません（カメラ未準備）。</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.StatusUnknown">モデル {0} の状態は「{1}」のため再生できません。</sys:String>
     <sys:String x:Key="Str.Main.Menu.Recent">最近</sys:String>
     <sys:String x:Key="Str.Main.Menu.Favorites">お気に入り</sys:String>
     <sys:String x:Key="Str.Main.Menu.Playlist">プレイリスト</sys:String>
@@ -458,7 +461,7 @@
     <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">フォルダから ASR モデルをインポート</sys:String>
     <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">手動インストール（現在の設定）</sys:String>
     <sys:String x:Key="Str.Settings.UiLanguage">インターフェイス言語</sys:String>
-    <sys:String x:Key="Str.Settings.UiLanguage.Hint">保存時に適用。UI パック：中国語／英語／日本語／韓国語に対応。</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">保存時に適用。UI パック：中国語／英語／スペイン語／日本語／韓国語に対応。</sys:String>
     <sys:String x:Key="Str.Settings.Section.Interface">インターフェイス</sys:String>
     <sys:String x:Key="Str.Settings.Section.SubtitleSource">字幕ソース</sys:String>
     <sys:String x:Key="Str.Settings.Section.Window">ウィンドウ</sys:String>
@@ -482,7 +485,14 @@
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan（GPU）</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">未読み込み</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 負荷を下げるには Vulkan を選んでください。認識スレッド数は上限付きです。GPU でも音声前処理でわずかに CPU を使います。CPU ライブラリを既に読み込んだ場合は、GPU 切替に再起動が必要です。他アプリが Intel QSV でエンコード中（HandBrake など）のときは、認識を CPU にするか先にエンコードを止めてください。一部の Intel ドライバではフリーズやブルースクリーンになることがあります。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">CPU 負荷を下げるには Vulkan を選んでください（デュアル GPU では Intel Arc を避け NVIDIA/AMD を優先）。認識スレッドは上限付き；GPU でも音声前処理でわずかに CPU を使います。CPU ライブラリを既に読み込んだ場合は再起動が必要です。他アプリが Intel QSV でエンコード中（HandBrake など）のとき：独顕があれば「自動/Vulkan」のまま；CPU 認識はエンコードと CPU を奪い合いフリーズしうるので、先にエンコードを止める方法もあります。</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Label">認識 GPU</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Auto">自動（NVIDIA/AMD 優先、Intel 回避）</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Hint">複数 GPU があるとき Whisper の使用 GPU を選べます。HandBrake が Intel Arc QSV を使っているときは NVIDIA を選び、Arc は選ばないでください。すでに GPU 認識ライブラリを読み込み済みなら、変更後に再起動が必要です。</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrGpuDeviceNeedsRestart">認識 GPU を変更しました · 再起動後に有効</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceNeedsRestart">認識 GPU を保存 · プレーヤーを再起動してください</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceRestart">認識 GPU を変更 · 再抽出中…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceSaved">認識 GPU を保存 · ファイルを開くと適用</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">認識ランタイム：{0} · スレッド {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">このプロセスは CPU 認識ライブラリを読み込み済みです · Vulkan（GPU）を使うには再起動してください</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">内蔵 ASR · {0} · モデル {1}</sys:String>
@@ -657,6 +667,9 @@
     <sys:String x:Key="Str.Main.Lag.JumpReady">準備済みへ戻る</sys:String>
     <sys:String x:Key="Str.Main.Lag.SwitchSource">原文で続ける</sys:String>
     <sys:String x:Key="Str.Main.Lag.ContinueWait">視聴を続ける</sys:String>
+    <sys:String x:Key="Str.Main.Lag.RestartFromHere">ここから認識</sys:String>
+    <sys:String x:Key="Str.Main.Status.AutoRestartFromPlayhead">字幕が大きく遅れ · 再生位置から再認識</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AutoRestartFromPlayhead">再生位置から再認識</sys:String>
     <sys:String x:Key="Str.Main.Menu.Subtitles">字幕</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayLater">字幕を 0.5 秒遅らせる</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">字幕を 0.5 秒早める</sys:String>
@@ -673,6 +686,16 @@
     <sys:String x:Key="Str.Main.Menu.Presets">プリセット</sys:String>
     <sys:String x:Key="Str.Main.Menu.PresetsLoading">（読み込み中）</sys:String>
     <sys:String x:Key="Str.Main.Menu.Speed">速度</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance">画質強化</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhanceCurrent">画質：{0}</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Off">オフ</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Light">軽量</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Enhance">強化</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Cycle">切り替え</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Tip">リアルタイムのシャープ・デバンド・高品質スケーリング。1:1 でも輪郭がはっきりします。既定はオフ。E で循環。カクつく場合はオフ／軽量へ。</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Off">画質強化 · オフ</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Light">画質強化 · 軽量（シャープ+デバンド）</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Enhance">画質強化 · 強化（強シャープ+デバンド）</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGrade">カラー調整</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeCurrent">調整：{0}</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeAdjust">手動調整…</sys:String>
@@ -951,10 +974,13 @@
     <sys:String x:Key="Str.Main.Status.Build.PreviewJa">生成中 · {0} · 中国語ソース</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtNotReady">原文を表示 · 翻訳未準備 · {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtFailed">原文を表示 · 翻訳の起動失敗 · {0}</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.Generating">生成中 · {0} · 原文を表示（遅れます）· 灰／青バー</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">認識中 · {0} · 原文を表示（遅れます）· 灰／青バー</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceThenMt">認識中 · {0} · 原文 {1} まで · 訳文を補完中</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtCatchingUp">翻訳中 · {0} · 訳文 {1} · 原文 {2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.PreviewMt">生成中 · {0} · 翻訳済み {1}/{2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.StartingMt">字幕生成中（遅れます）· 翻訳モデルを起動中</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">生成中 · {0} · 原文のみ</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">認識中 · {0} · 原文のみ</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnlyFrontier">認識中 · {0} · 原文のみ · {1} まで</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.TranslateOff">生成中 · {0} · 翻訳オフ · 原文を表示</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailed">生成失敗 · 動画は再生中</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">再生中 · 生成失敗：{0}</sys:String>
@@ -1005,7 +1031,7 @@
     <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">オフ：再生のみ — 原文抽出、MT、オンライン検索なし。
 オンライン：タイトルで SubtitleCat／迅雷を検索；失敗時に自動原文抽出なし。
 ローカル：サイドカー .srt／.ass のみ；なければ自動原文抽出なし。
-ライブ字幕：任意でサイドカー優先、なければ自動原文抽出（既定パス）。</sys:String>
+ライブ字幕：「サイドカー優先」で見つかればそれを使用；なければ告知のうえライブ認識。原文が先に表示され、訳文は再生位置付近で補完。</sys:String>
     <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">開く Ctrl+O · ストリーム Ctrl+Shift+O · 再生／一時停止 Space · シーク ← →
 微調整 Shift+←→ · 大ジャンプ Ctrl+←→ · ±60s PageUp/Down
 先頭／末尾 Home/End · フレーム , .
@@ -1027,28 +1053,32 @@
     <sys:String x:Key="Str.Settings.AutoPreview">サイドカーがないとき ASR を自動開始</sys:String>
     <sys:String x:Key="Str.Settings.Translate">翻訳：利用可能ならローカルモデル；なければまず原文</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget">訳文言語</sys:String>
-    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">既定は UI 言語に従い、いつでも変更可。簡体／繁体／en／ja／ko は同一翻訳モデルを共有（既定パック外）。</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">既定は UI 言語に従い、いつでも変更可。簡体／繁体／en／es／ja／ko は同一翻訳モデルを共有（既定パック外）。</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Zh">簡体字中国語</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.ZhHant">繁体字中国語</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.En">英語</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Es">スペイン語</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ja">日本語</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ko">韓国語</sys:String>
     <!-- Control-bar short labels (closed + dropdown) -->
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Zh">簡体</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.ZhHant">繁体</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.En">EN</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ja">JA</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ko">KO</sys:String>
     <sys:String x:Key="Str.SourceLang.Auto">自動</sys:String>
     <sys:String x:Key="Str.SourceLang.Ja">日本語</sys:String>
     <sys:String x:Key="Str.SourceLang.Ko">韓国語</sys:String>
     <sys:String x:Key="Str.SourceLang.En">英語</sys:String>
+    <sys:String x:Key="Str.SourceLang.Es">スペイン語</sys:String>
     <sys:String x:Key="Str.SourceLang.Zh">中国語</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Auto">自動</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.AutoResolved">自動·{0}</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ja">JA</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ko">KO</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.En">EN</sys:String>
+    <sys:String x:Key="Str.SourceLang.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">品質優先</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
@@ -1067,7 +1097,9 @@
     <sys:String x:Key="Str.Settings.TextSanitize.Hint">プレーヤー側の軽いクリーンアップ；本番パイプラインは Transub。</sys:String>
     <sys:String x:Key="Str.Settings.WaitFirstZh">長く待つ：訳文が目標時間に達するまで再生しない</sys:String>
     <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen">開いたらすぐに再生（訳文を待たない）</sys:String>
-    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">既定では訳文／二か国語モードは最初の訳文が揃うまで一時停止。チェックするとすぐに再生（訳文が追いつくまで原文表示）。</sys:String>
+    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">既定でオン：すぐに再生し、訳文／二か国語は追いつくまで原文表示。オフにすると最初の訳文まで一時停止。</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging">遅れが大きいとき再生位置から自動再認識</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging.Hint">未生成の位置へシークして数秒止まると、線形の追いつきを待たず再生位置から再認識します。</sys:String>
     <sys:String x:Key="Str.Settings.WaitZhMinutes">訳文が到達すべき時間（分）</sys:String>
     <sys:String x:Key="Str.Settings.WaitZh.DepHint">翻訳、自動原文抽出、開いたら自動再生、既定モードが訳文／二か国語が必要。「すぐに再生」がオフの場合、開くと最初の訳文バッチを待機；下のオプションでさらに長く待てます。</sys:String>
     <sys:String x:Key="Str.Settings.FullscreenQuietOsd">フルスクリーンで遅延プロンプトを減らす</sys:String>
@@ -1097,7 +1129,9 @@
     <sys:String x:Key="Str.Settings.SeekLarge">大ジャンプ幅（Ctrl + ← →）</sys:String>
     <sys:String x:Key="Str.Settings.HwDec">ハードウェアデコード</sys:String>
     <sys:String x:Key="Str.Settings.VideoFit">動画スケーリング</sys:String>
-    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">ハードウェアデコードはすぐに mpv へ書き込み；映像が切り替わらない場合はファイルを開き直す。「ウィンドウを動画に合わせる」は開いたときにリサイズ（1:1 ピクセル、画面内に制限；最大化／フルスクリーンではスキップ）。</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance">画質強化</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance.Tip">リアルタイムのシャープ・デバンド・高品質スケーリング。既定はオフ。右クリックまたは E でも切替可。カクつく場合はオフ／軽量へ。</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">ハードウェアデコードはすぐに mpv へ書き込み；映像が切り替わらない場合はファイルを開き直す。「ウィンドウを動画に合わせる」は開いたときにリサイズ（1:1 ピクセル、画面内に制限；最大化／フルスクリーンではスキップ）。画質強化はすぐに反映されます。</sys:String>
     <sys:String x:Key="Str.Settings.Subtitle.Hint">字幕の見た目と同期。原文抽出の切替は「一般」。</sys:String>
     <sys:String x:Key="Str.Settings.SubDefaultMode">既定の表示</sys:String>
     <sys:String x:Key="Str.Settings.SubFont">フォント（編集可）</sys:String>

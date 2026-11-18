@@ -6,9 +6,9 @@ using System.Text.RegularExpressions;
 namespace TransubPlayer.Services;
 
 /// <summary>Local HLS proxy: resolves master playlists, decrypts MOUFLON media playlists for mpv.</summary>
-internal sealed class StripchatHlsProxy : IDisposable
+internal sealed class LiveCamHlsProxy : IDisposable
 {
-    private static StripchatHlsProxy? _shared;
+    private static LiveCamHlsProxy? _shared;
     private static readonly object Gate = new();
 
     private static readonly Regex UriAttrRe = new(
@@ -25,7 +25,7 @@ internal sealed class StripchatHlsProxy : IDisposable
     {
         lock (Gate)
         {
-            _shared ??= new StripchatHlsProxy();
+            _shared ??= new LiveCamHlsProxy();
             return _shared.WrapInternal(sourceUrl, pageReferer, masterUrl);
         }
     }
@@ -45,7 +45,7 @@ internal sealed class StripchatHlsProxy : IDisposable
         var query = $"src={Uri.EscapeDataString(sourceUrl)}&ref={Uri.EscapeDataString(pageReferer)}";
         if (!string.IsNullOrWhiteSpace(masterUrl))
             query += $"&master={Uri.EscapeDataString(masterUrl)}";
-        return $"http://127.0.0.1:{_port}/stripchat.m3u8?{query}";
+        return $"http://127.0.0.1:{_port}/{LiveCamSeal.ProxyPath}?{query}";
     }
 
     private void EnsureStarted()
@@ -73,7 +73,7 @@ internal sealed class StripchatHlsProxy : IDisposable
             }
             catch (Exception ex)
             {
-                PlayerLog.Write("Stripchat proxy: " + ex.Message);
+                PlayerLog.Write("live proxy: " + ex.Message);
             }
         }
     }
@@ -83,14 +83,14 @@ internal sealed class StripchatHlsProxy : IDisposable
         try
         {
             var path = ctx.Request.Url?.AbsolutePath ?? "";
-            if (!path.EndsWith("stripchat.m3u8", StringComparison.OrdinalIgnoreCase))
+            if (!path.EndsWith(LiveCamSeal.ProxyPath, StringComparison.OrdinalIgnoreCase))
             {
                 await WriteTextAsync(ctx, 404, "not found").ConfigureAwait(false);
                 return;
             }
 
             var src = ctx.Request.QueryString["src"];
-            var referer = ctx.Request.QueryString["ref"] ?? "https://stripchat.com/";
+            var referer = ctx.Request.QueryString["ref"] ?? LiveCamSeal.OfficialOriginSlash;
             var master = ctx.Request.QueryString["master"];
             if (string.IsNullOrWhiteSpace(src))
             {
@@ -111,7 +111,7 @@ internal sealed class StripchatHlsProxy : IDisposable
         }
         catch (Exception ex)
         {
-            PlayerLog.Write("Stripchat proxy request: " + ex.Message);
+            PlayerLog.Write("live proxy request: " + ex.Message);
             try
             {
                 await WriteTextAsync(ctx, 502, ex.Message).ConfigureAwait(false);
@@ -132,13 +132,13 @@ internal sealed class StripchatHlsProxy : IDisposable
         if (!string.IsNullOrWhiteSpace(masterUrl))
         {
             // Re-fetch master on every mpv playlist poll so psch/pkey auth never goes stale (~2 min).
-            mediaUrl = StripchatHlsPlaylist.IsMasterPlaylist(sourceUrl)
-                ? await StripchatHlsPlaylist.ResolveMediaUrlAsync(masterUrl, pageReferer, CancellationToken.None).ConfigureAwait(false)
-                : await StripchatHlsPlaylist.ResolveVariantMediaUrlAsync(masterUrl, sourceUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
+            mediaUrl = LiveCamHlsPlaylist.IsMasterPlaylist(sourceUrl)
+                ? await LiveCamHlsPlaylist.ResolveMediaUrlAsync(masterUrl, pageReferer, CancellationToken.None).ConfigureAwait(false)
+                : await LiveCamHlsPlaylist.ResolveVariantMediaUrlAsync(masterUrl, sourceUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
         }
-        else if (StripchatHlsPlaylist.IsMasterPlaylist(sourceUrl))
+        else if (LiveCamHlsPlaylist.IsMasterPlaylist(sourceUrl))
         {
-            mediaUrl = await StripchatHlsPlaylist.ResolveMediaUrlAsync(sourceUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
+            mediaUrl = await LiveCamHlsPlaylist.ResolveMediaUrlAsync(sourceUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
         }
         else
         {
@@ -149,9 +149,9 @@ internal sealed class StripchatHlsProxy : IDisposable
         if (poll == 1 || poll % 20 == 0)
             PlayerLog.Write($"HLS proxy poll #{poll} → {ShortUrl(mediaUrl)}");
 
-        var raw = await StripchatHlsPlaylist.FetchTextAsync(mediaUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
-        var decoded = StripchatMouflonDecoder.DecodePlaylist(raw);
-        decoded = StripchatHlsPlaylist.NormalizeLivePlaylist(decoded);
+        var raw = await LiveCamHlsPlaylist.FetchTextAsync(mediaUrl, pageReferer, CancellationToken.None).ConfigureAwait(false);
+        var decoded = LiveCamMouflonDecoder.DecodePlaylist(raw);
+        decoded = LiveCamHlsPlaylist.NormalizeLivePlaylist(decoded);
         return AbsolutizePlaylist(decoded, mediaUrl);
     }
 

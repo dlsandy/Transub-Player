@@ -9,10 +9,11 @@ internal static class TranslateTargets
     /// <summary>Traditional Chinese (written form). Distinct from <see cref="Zh"/> (Simplified).</summary>
     public const string ZhHant = "zh-Hant";
     public const string En = "en";
+    public const string Es = "es";
     public const string Ja = "ja";
     public const string Ko = "ko";
 
-    public static readonly string[] All = [Zh, ZhHant, En, Ja, Ko];
+    public static readonly string[] All = [Zh, ZhHant, En, Es, Ja, Ko];
 
     public static string Normalize(string? raw)
     {
@@ -22,6 +23,7 @@ internal static class TranslateTargets
         return lower switch
         {
             En or "eng" or "english" => En,
+            Es or "spa" or "esp" or "spanish" or "español" or "espanol" => Es,
             Ja or "jp" or "japanese" => Ja,
             Ko or "kr" or "korean" => Ko,
             "zh-hant" or "zh-tw" or "zh-hk" or "zh-mo" or "zht" or "hant"
@@ -33,6 +35,7 @@ internal static class TranslateTargets
     }
 
     public static bool IsEnglish(string? target) => Normalize(target) == En;
+    public static bool IsSpanish(string? target) => Normalize(target) == Es;
     public static bool IsChinese(string? target)
     {
         var t = Normalize(target);
@@ -45,6 +48,7 @@ internal static class TranslateTargets
     public static bool IsKorean(string? target) => Normalize(target) == Ko;
 
     public static bool IsEnglish(AppSettings settings) => IsEnglish(settings.TranslateTarget);
+    public static bool IsSpanish(AppSettings settings) => IsSpanish(settings.TranslateTarget);
     public static bool IsChinese(AppSettings settings) => IsChinese(settings.TranslateTarget);
     public static bool IsSimplifiedChinese(AppSettings settings) => IsSimplifiedChinese(settings.TranslateTarget);
     public static bool IsTraditionalChinese(AppSettings settings) => IsTraditionalChinese(settings.TranslateTarget);
@@ -56,6 +60,7 @@ internal static class TranslateTargets
     {
         ZhHant => "zh-Hant",
         En => En,
+        Es => Es,
         Ja => Ja,
         Ko => Ko,
         _ => Zh,
@@ -64,6 +69,7 @@ internal static class TranslateTargets
     public static string EnglishLabel(string? target) => Normalize(target) switch
     {
         En => "English",
+        Es => "Spanish",
         Ja => "Japanese",
         Ko => "Korean",
         ZhHant => "Traditional Chinese",
@@ -73,6 +79,7 @@ internal static class TranslateTargets
     public static string ChineseLabel(string? target) => Normalize(target) switch
     {
         En => "英语",
+        Es => "西班牙语",
         Ja => "日语",
         Ko => "韩语",
         ZhHant => "繁体中文",
@@ -88,6 +95,8 @@ internal static class TranslateTargets
         var tag = UiLanguages.Resolve(uiLanguagePreference);
         if (tag.StartsWith("en", StringComparison.OrdinalIgnoreCase))
             return En;
+        if (tag.StartsWith("es", StringComparison.OrdinalIgnoreCase))
+            return Es;
         if (tag.StartsWith("ja", StringComparison.OrdinalIgnoreCase))
             return Ja;
         if (tag.StartsWith("ko", StringComparison.OrdinalIgnoreCase))

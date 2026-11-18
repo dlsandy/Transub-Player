@@ -22,6 +22,7 @@ internal sealed class MpvHost : HwndHost
     private const int WsClipSiblings = 0x04000000;
     private const int WsClipChildren = 0x02000000;
     private const int WmEraseBkgnd = 0x0014;
+    private const int WmSetCursor = 0x0020;
     private const int WmKeyDown = 0x0100;
     private const int WmSysKeyDown = 0x0104;
     private const int WmMouseMove = 0x0200;
@@ -48,6 +49,26 @@ internal sealed class MpvHost : HwndHost
     private DispatcherTimer? _childHookTimer;
 
     public IntPtr Hwnd => _hwnd;
+
+    private bool _suppressNativeCursor;
+
+    /// <summary>
+    /// When true, WM_SETCURSOR on this HWND (and hooked children) forces a hidden cursor.
+    /// Needed because WPF <see cref="FrameworkElement.Cursor"/> does not affect HwndHost airspace.
+    /// </summary>
+    public bool SuppressNativeCursor
+    {
+        get => _suppressNativeCursor;
+        set
+        {
+            if (_suppressNativeCursor == value) return;
+            _suppressNativeCursor = value;
+            if (value)
+                SetCursor(IntPtr.Zero);
+            else
+                SetCursor(LoadCursor(IntPtr.Zero, IdcArrow));
+        }
+    }
 
     /// <summary>Right mouse button released over the video surface.</summary>
     public event Action? NativeRightButtonUp;
@@ -112,6 +133,14 @@ internal sealed class MpvHost : HwndHost
     {
         if (msg == WmEraseBkgnd)
         {
+            handled = true;
+            return new IntPtr(1);
+        }
+
+        if (msg == WmSetCursor && SuppressNativeCursor)
+        {
+            // Do not call SetCursor here — repeating SetCursor(NULL) synthesizes WM_MOUSEMOVE
+            // and would keep re-showing fullscreen chrome after auto-hide.
             handled = true;
             return new IntPtr(1);
         }
@@ -228,6 +257,9 @@ internal sealed class MpvHost : HwndHost
 
     private IntPtr ChildWndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam)
     {
+        if (msg == WmSetCursor && SuppressNativeCursor)
+            return new IntPtr(1);
+
         var handled = false;
         if (TryRaiseMouse(msg, wParam, ref handled) && handled)
             return IntPtr.Zero;
@@ -295,11 +327,12 @@ internal sealed class MpvHost : HwndHost
             if (defWndProc == IntPtr.Zero)
                 throw new InvalidOperationException("无法解析 DefWindowProcW。");
 
+            const uint csDblClks = 0x0008;
             var wc = new WndClassExW
             {
                 cbSize = (uint)Marshal.SizeOf<WndClassExW>(),
-                // No CS_HREDRAW|CS_VREDRAW — those force full client invalidation on resize.
-                style = 0,
+                // CS_DBLCLKS so WM_LBUTTONDBLCLK reaches us; no CS_HREDRAW|CS_VREDRAW (resize flash).
+                style = csDblClks,
                 lpfnWndProc = defWndProc,
                 hInstance = hInstance,
                 hbrBackground = GetStockObject(4 /* BLACK_BRUSH */),
@@ -368,6 +401,14 @@ internal sealed class MpvHost : HwndHost
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr DefWindowProcW(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    private const int IdcArrow = 32512;
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr SetCursor(IntPtr hCursor);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadCursor(IntPtr hInstance, int lpCursorName);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr GetModuleHandleW(string? lpModuleName);

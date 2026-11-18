@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace TransubPlayer.Services;
 
-internal static class StripchatMouflonDecoder
+internal static class LiveCamMouflonDecoder
 {
     private static readonly Regex PkeyRe = new(
         @"#EXT-X-MOUFLON:PSCH:(?<psch>v\d+):(?<pkey>\w+)",
@@ -23,7 +23,7 @@ internal static class StripchatMouflonDecoder
         string best = m3u8;
         var bestScore = -1;
 
-        foreach (var pdkey in StripchatMouflonKeys.CandidatePdkeys(pkeys))
+        foreach (var pdkey in LiveCamMouflonKeys.CandidatePdkeys(pkeys))
         {
             var decoded = DecodeWithPdkey(m3u8, pdkey);
             var score = ScorePlaylist(decoded);
@@ -101,8 +101,12 @@ internal static class StripchatMouflonDecoder
             if (t.StartsWith('#')) continue;
             if (string.IsNullOrWhiteSpace(t)) continue;
             if (t.Contains("media.mp4", StringComparison.Ordinal)) continue;
+            // Wrong pdkey yields binary garbage / U+FFFD in the URI — do not treat as success.
+            if (t.Contains('\uFFFD') || t.Any(c => c < 0x20 && c != '\t'))
+                continue;
             if (t.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                 || t.EndsWith(".ts", StringComparison.OrdinalIgnoreCase)
+                || t.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase)
                 || t.Contains(".m4s", StringComparison.OrdinalIgnoreCase))
                 score++;
         }

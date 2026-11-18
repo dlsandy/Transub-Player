@@ -16,6 +16,7 @@ public static class UiLanguages
     [
         new("zh-Hans", "简体中文", "zh-Hans"),
         new("en", "English", "en"),
+        new("es", "Español", "es"),
         new("ja", "日本語", "ja"),
         new("ko", "한국어", "ko"),
     ];
@@ -94,6 +95,14 @@ public static class UiLanguages
         if (s.StartsWith("en", StringComparison.OrdinalIgnoreCase))
         {
             tag = "en";
+            return true;
+        }
+
+        if (s.StartsWith("es", StringComparison.OrdinalIgnoreCase)
+            || s.Equals("spa", StringComparison.OrdinalIgnoreCase)
+            || s.Equals("esp", StringComparison.OrdinalIgnoreCase))
+        {
+            tag = "es";
             return true;
         }
 

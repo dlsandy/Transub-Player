@@ -1,13 +1,19 @@
 namespace TransubPlayer.Services;
 
-internal static class StripchatMouflonKeys
+/// <summary>pkey (keyId in playlist) → pdkey (XOR material). Values stored sealed.</summary>
+internal static class LiveCamMouflonKeys
 {
-    private static readonly Dictionary<string, string> Known = new(StringComparer.Ordinal)
+    private static readonly Lazy<Dictionary<string, string>> KnownLazy = new(BuildKnown);
+
+    private static Dictionary<string, string> Known => KnownLazy.Value;
+
+    private static Dictionary<string, string> BuildKnown()
     {
-        ["Zeechoej4aleeshi"] = "ubahjae7goPoodi6",
-        ["Zokee2OhPh9kugh4"] = "Zokee2OhPh9kugh4",
-        ["Ook7quaiNgiyuhai"] = "Ook7quaiNgiyuhai",
-    };
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (encPkey, encPdkey) in LiveCamSeal.MouflonKeyPairs)
+            map[SealedText.Open(encPkey)] = SealedText.Open(encPdkey);
+        return map;
+    }
 
     public static string? GetPdkey(string pkey)
         => Known.TryGetValue(pkey, out var pdkey) ? pdkey : null;

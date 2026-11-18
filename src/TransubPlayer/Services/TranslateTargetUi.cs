@@ -57,6 +57,7 @@ internal static class TranslateTargetUi
         if (TranslateTargets.IsEnglish(settings))
             return Loc.Get("Main.Mode.Zh.Tip.EnTarget");
         if (TranslateTargets.IsJapanese(settings) || TranslateTargets.IsKorean(settings)
+            || TranslateTargets.IsSpanish(settings)
             || TranslateTargets.IsTraditionalChinese(settings))
             return Loc.Format("Main.Mode.Translation.Tip", TargetDisplayName(settings));
         return Loc.Get("Main.Mode.Zh.Tip");
@@ -76,6 +77,7 @@ internal static class TranslateTargetUi
         if (TranslateTargets.IsEnglish(settings))
             return Loc.Get("Main.Mode.Dual.Tip.EnTarget");
         if (TranslateTargets.IsJapanese(settings) || TranslateTargets.IsKorean(settings)
+            || TranslateTargets.IsSpanish(settings)
             || TranslateTargets.IsTraditionalChinese(settings))
             return Loc.Format("Main.Mode.Dual.Translation.Tip", TargetDisplayName(settings));
         return Loc.Get("Main.Mode.Dual.Tip");
@@ -85,6 +87,7 @@ internal static class TranslateTargetUi
         => TranslateTargets.Normalize(settings.TranslateTarget) switch
         {
             TranslateTargets.En => Loc.Get("Settings.TranslateTarget.En"),
+            TranslateTargets.Es => Loc.Get("Settings.TranslateTarget.Es"),
             TranslateTargets.Ja => Loc.Get("Settings.TranslateTarget.Ja"),
             TranslateTargets.Ko => Loc.Get("Settings.TranslateTarget.Ko"),
             TranslateTargets.ZhHant => Loc.Get("Settings.TranslateTarget.ZhHant"),

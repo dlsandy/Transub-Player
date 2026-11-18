@@ -10,8 +10,12 @@ namespace TransubPlayer.Services;
 /// </summary>
 internal sealed class AsrPipeline : IDisposable
 {
-    private const double ChunkSec = 90;
-    private const double ChunkOverlapSec = 2;
+    /// <summary>Steady-state window length (seconds).</summary>
+    internal const double ChunkSec = 90;
+    internal const double ChunkOverlapSec = 2;
+    /// <summary>Shorter first window so the first on-screen cue arrives sooner.</summary>
+    internal const double FirstChunkSec = 30;
+    internal static double ChunkStepSec => ChunkSec - ChunkOverlapSec;
 
     private readonly AppSettings _settings;
     private readonly Action<string> _status;
@@ -210,49 +214,63 @@ internal sealed class AsrPipeline : IDisposable
         double startSec,
         CancellationToken ct)
     {
+        _ = asrModel;
         // Never overlap another Whisper ProcessAsync on the shared factory (Vulkan).
         await WaitUntilIdleAsync(ct).ConfigureAwait(false);
         await EnsureAsrModelAsync(ct).ConfigureAwait(false);
         var modelPath = AsrModelStore.TurboPath(_modelsRoot);
-        // Reuse the shared factory — a second FromPath can double VRAM and OOM on Vulkan.
-        string? wav = null;
+
+        var mediaDuration = 0.0;
         try
         {
-            wav = await AsrAudioExtract.ExtractWavAsync(mediaPath, startSec, durationSec, ct).ConfigureAwait(false);
-            await _factoryGate.WaitAsync(ct).ConfigureAwait(false);
-            try
-            {
-                EnsureFactory(modelPath);
-                await using var stream = File.OpenRead(wav);
-                await using var processor = BuildProcessor("auto");
-                var detected = "";
-                await foreach (var seg in processor.ProcessAsync(stream, ct).ConfigureAwait(false))
-                {
-                    if (!string.IsNullOrWhiteSpace(seg.Text))
-                    {
-                        detected = seg.Language ?? "";
-                        if (!string.IsNullOrWhiteSpace(detected))
-                            break;
-                    }
-                }
+            var probed = await AsrAudioExtract.ProbeDurationAsync(mediaPath, ct).ConfigureAwait(false);
+            if (!AsrAudioExtract.IsFallbackDuration(probed))
+                mediaDuration = probed;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Multi-window still works with unknown duration (offsets used as-is).
+        }
 
-                var lang = MapWhisperLanguage(detected);
-                var payload = new
-                {
-                    ok = !SourceLanguages.IsAuto(lang),
-                    language = lang,
-                    confidence = SourceLanguages.IsAuto(lang) ? 0.0 : 0.85,
-                };
-                return JsonSerializer.SerializeToElement(payload);
-            }
-            finally
+        var windowSec = durationSec > 1 ? durationSec : SourceLanguageSense.DurationSec;
+        var starts = SourceLanguageSense.ProbeStartsSec.Length > 0
+            ? SourceLanguageSense.ProbeStartsSec
+            : new[] { startSec > 0 ? startSec : SourceLanguageSense.StartSec };
+
+        await _factoryGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            EnsureFactory(modelPath);
+            // LID uses mel + lang_auto_detect only — no full decode (faster, real probs).
+            await using var processor = BuildProcessor("auto");
+            var (lang, confidence, detail) = await AsrLanguageDetect.ProbeAsync(
+                    processor,
+                    mediaPath,
+                    mediaDuration,
+                    starts,
+                    windowSec,
+                    _log,
+                    ct)
+                .ConfigureAwait(false);
+
+            if (!string.IsNullOrWhiteSpace(detail))
+                _log("语种探测 · " + detail);
+
+            var payload = new
             {
-                _factoryGate.Release();
-            }
+                ok = !SourceLanguages.IsAuto(lang),
+                language = lang,
+                confidence = SourceLanguages.IsAuto(lang) ? 0.0 : confidence,
+            };
+            return JsonSerializer.SerializeToElement(payload);
         }
         finally
         {
-            AsrAudioExtract.TryDeleteTemp(wav);
+            _factoryGate.Release();
         }
     }
 
@@ -461,39 +479,41 @@ internal sealed class AsrPipeline : IDisposable
             // overrunning short files. Live GetLiveDurationSec can extend if mpv revises length later.
             var duration = await ResolveJobDurationAsync(job, ct).ConfigureAwait(false);
             var whisperLang = MapWhisperLanguage(job.Language);
-            var chunkStep = ChunkSec - ChunkOverlapSec;
-            var totalChunks = Math.Max(1, (int)Math.Ceiling(duration / chunkStep));
-            var firstChunk = job.StartFromSeconds > 0.5
-                ? Math.Clamp((int)Math.Floor(job.StartFromSeconds / chunkStep), 0, Math.Max(0, totalChunks - 1))
+            var chunkStep = ChunkStepSec;
+            // Align mid-file restarts to the steady-state grid; open-from-zero uses a short first window.
+            var cursor = job.StartFromSeconds > 0.5
+                ? Math.Floor(job.StartFromSeconds / chunkStep) * chunkStep
                 : 0;
-            if (firstChunk > 0)
+            cursor = Math.Clamp(cursor, 0, Math.Max(0, duration - 0.35));
+            if (cursor > 0.5)
             {
-                _log(Loc.Format("Main.Status.AsrFromPlayhead", MediaTimeFormat.Format(job.StartFromSeconds)));
+                _log(Loc.Format("Main.Status.AsrFromPlayhead", MediaTimeFormat.Format(cursor)));
                 SubtitleFile.WriteSrt(sourceSrt, cues, chinese: false);
             }
 
             var lastExtractRetryStart = double.NaN;
-            for (var chunk = firstChunk; ; chunk++)
+            var isFirstWindow = true;
+            for (;;)
             {
                 ct.ThrowIfCancellationRequested();
                 if (shouldAbort?.Invoke() == true)
                     throw new OperationCanceledException(ct);
 
                 // mpv often reports a short demux estimate at open, then grows — keep covering the tail.
-                TryExtendDuration(job, ref duration, ref totalChunks, chunkStep);
+                TryExtendDuration(job, ref duration);
 
-                if (chunk >= totalChunks)
-                    break;
-
-                var start = chunk * chunkStep;
-                var remaining = duration - start;
+                var remaining = duration - cursor;
                 if (remaining <= 0.05)
                     break;
-                var len = Math.Min(ChunkSec, Math.Max(0.35, remaining));
 
-                var pct = Math.Clamp((int)Math.Round(100.0 * (chunk + 1) / totalChunks), 1, 99);
+                var window = isFirstWindow ? FirstChunkSec : ChunkSec;
+                var len = Math.Min(window, Math.Max(0.35, remaining));
+                var start = cursor;
+                var pct = duration > 1
+                    ? Math.Clamp((int)Math.Round(100.0 * (start + len) / duration), 1, 99)
+                    : 1;
                 _status(Loc.Format("Main.Status.AsrProgress", pct, Loc.Get("Main.Status.AsrStageRecognizing")));
-                _log(Loc.Format("Main.Status.AsrProgress", pct, $"{start:0}s"));
+                _log(Loc.Format("Main.Status.AsrProgress", pct, $"{start:0}s+{len:0.#}s"));
 
                 string? wav = null;
                 cleanFrom = cues.Count;
@@ -508,19 +528,18 @@ internal sealed class AsrPipeline : IDisposable
                     {
                         throw;
                     }
-                    catch (Exception ex) when (chunk > firstChunk || cues.Count > 0)
+                    catch (Exception ex) when (!isFirstWindow || cues.Count > 0)
                     {
                         // Overestimated duration / EOF: keep cues already written instead of failing the job.
                         // If the player later reports a longer length, extend once and retry this start.
                         var alreadyRetried = !double.IsNaN(lastExtractRetryStart)
                                              && Math.Abs(lastExtractRetryStart - start) < 0.01;
                         if (!alreadyRetried
-                            && TryExtendDuration(job, ref duration, ref totalChunks, chunkStep)
+                            && TryExtendDuration(job, ref duration)
                             && start + 0.5 < duration)
                         {
                             lastExtractRetryStart = start;
                             _log($"ASR extract miss at {start:0.#}s · retry after duration extend · {ex.Message}");
-                            chunk--; // retry same index with updated duration/len next iteration
                             continue;
                         }
 
@@ -533,8 +552,8 @@ internal sealed class AsrPipeline : IDisposable
                     {
                         await using var stream = File.OpenRead(wav);
                         await using var processor = BuildProcessor(whisperLang);
-                        // Later chunks re-decode the overlap tail of the previous chunk — drop those cues.
-                        var overlapFloor = chunk > firstChunk ? start + ChunkOverlapSec : double.NegativeInfinity;
+                        // Later windows re-decode the overlap tail of the previous window — drop those cues.
+                        var overlapFloor = isFirstWindow ? double.NegativeInfinity : start + ChunkOverlapSec;
                         await foreach (var seg in processor.ProcessAsync(stream, ct).ConfigureAwait(false))
                         {
                             var text = (seg.Text ?? "").Trim();
@@ -570,6 +589,12 @@ internal sealed class AsrPipeline : IDisposable
                 }
 
                 await FlushSourceAsync(incremental: false).ConfigureAwait(false);
+
+                var next = start + len - ChunkOverlapSec;
+                if (next <= cursor + 0.05)
+                    break;
+                cursor = next;
+                isFirstWindow = false;
 
                 if ((DateTime.UtcNow - lastFlush).TotalMilliseconds > 800)
                 {
@@ -627,11 +652,7 @@ internal sealed class AsrPipeline : IDisposable
         return probed;
     }
 
-    private bool TryExtendDuration(
-        AsrJobRequest job,
-        ref double duration,
-        ref int totalChunks,
-        double chunkStep)
+    private bool TryExtendDuration(AsrJobRequest job, ref double duration)
     {
         var live = job.GetLiveDurationSec?.Invoke() ?? 0;
         if (live <= duration + 0.5)
@@ -639,7 +660,6 @@ internal sealed class AsrPipeline : IDisposable
 
         _log($"ASR duration: extended player={live:0.#}s (was {duration:0.#}s)");
         duration = live;
-        totalChunks = Math.Max(1, (int)Math.Ceiling(duration / chunkStep));
         return true;
     }
 
@@ -657,12 +677,19 @@ internal sealed class AsrPipeline : IDisposable
             _log(Loc.Get("Main.Status.AsrGpuNeedsRestart"));
             _status(Loc.Get("Main.Status.AsrGpuNeedsRestart"));
         }
+        else if (AsrRuntime.NeedsRestartForGpuDevice(_settings))
+        {
+            _log(Loc.Get("Main.Status.AsrGpuDeviceNeedsRestart"));
+            _status(Loc.Get("Main.Status.AsrGpuDeviceNeedsRestart"));
+        }
 
         ReleaseModel();
         // UseGpu must match preference: CPU-only selection keeps weights on host even if a
         // Vulkan-capable DLL was already pinned for this process.
-        // GpuDevice: ggml-vulkan lists discrete adapters first — pin index 0 when PreferGpu.
-        var gpuDevice = preferGpu ? GpuAdapterProbe.PreferredWhisperGpuDevice() : 0;
+        // Pin one Vulkan device (settings AsrGpuDevice / auto avoids Arc when NVIDIA/AMD exists).
+        var gpuDevice = preferGpu
+            ? GpuAdapterProbe.PreferredWhisperGpuDevice(_settings.AsrGpuDevice)
+            : 0;
         var options = new WhisperFactoryOptions
         {
             UseGpu = preferGpu,
@@ -678,8 +705,16 @@ internal sealed class AsrPipeline : IDisposable
         try
         {
             _log(GpuAdapterProbe.DescribeForLog());
-            var preferName = GpuAdapterProbe.PreferredDiscrete?.Description ?? "(default / iGPU)";
-            _log($"ASR GPU · adapter={preferName} · GpuDevice={gpuDevice} · lib={loaded}");
+            _log(VulkanGpuProbe.DescribeForLog(_settings.AsrGpuDevice));
+            var preferName = VulkanGpuProbe.ResolveDevice(_settings.AsrGpuDevice)?.Name
+                             ?? GpuAdapterProbe.PreferredDiscrete?.Description
+                             ?? "(default)";
+            var visible = Environment.GetEnvironmentVariable("GGML_VK_VISIBLE_DEVICES");
+            _log($"ASR GPU · adapter={preferName} · GpuDevice={gpuDevice}"
+                 + (string.IsNullOrEmpty(visible) ? "" : $" · GGML_VK_VISIBLE_DEVICES={visible}")
+                 + $" · lib={loaded}");
+            if (preferGpu && VulkanGpuProbe.HasIntelGpu && !VulkanGpuProbe.HasNonIntelGpu)
+                _log("ASR GPU · Intel-only Vulkan — avoid concurrent Intel QSV encode (HandBrake)");
             var info = WhisperFactory.GetRuntimeInfo();
             if (!string.IsNullOrWhiteSpace(info))
                 _log("whisper runtime: " + info.Trim());
@@ -822,6 +857,7 @@ internal sealed class AsrPipeline : IDisposable
             SourceLanguages.Ko => "ko",
             SourceLanguages.Zh => "zh",
             SourceLanguages.En => "en",
+            SourceLanguages.Es => "es",
             _ => "auto",
         };
     }

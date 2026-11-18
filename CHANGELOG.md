@@ -2,6 +2,31 @@
 
 [English](CHANGELOG.md) | [简体中文](CHANGELOG.zh-CN.md) | [日本語](CHANGELOG.ja.md) | [한국어](CHANGELOG.ko.md)
 
+## [1.8.0] — 2026-11-18
+
+### Added
+
+- **Picture enhance:** right-click → Picture enhance, or press `E` to cycle Off / Light / Enhance (real-time sharpen, deband, high-quality scale). Default off; turn down if playback stutters.
+- **Seek thumbnail preview:** hover the progress bar to preview a frame at that time.
+- **Spanish UI and Spanish as source / translation target** (same on-demand translation model as other targets).
+- **Recognition GPU picker:** when multiple Vulkan GPUs are present, Settings → Advanced chooses which GPU Whisper uses (default Auto = NVIDIA/AMD over Intel).
+- **Auto re-recognize from playhead** when subtitles lag far behind (default on), plus a **Restart from here** action; open-and-play is also on by default so translation can catch up near the playhead.
+
+### Improved
+
+- **Source language Auto:** short multi-window Whisper language-ID can confirm or override weak filename guesses (e.g. anime tags on dubs, SxxExx→en); explicit audio-language tags in the filename take priority.
+- Fullscreen chrome: pausing keeps controls visible; idle hide delay is a bit longer; bottom bar uses a clearer overlay style. Cursor hide works over the mpv surface; chrome only reappears on real pointer movement or shortcuts (avoids flash loops after auto-hide).
+- Double-click the video to enter / leave fullscreen is more reliable on the embedded mpv surface (no longer fights a pending single-click pause).
+- Clearer live recognition / translation status (source frontier vs translation catch-up).
+- Online subtitle picker searches SubtitleCat and Xunlei in parallel so switching providers is snappier.
+- Live room / stream open paths report more specific offline / private / geo-restricted states.
+
+### Fixed
+
+- **Intel Arc + NVIDIA dual GPU (#19):** Whisper Vulkan no longer defaults onto Arc while HandBrake QSV owns it. Enumerate Vulkan devices, set `GGML_VK_VISIBLE_DEVICES` to NVIDIA/AMD, and keep ASR off the Intel adapter. CPU recognition threads capped at 2 to reduce freezes when QSV and ASR run together.
+
+---
+
 ## [1.7.1] — 2026-11-09
 
 ### Improved

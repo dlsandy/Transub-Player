@@ -433,7 +433,7 @@ internal static class SubtitleFile
         if (t is "forced" or "sdh" or "cc" or "hi" or "default" or "bilingual" or "dual")
             return true;
         if (t is "chs" or "cht" or "chi" or "cn" or "tw" or "sc" or "tc"
-            or "en" or "eng" or "ja" or "jp" or "jpn" or "ko" or "kor" or "zh")
+            or "en" or "eng" or "es" or "spa" or "esp" or "ja" or "jp" or "jpn" or "ko" or "kor" or "zh")
             return true;
         if (t.StartsWith("zh", StringComparison.Ordinal)) return true;
         if (rest.Contains('中', StringComparison.Ordinal)

@@ -9,19 +9,22 @@ internal static class SourceLanguages
     public const string Ja = "ja";
     public const string Ko = "ko";
     public const string En = "en";
+    public const string Es = "es";
     public const string Zh = "zh";
 
-    public static readonly string[] All = [Auto, Ja, Ko, En, Zh];
+    public static readonly string[] All = [Auto, Ja, Ko, En, Es, Zh];
 
     public static string Normalize(string? raw)
     {
         var t = raw?.Trim().ToLowerInvariant() ?? "";
         return t switch
         {
-            Ja or "jp" or "japanese" => Ja,
-            Ko or "kr" or "korean" => Ko,
+            Ja or "jp" or "jpn" or "japanese" => Ja,
+            Ko or "kr" or "kor" or "korean" => Ko,
             En or "eng" or "english" => En,
-            Zh or "cn" or "zh-cn" or "zh-hans" or "chinese" => Zh,
+            Es or "spa" or "esp" or "spanish" or "español" or "espanol" => Es,
+            Zh or "cn" or "cmn" or "yue" or "zh-cn" or "zh-tw" or "zh-hk" or "zh-hans" or "zh-hant"
+                or "chinese" or "cantonese" or "mandarin" => Zh,
             _ => Auto,
         };
     }
@@ -41,6 +44,7 @@ internal static class SourceLanguages
         Ja => Loc.Get("SourceLang.Ja"),
         Ko => Loc.Get("SourceLang.Ko"),
         En => Loc.Get("SourceLang.En"),
+        Es => Loc.Get("SourceLang.Es"),
         Zh => Loc.Get("SourceLang.Zh"),
         _ => Loc.Get("SourceLang.Auto"),
     };
@@ -51,6 +55,7 @@ internal static class SourceLanguages
         Ja => "Japanese",
         Ko => "Korean",
         En => "English",
+        Es => "Spanish",
         Zh => "Chinese",
         _ => "the source language",
     };
@@ -61,6 +66,7 @@ internal static class SourceLanguages
         Ja => "日语",
         Ko => "韩语",
         En => "英语",
+        Es => "西班牙语",
         Zh => "中文",
         _ => "原文",
     };

@@ -54,7 +54,11 @@ public partial class SettingsWindow : Window
         BuildAssociationUi();
         RefreshModelsTab();
         RefreshStatus();
-        AsrBackendBox.SelectionChanged += (_, _) => RefreshStatus();
+        AsrBackendBox.SelectionChanged += (_, _) =>
+        {
+            RefreshAsrGpuDeviceGate();
+            RefreshStatus();
+        };
         SettingsTabs.SelectionChanged += SettingsTabs_SelectionChanged;
         if (selectedTab >= 0 && selectedTab < SettingsTabs.Items.Count)
             SettingsTabs.SelectedIndex = selectedTab;
@@ -90,6 +94,14 @@ public partial class SettingsWindow : Window
         };
         VideoFitBox.DisplayMemberPath = nameof(LabeledOption.Label);
         VideoFitBox.SelectedValuePath = nameof(LabeledOption.Value);
+        VideoEnhanceBox.ItemsSource = new[]
+        {
+            new LabeledOption(Loc.Get("Main.Menu.VideoEnhance.Off"), VideoEnhanceModes.Off),
+            new LabeledOption(Loc.Get("Main.Menu.VideoEnhance.Light"), VideoEnhanceModes.Light),
+            new LabeledOption(Loc.Get("Main.Menu.VideoEnhance.Enhance"), VideoEnhanceModes.Enhance),
+        };
+        VideoEnhanceBox.DisplayMemberPath = nameof(LabeledOption.Label);
+        VideoEnhanceBox.SelectedValuePath = nameof(LabeledOption.Value);
         SubFontBox.ItemsSource = new[]
         {
             "Microsoft YaHei", "Microsoft YaHei UI", "SimHei", "SimSun", "DengXian", "Arial", "Segoe UI",
@@ -130,6 +142,7 @@ public partial class SettingsWindow : Window
         new(Loc.Get("Settings.TranslateTarget.Zh"), TranslateTargets.Zh),
         new(Loc.Get("Settings.TranslateTarget.ZhHant"), TranslateTargets.ZhHant),
         new(Loc.Get("Settings.TranslateTarget.En"), TranslateTargets.En),
+        new(Loc.Get("Settings.TranslateTarget.Es"), TranslateTargets.Es),
         new(Loc.Get("Settings.TranslateTarget.Ja"), TranslateTargets.Ja),
         new(Loc.Get("Settings.TranslateTarget.Ko"), TranslateTargets.Ko),
     ];
@@ -178,6 +191,10 @@ public partial class SettingsWindow : Window
         SeekLargeBox.SelectedItem = PickClosest(SeekLargeBox.Items.Cast<int>(), _settings.SeekStepLargeSeconds);
         SelectComboValue(HwDecBox, NormalizeHwDec(_settings.HwDec), "auto");
         SelectComboValue(VideoFitBox, NormalizeVideoFit(_settings.VideoFit), "window");
+        SelectComboValue(
+            VideoEnhanceBox,
+            VideoEnhanceModes.ToSetting(_settings.GetVideoEnhanceMode()),
+            VideoEnhanceModes.Off);
 
         var subMode = SubtitleDisplayModeUtil.ToSetting(SubtitleDisplayModeUtil.Parse(_settings.SubtitleMode));
         if (!string.Equals(subMode, "off", StringComparison.OrdinalIgnoreCase))
@@ -204,6 +221,7 @@ public partial class SettingsWindow : Window
         TextSanitizeBox.IsChecked = _settings.TextSanitizeEnabled;
         GlossaryPathBox.Text = _settings.GlossaryPath;
         PlayImmediatelyBox.IsChecked = _settings.PlayImmediatelyOnOpen;
+        AutoRestartAsrBox.IsChecked = _settings.AutoRestartAsrWhenLagging;
         WaitFirstZhBox.IsChecked = _settings.WaitForFirstZhBeforePlay;
         SelectComboValue(WaitZhMinutesBox, NormalizeWaitZhMinutes(_settings.WaitForZhMinutes), "1");
         FullscreenQuietOsdBox.IsChecked = _settings.FullscreenQuietOsd;
@@ -221,6 +239,12 @@ public partial class SettingsWindow : Window
         TranslateUrlBox.Text = _settings.TranslateUrl;
         PopulateAsrBackendBox();
         SelectComboValue(AsrBackendBox, AsrBackends.Normalize(_settings.AsrBackend), AsrBackends.Auto);
+        PopulateAsrGpuDeviceBox();
+        SelectComboValue(
+            AsrGpuDeviceBox,
+            AsrGpuDevices.Normalize(_settings.AsrGpuDevice),
+            AsrGpuDevices.Auto);
+        RefreshAsrGpuDeviceGate();
         PopulateUpdateSourceBox();
         SelectComboValue(UpdateSourceBox, AppUpdateEndpoints.Normalize(_settings.UpdateSource), AppUpdateEndpoints.Auto);
         CheckUpdatesOnStartupBox.IsChecked = _settings.CheckUpdatesOnStartup == true;
@@ -328,6 +352,32 @@ public partial class SettingsWindow : Window
         AsrBackendBox.SelectedValuePath = nameof(LabeledOption.Value);
     }
 
+    private void PopulateAsrGpuDeviceBox()
+    {
+        var items = new List<LabeledOption>
+        {
+            new(AsrGpuDevices.AutoDisplayName(), AsrGpuDevices.Auto),
+        };
+        foreach (var d in VulkanGpuProbe.Devices)
+            items.Add(new LabeledOption(AsrGpuDevices.DeviceDisplayName(d), d.Index.ToString(CultureInfo.InvariantCulture)));
+
+        AsrGpuDeviceBox.ItemsSource = items;
+        AsrGpuDeviceBox.DisplayMemberPath = nameof(LabeledOption.Label);
+        AsrGpuDeviceBox.SelectedValuePath = nameof(LabeledOption.Value);
+    }
+
+    private void RefreshAsrGpuDeviceGate()
+    {
+        if (AsrGpuDevicePanel is null || AsrGpuDeviceBox is null)
+            return;
+
+        var show = AsrGpuDevices.ShouldShowPicker();
+        AsrGpuDevicePanel.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        var backend = AsrBackendBox.SelectedValue as string ?? AsrBackends.Auto;
+        var gpuBackend = AsrBackends.Normalize(backend) is not AsrBackends.Cpu;
+        AsrGpuDeviceBox.IsEnabled = show && gpuBackend;
+    }
+
     private void PopulateUpdateSourceBox()
     {
         UpdateSourceBox.ItemsSource = new List<LabeledOption>
@@ -380,6 +430,7 @@ public partial class SettingsWindow : Window
     private void SnapshotEngineFields()
     {
         _settings.AsrBackend = AsrBackendBox.SelectedValue as string ?? AsrBackends.Auto;
+        _settings.AsrGpuDevice = AsrGpuDevices.Normalize(AsrGpuDeviceBox.SelectedValue as string);
         _settings.HfEndpoint = HfEndpoints.NormalizeOrDefault(HfBox.Text);
         _settings.UpdateSource = AppUpdateEndpoints.Normalize(UpdateSourceBox.SelectedValue as string);
         _settings.CheckUpdatesOnStartup = CheckUpdatesOnStartupBox.IsChecked == true;
@@ -411,6 +462,8 @@ public partial class SettingsWindow : Window
         _settings.SeekStepLargeSeconds = SeekLargeBox.SelectedItem is int large ? large : 30;
         _settings.HwDec = HwDecBox.SelectedValue as string ?? "auto";
         _settings.VideoFit = VideoFitBox.SelectedValue as string ?? "window";
+        _settings.VideoEnhance = VideoEnhanceModes.ToSetting(
+            VideoEnhanceModes.Parse(VideoEnhanceBox.SelectedValue as string));
 
         var subMode = SubModeBox.SelectedValue as string ?? "zh";
         if (SubVisibleBox.IsChecked == false)
@@ -431,6 +484,7 @@ public partial class SettingsWindow : Window
         _settings.TextSanitizeEnabled = TextSanitizeBox.IsChecked != false;
         _settings.GlossaryPath = GlossaryPathBox.Text.Trim();
         _settings.PlayImmediatelyOnOpen = PlayImmediatelyBox.IsChecked == true;
+        _settings.AutoRestartAsrWhenLagging = AutoRestartAsrBox.IsChecked != false;
         _settings.WaitForFirstZhBeforePlay = WaitFirstZhBox.IsChecked == true;
         _settings.WaitForZhMinutes = ParseWaitZhMinutes(WaitZhMinutesBox.SelectedValue as string);
         _settings.FullscreenQuietOsd = FullscreenQuietOsdBox.IsChecked != false;

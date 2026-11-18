@@ -215,7 +215,7 @@ public partial class MainWindow
         var on = HasMedia;
         var stream = _preview?.IsStreamPlayback == true;
         var canSeek = on && _preview?.CanSeek == true;
-        // 直播 / 尚无时长的流隐藏进度条；本地空状态仍保留禁用轨道。
+        // 直播 / 尚无时长的流隐藏进度条；网络点播拿到 duration 后显示。本地空状态仍保留禁用轨道。
         SeekBar.IsEnabled = canSeek;
         if (SeekRow is not null)
             SeekRow.Visibility = stream && !canSeek ? Visibility.Collapsed : Visibility.Visible;
@@ -292,6 +292,8 @@ public partial class MainWindow
         SpeedMenu.IsEnabled = on;
         if (ColorGradeMenu is not null)
             ColorGradeMenu.IsEnabled = on;
+        if (VideoEnhanceMenu is not null)
+            VideoEnhanceMenu.IsEnabled = on;
         ScreenshotMenu.IsEnabled = on;
         RefreshClipUi();
         RePreviewMenu.IsEnabled = on && !stream && (_preview?.ShowSwitchToPreviewAction == true || _preview?.PreviewRetryAvailable == true);
@@ -338,6 +340,8 @@ public partial class MainWindow
 
         _lastChromeHeavyUtc = now;
         _lastChromePaused = paused;
+        if (_isFullscreen)
+            SyncFullscreenChromeForPause(paused);
         _preview.TickLiveClock();
         _preview.TickFirstCueEta();
         PlayButton.Content = paused ? "▶" : "⏸";
@@ -366,6 +370,7 @@ public partial class MainWindow
         RefreshSpeedButton();
         RefreshModeButtons();
         RefreshPlaybackEnabled();
+        BindSeekThumbMedia();
         UpdateSubtitleProgress();
         UpdatePresetHint();
         UpdateOpeningOverlay();
@@ -724,6 +729,11 @@ public partial class MainWindow
 
     private void VideoArea_SizeChanged(object sender, SizeChangedEventArgs e)
     {
+        if (_bottomBarOverlay && BottomBarPopup.IsOpen)
+            SyncBottomBarPopupLayout();
+        if (FullscreenHitPopup.IsOpen)
+            SyncFullscreenHitPopupLayout();
+
         if (OpeningPopup.IsOpen)
         {
             SyncOpeningPopupLayout();
@@ -858,17 +868,18 @@ public partial class MainWindow
         }
 
         var ready = _preview.EffectiveReadyFrontier();
-        if (ready <= 0)
+        var gap = ready <= 0 ? _preview.Position : _preview.Position - ready;
+        if (ready > 0 && gap < 3)
         {
+            _lagOsdShown = false;
+            _lagBarDismissed = false;
             HideLagActionBar();
             return;
         }
 
-        var gap = _preview.Position - ready;
-        if (gap < 3)
+        // Mid-file with no frontier yet: still offer "recognize from here".
+        if (ready <= 0 && (_preview.Position < 15 || !_preview.CanRestartFromPlayhead))
         {
-            _lagOsdShown = false;
-            _lagBarDismissed = false;
             HideLagActionBar();
             return;
         }
@@ -912,12 +923,25 @@ public partial class MainWindow
             return;
         }
 
-        LagActionTitle.Text = Loc.Format("Main.Lag.TitleWithReady", MediaTimeFormat.Format(ready));
+        LagActionTitle.Text = ready > 0.05
+            ? Loc.Format("Main.Lag.TitleWithReady", MediaTimeFormat.Format(ready))
+            : Loc.Get("Main.Lag.Title");
+        if (LagRestartFromHereButton is not null)
+            LagRestartFromHereButton.Visibility = _preview?.CanRestartFromPlayhead == true
+                ? Visibility.Visible
+                : Visibility.Collapsed;
         SyncLagActionPopupLayout();
         if (!LagActionPopup.IsOpen)
             LagActionPopup.IsOpen = true;
         else
             NudgeLagActionPopup();
+    }
+
+    private async void LagRestartFromHere_Click(object sender, RoutedEventArgs e)
+    {
+        _lagBarDismissed = true;
+        HideLagActionBar();
+        await RestartFromPlayheadCoreAsync(confirm: false);
     }
 
     private void HideLagActionBar()
@@ -1029,6 +1053,9 @@ public partial class MainWindow
                     _preview.ShowOsd(Loc.Get("Main.Osd.SeekNoSubtitleYet"), 1800);
                 SetStatus(Loc.Get("Main.Status.SeekNoSubtitleYetPlain"));
             }
+
+            if (!(_isFullscreen && _settings.FullscreenQuietOsd))
+                ShowLagActionBar(0);
             return;
         }
 

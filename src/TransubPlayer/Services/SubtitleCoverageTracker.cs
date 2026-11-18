@@ -13,6 +13,9 @@ internal sealed class SubtitleCoverageTracker
     private double _lastFrontier;
     private DateTime _lastSampleUtc;
     private double _mediaPerWallSec;
+    private bool _shortFirstWindow;
+    /// <summary>EMA of observed wall seconds to first cue (process lifetime).</summary>
+    private static double s_observedFirstCueSec;
 
     public bool AwaitingFirstCue => _genStartedUtc.HasValue && !_gotFirstCue;
 
@@ -25,9 +28,10 @@ internal sealed class SubtitleCoverageTracker
         _lastFrontier = 0;
         _lastSampleUtc = default;
         _mediaPerWallSec = 0;
+        _shortFirstWindow = false;
     }
 
-    public void OnAsrJobStarted(string? asrModel, double mediaDurationSec = 0)
+    public void OnAsrJobStarted(string? asrModel, double mediaDurationSec = 0, bool shortFirstWindow = true)
     {
         _genStartedUtc = DateTime.UtcNow;
         _gotFirstCue = false;
@@ -36,6 +40,7 @@ internal sealed class SubtitleCoverageTracker
         _lastFrontier = 0;
         _lastSampleUtc = DateTime.UtcNow;
         _mediaPerWallSec = 0;
+        _shortFirstWindow = shortFirstWindow;
     }
 
     /// <summary>mpv often reports duration after the ASR job starts — keep the ETA scale current.</summary>
@@ -47,10 +52,19 @@ internal sealed class SubtitleCoverageTracker
 
     public void OnCoverage(double subFrontier, int cueCount)
     {
-        if (cueCount > 0 || subFrontier > 0.05)
-            _gotFirstCue = true;
-
         var now = DateTime.UtcNow;
+        if (!_gotFirstCue && (cueCount > 0 || subFrontier > 0.05))
+        {
+            _gotFirstCue = true;
+            if (_genStartedUtc is DateTime started)
+            {
+                var observed = Math.Clamp((now - started).TotalSeconds, 3, 180);
+                s_observedFirstCueSec = s_observedFirstCueSec <= 0
+                    ? observed
+                    : (s_observedFirstCueSec * 0.55) + (observed * 0.45);
+            }
+        }
+
         if (_lastSampleUtc != default && subFrontier > _lastFrontier + 0.05)
         {
             var wall = (now - _lastSampleUtc).TotalSeconds;
@@ -77,14 +91,17 @@ internal sealed class SubtitleCoverageTracker
             return null;
 
         var elapsed = (DateTime.UtcNow - _genStartedUtc.Value).TotalSeconds;
-        var baseline = BaselineFirstCueSeconds(_asrModel, _mediaDurationSec);
+        var baseline = BaselineFirstCueSeconds(_asrModel, _mediaDurationSec, _shortFirstWindow);
+        if (s_observedFirstCueSec > 3)
+            baseline = (baseline * 0.4) + (s_observedFirstCueSec * 0.6);
+
         var remain = baseline - elapsed;
         if (remain > 1)
             return (int)Math.Ceiling(remain);
 
         // Past the baseline: never stick at "约 2 秒" — grow a modest pad until the cue arrives.
         var overdue = Math.Max(0, elapsed - baseline);
-        return (int)Math.Ceiling(Math.Clamp(10 + overdue * 0.4, 10, 90));
+        return (int)Math.Ceiling(Math.Clamp(8 + overdue * 0.4, 8, 75));
     }
 
     /// <summary>Wall-clock seconds for ASR frontier to reach <paramref name="targetMediaSec"/>.</summary>
@@ -105,27 +122,29 @@ internal sealed class SubtitleCoverageTracker
         => readyFrontier <= 0 ? Math.Max(0, position) : Math.Max(0, position - readyFrontier);
 
     /// <summary>
-    /// First-cue wall time is dominated by model warmup + whole-file audio/VAD prep,
-    /// which scales with media length (observed ~22s turbo on a 2h+ file).
+    /// First-cue wall time is dominated by model warmup + first audio window,
+    /// with a smaller duration term (demux/setup) for long files.
     /// </summary>
-    private static double BaselineFirstCueSeconds(string asrModel, double mediaDurationSec)
+    private static double BaselineFirstCueSeconds(string asrModel, double mediaDurationSec, bool shortFirstWindow)
     {
         double warmup;
         double secPerHour;
         if (asrModel.Contains("turbo", StringComparison.OrdinalIgnoreCase))
         {
-            warmup = 10;
-            secPerHour = 6;
+            warmup = shortFirstWindow ? 7 : 10;
+            secPerHour = shortFirstWindow ? 4 : 6;
         }
         else
         {
-            warmup = 12;
-            secPerHour = 8;
+            warmup = shortFirstWindow ? 9 : 12;
+            secPerHour = shortFirstWindow ? 5 : 8;
         }
 
         // Unknown duration → assume ~1h of prep cost so we do not under-promise.
         var hours = mediaDurationSec > 1 ? mediaDurationSec / 3600.0 : 1.0;
         var durationPart = secPerHour * Math.Min(hours, 4.0);
-        return Math.Clamp(warmup + durationPart, 12, 180);
+        var min = shortFirstWindow ? 8 : 12;
+        var max = shortFirstWindow ? 120 : 180;
+        return Math.Clamp(warmup + durationPart, min, max);
     }
 }

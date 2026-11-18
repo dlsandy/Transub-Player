@@ -12,9 +12,9 @@ public partial class SubtitleCatPickerWindow : Window
     private readonly MediaSearchQuery _query;
     private readonly bool _searchOnOpen;
     private readonly Dictionary<OnlineSubtitleProvider, IReadOnlyList<SubtitleCatResult>> _cache = new();
+    private readonly Dictionary<OnlineSubtitleProvider, Task<(IReadOnlyList<SubtitleCatResult> Results, string? Note)>> _inflight = new();
     private OnlineSubtitleProvider _provider;
     private bool _ready;
-    private bool _busy;
     private bool _initialSearchStarted;
     private CancellationTokenSource? _searchCts;
 
@@ -33,7 +33,6 @@ public partial class SubtitleCatPickerWindow : Window
             BindResults([]);
             EmptyLabel.Visibility = Visibility.Collapsed;
             ShowSearching();
-            SetUiBusy(true);
             _ready = true;
             return;
         }
@@ -67,7 +66,10 @@ public partial class SubtitleCatPickerWindow : Window
         if (!_searchOnOpen || _initialSearchStarted)
             return;
         _initialSearchStarted = true;
-        await RunFallbackSearchAsync().ConfigureAwait(true);
+        // Kick both sources in parallel so switching never waits on a cold start.
+        _ = EnsureSearchStarted(OnlineSubtitleProvider.SubtitleCat);
+        _ = EnsureSearchStarted(OnlineSubtitleProvider.Xunlei);
+        await ShowProviderAsync(_provider).ConfigureAwait(true);
     }
 
     private void ApplyProviderRadios()
@@ -102,7 +104,7 @@ public partial class SubtitleCatPickerWindow : Window
 
     private async void Provider_Checked(object sender, RoutedEventArgs e)
     {
-        if (!_ready || _busy) return;
+        if (!_ready) return;
 
         var next = ProviderXunleiRadio.IsChecked == true
             ? OnlineSubtitleProvider.Xunlei
@@ -110,41 +112,85 @@ public partial class SubtitleCatPickerWindow : Window
         if (next == _provider) return;
 
         _provider = next;
-        if (_cache.TryGetValue(next, out var cached))
+        await ShowProviderAsync(next).ConfigureAwait(true);
+    }
+
+    private Task<(IReadOnlyList<SubtitleCatResult> Results, string? Note)> EnsureSearchStarted(
+        OnlineSubtitleProvider provider)
+    {
+        if (_cache.TryGetValue(provider, out var cached))
+            return Task.FromResult<(IReadOnlyList<SubtitleCatResult>, string?)>((cached, null));
+
+        if (_inflight.TryGetValue(provider, out var existing))
+            return existing;
+
+        _searchCts ??= new CancellationTokenSource();
+        var ct = _searchCts.Token;
+        var task = SearchAndCacheAsync(provider, ct);
+        _inflight[provider] = task;
+        return task;
+    }
+
+    private async Task<(IReadOnlyList<SubtitleCatResult> Results, string? Note)> SearchAndCacheAsync(
+        OnlineSubtitleProvider provider,
+        CancellationToken ct)
+    {
+        try
         {
-            NoteLabel.Visibility = Visibility.Collapsed;
+            var results = await SubtitleCatClient.SearchProviderAsync(provider, _query, ct)
+                .ConfigureAwait(false);
+            _cache[provider] = results;
+            return (results, null);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _cache[provider] = [];
+            return ([], Loc.Format("SubtitleCat.Failed", ex.Message));
+        }
+        finally
+        {
+            _inflight.Remove(provider);
+        }
+    }
+
+    private async Task ShowProviderAsync(OnlineSubtitleProvider provider)
+    {
+        if (_cache.TryGetValue(provider, out var cached))
+        {
             SearchProgress.Visibility = Visibility.Collapsed;
             BindResults(cached);
+            if (cached.Count == 0)
+            {
+                NoteLabel.Text = Loc.Get("SubtitleCat.NoResults");
+                NoteLabel.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                NoteLabel.Visibility = Visibility.Collapsed;
+            }
+            SetUiBusy(false);
             return;
         }
 
-        await SearchCurrentProviderAsync().ConfigureAwait(true);
-    }
-
-    private async Task RunFallbackSearchAsync()
-    {
-        _busy = true;
-        SetUiBusy(true);
         ShowSearching();
-
-        try { _searchCts?.Cancel(); } catch { /* ignore */ }
-        _searchCts?.Dispose();
-        _searchCts = new CancellationTokenSource();
-        var ct = _searchCts.Token;
+        SetUiBusy(false); // keep radios enabled while the other source fills cache
 
         try
         {
-            var (results, note) = await SubtitleCatClient.SearchWithFallbackAsync(_query, ct)
-                .ConfigureAwait(true);
+            var (results, note) = await EnsureSearchStarted(provider).ConfigureAwait(true);
+            if (provider != _provider) return;
 
-            _provider = SubtitleCatClient.DetectProvider(results);
-            ApplyProviderRadios();
-            _cache[_provider] = results;
+            _cache[provider] = results;
             BindResults(results);
-
             if (results.Count == 0)
             {
-                NoteLabel.Text = Loc.Get("SubtitleCat.NoResults");
+                NoteLabel.Text = string.IsNullOrWhiteSpace(note)
+                    ? Loc.Get("SubtitleCat.NoResults")
+                    : note!;
                 NoteLabel.Visibility = Visibility.Visible;
             }
             else if (!string.IsNullOrWhiteSpace(note))
@@ -152,11 +198,6 @@ public partial class SubtitleCatPickerWindow : Window
                 NoteLabel.Text = note!;
                 NoteLabel.Visibility = Visibility.Visible;
             }
-            else if (_provider == OnlineSubtitleProvider.Xunlei)
-            {
-                NoteLabel.Text = Loc.Get("SubtitleCat.Picker.FallbackNote");
-                NoteLabel.Visibility = Visibility.Visible;
-            }
             else
             {
                 NoteLabel.Visibility = Visibility.Collapsed;
@@ -164,80 +205,20 @@ public partial class SubtitleCatPickerWindow : Window
         }
         catch (OperationCanceledException)
         {
-            // closed / cancelled
-        }
-        catch (Exception ex)
-        {
-            _cache[_provider] = [];
-            BindResults([]);
-            NoteLabel.Text = Loc.Format("SubtitleCat.Failed", ex.Message);
-            NoteLabel.Visibility = Visibility.Visible;
-        }
-        finally
-        {
-            _busy = false;
-            SetUiBusy(false);
-            SearchProgress.Visibility = Visibility.Collapsed;
-        }
-    }
-
-    private async Task SearchCurrentProviderAsync()
-    {
-        _busy = true;
-        SetUiBusy(true);
-        ShowSearching();
-
-        try { _searchCts?.Cancel(); } catch { /* ignore */ }
-        _searchCts?.Dispose();
-        _searchCts = new CancellationTokenSource();
-        var ct = _searchCts.Token;
-        var provider = _provider;
-
-        try
-        {
-            var results = await SubtitleCatClient.SearchProviderAsync(provider, _query, ct)
-                .ConfigureAwait(true);
-            if (provider != _provider) return;
-
-            _cache[provider] = results;
-            BindResults(results);
-            if (results.Count == 0)
-            {
-                NoteLabel.Text = Loc.Get("SubtitleCat.NoResults");
-                NoteLabel.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                NoteLabel.Visibility = Visibility.Collapsed;
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // switched away or closed
-        }
-        catch (Exception ex)
-        {
-            if (provider != _provider) return;
-            _cache[provider] = [];
-            BindResults([]);
-            NoteLabel.Text = Loc.Format("SubtitleCat.Failed", ex.Message);
-            NoteLabel.Visibility = Visibility.Visible;
+            // closed
         }
         finally
         {
             if (provider == _provider)
-            {
-                _busy = false;
-                SetUiBusy(false);
                 SearchProgress.Visibility = Visibility.Collapsed;
-            }
         }
     }
 
     private void SetUiBusy(bool busy)
     {
-        ProviderCatRadio.IsEnabled = !busy;
-        ProviderXunleiRadio.IsEnabled = !busy;
+        // Radios stay enabled so the user can switch sources while a search runs.
+        ProviderCatRadio.IsEnabled = true;
+        ProviderXunleiRadio.IsEnabled = true;
         UseButton.IsEnabled = !busy;
         ResultList.IsEnabled = !busy;
         // Skip stays enabled so the user can cancel a long search.
@@ -259,7 +240,6 @@ public partial class SubtitleCatPickerWindow : Window
 
     private void ConfirmSelection()
     {
-        if (_busy) return;
         if (ResultList.SelectedItem is not SubtitleCatResult pick)
         {
             MessageBox.Show(this, Loc.Get("SubtitleCat.Picker.NeedSelect"), Loc.Get("SubtitleCat.Picker.Title"),
@@ -278,6 +258,7 @@ public partial class SubtitleCatPickerWindow : Window
         try { _searchCts?.Cancel(); } catch { /* ignore */ }
         _searchCts?.Dispose();
         _searchCts = null;
+        _inflight.Clear();
     }
 
     protected override void OnClosed(EventArgs e)

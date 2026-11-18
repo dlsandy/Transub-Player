@@ -3,10 +3,14 @@ using System.Text.RegularExpressions;
 
 namespace TransubPlayer.Services;
 
-/// <summary>Stripchat live CDN URL building (aligned with Covers Download sacdnssedge-first playback).</summary>
-internal static class StripchatLiveCdn
+/// <summary>
+/// Live-cam CDN URL building.
+/// Prefer primary media CDN (MOUFLON via local proxy). Bare secondary edge
+/// <c>/{id}/{id}.m3u8</c> paths often 404; sac edge master is ≤480p only.
+/// </summary>
+internal static class LiveCamCdn
 {
-    internal const string SacdnssedgePlayReferer = "https://juy.bvjiyfh.com:25118/";
+    internal static string SacdnssedgePlayReferer => LiveCamSeal.SacPlayReferer;
 
     private static readonly Regex HlsNodeRe = new(
         @"(?:^|[^a-z])(?:b-)?(hls-\d+)\b",
@@ -20,9 +24,19 @@ internal static class StripchatLiveCdn
         @"/hls/([^/]+)/master/[^/?#]+",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Lazy<Regex> DoppioHostReLazy = new(() => new Regex(
+        LiveCamSeal.DoppioHostRe,
+        RegexOptions.IgnoreCase | RegexOptions.Compiled));
+
+    private static Regex DoppioHostRe => DoppioHostReLazy.Value;
+
     public static bool IsSacdnssedge(string? url)
         => !string.IsNullOrWhiteSpace(url)
-           && url.Contains("sacdnssedge.com", StringComparison.OrdinalIgnoreCase);
+           && url.Contains(LiveCamSeal.SacToken, StringComparison.OrdinalIgnoreCase);
+
+    public static bool IsDoppiocdn(string? url)
+        => !string.IsNullOrWhiteSpace(url)
+           && url.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase);
 
     public static string? NormalizeHlsNode(string? viewServer)
     {
@@ -38,47 +52,53 @@ internal static class StripchatLiveCdn
         return null;
     }
 
+    /// <summary>Legacy bare media path — often 404 now; kept only for probe/fallback lists.</summary>
     public static string SacdnssedgeUrl(string streamName, string? viewServerOrNode = null)
     {
         var sn = streamName.Trim();
         var node = NormalizeHlsNode(viewServerOrNode) ?? "hls-17";
-        return $"https://media-hls.sacdnssedge.com/b-{node}/{sn}/{sn}.m3u8";
+        return string.Format(LiveCamSeal.SacMediaUrlTpl, node, sn);
+    }
+
+    public static string SacdnssedgeEdgeAutoUrl(string streamName)
+    {
+        var sn = streamName.Trim();
+        return string.Format(LiveCamSeal.SacEdgeAutoTpl, sn);
     }
 
     public static string DoppiocdnEdgeAutoUrl(string streamName)
     {
         var sn = streamName.Trim();
-        return $"https://edge-hls.doppiocdn.com/hls/{sn}/master/{sn}_auto.m3u8";
+        return string.Format(LiveCamSeal.DoppioEdgeAutoTpl, sn);
     }
 
     public static string? NormalizeDoppiocdnAuto(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return null;
-        if (url.Contains("_auto.m3u8", StringComparison.OrdinalIgnoreCase)) return url;
+        var preferred = PreferPlayableCdn(url);
+        if (preferred.Contains("_auto.m3u8", StringComparison.OrdinalIgnoreCase)) return preferred;
 
-        var m = DoppioAutoRe.Match(url);
+        var m = DoppioAutoRe.Match(preferred);
         if (!m.Success) return null;
 
         return DoppiocdnEdgeAutoUrl(m.Groups[1].Value);
     }
 
-    /// <summary>Preferred play URL: sacdnssedge mirror first, doppiocdn edge as fallback.</summary>
+    /// <summary>Preferred play URL: doppiocdn edge master (proxy + MOUFLON), not bare sac media.</summary>
     public static string PickPlayUrl(string streamName, string? viewServer, string? hlsPlaylist = null)
     {
         var sn = streamName.Trim();
         if (string.IsNullOrEmpty(sn)) return "";
 
-        foreach (var url in BuildSacdnssedgeCandidates(sn, viewServer))
-            return url;
-
         if (!string.IsNullOrWhiteSpace(hlsPlaylist))
         {
-            var fromPlaylist = NormalizeDoppiocdnAuto(hlsPlaylist) ?? hlsPlaylist.Trim();
+            var fromPlaylist = NormalizeDoppiocdnAuto(hlsPlaylist) ?? PreferPlayableCdn(hlsPlaylist.Trim());
             if (fromPlaylist.Contains("_auto.m3u8", StringComparison.OrdinalIgnoreCase)
                 || fromPlaylist.Contains("/master/", StringComparison.OrdinalIgnoreCase))
                 return fromPlaylist;
         }
 
+        _ = viewServer; // node only mattered for bare sac media paths
         return DoppiocdnEdgeAutoUrl(sn);
     }
 
@@ -88,7 +108,7 @@ internal static class StripchatLiveCdn
         var sn = streamName.Trim();
         if (!string.IsNullOrWhiteSpace(hlsPlaylist))
         {
-            var fromPlaylist = NormalizeDoppiocdnAuto(hlsPlaylist) ?? hlsPlaylist.Trim();
+            var fromPlaylist = NormalizeDoppiocdnAuto(hlsPlaylist) ?? PreferPlayableCdn(hlsPlaylist.Trim());
             if (fromPlaylist.Contains("_auto.m3u8", StringComparison.OrdinalIgnoreCase)
                 || fromPlaylist.Contains("/master/", StringComparison.OrdinalIgnoreCase))
                 return fromPlaylist;
@@ -97,50 +117,41 @@ internal static class StripchatLiveCdn
         return string.IsNullOrEmpty(sn) ? null : DoppiocdnEdgeAutoUrl(sn);
     }
 
+    /// <summary>
+    /// Optional sac edge master (≤480p) as a secondary mirror — not the bare media path.
+    /// </summary>
     public static IReadOnlyList<string> BuildSacdnssedgeCandidates(string streamName, string? viewServer)
     {
         var sn = streamName.Trim();
         if (string.IsNullOrEmpty(sn)) return [];
-
-        var list = new List<string>();
-        void Add(string url)
-        {
-            if (!list.Contains(url, StringComparer.OrdinalIgnoreCase))
-                list.Add(url);
-        }
-
-        var node = NormalizeHlsNode(viewServer) ?? "hls-17";
-        Add(SacdnssedgeUrl(sn, node));
-        if (!node.Equals("hls-17", StringComparison.OrdinalIgnoreCase))
-            Add(SacdnssedgeUrl(sn, "hls-17"));
-
-        return list;
+        _ = viewServer;
+        return [SacdnssedgeEdgeAutoUrl(sn)];
     }
 
     public static string PlayReferer(string url)
-        => IsSacdnssedge(url) ? SacdnssedgePlayReferer : StripchatHlsPlaylist.CdnReferer;
+        => IsSacdnssedge(url) ? SacdnssedgePlayReferer : LiveCamHlsPlaylist.CdnReferer;
 
     /// <summary>
-    /// Rewrite doppiocdn media-hls variant URLs to sacdnssedge (same path).
-    /// doppiocdn.com media edge often fails TLS from some networks; sacdnssedge is the playable mirror.
+    /// Rewrite unreachable primary CDN .com edge → .net (TLS resets on .com from many networks).
+    /// Do not rewrite to secondary CDN: same path with _720p often 404s there (caps at 480p).
     /// </summary>
-    public static string? TryRewriteDoppioMediaToSacdnssedge(string? url)
+    public static string? TryRewriteDoppioComToNet(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return null;
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return null;
-        if (!uri.Host.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase)) return null;
 
-        var path = uri.AbsolutePath;
-        // e.g. /b-hls-28/204211824/204211824_480p.m3u8
-        if (!path.Contains("/b-hls-", StringComparison.OrdinalIgnoreCase)
-            && !path.Contains("/b-hls", StringComparison.OrdinalIgnoreCase))
+        var m = DoppioHostRe.Match(uri.Host);
+        if (!m.Success) return null;
+        if (!m.Groups["tld"].Value.Equals("com", StringComparison.OrdinalIgnoreCase))
             return null;
 
-        return $"https://media-hls.sacdnssedge.com{path}";
+        var edge = m.Groups["edge"].Value.ToLowerInvariant();
+        var builder = new UriBuilder(uri) { Host = string.Format(LiveCamSeal.DoppioNetHostTpl, edge) };
+        return builder.Uri.ToString();
     }
 
     public static string PreferPlayableCdn(string url)
-        => TryRewriteDoppioMediaToSacdnssedge(url) ?? url;
+        => TryRewriteDoppioComToNet(url) ?? url;
 
     public static string? HlsNodeFromCam(JsonElement cam)
     {

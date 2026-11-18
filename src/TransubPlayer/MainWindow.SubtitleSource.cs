@@ -135,7 +135,9 @@ public partial class MainWindow
             SubtitleSourceKind.Local => hasLocal
                 ? Loc.Get("Main.SubSource.Local")
                 : Loc.Get("Main.SubSource.LocalOnlyNone"),
-            SubtitleSourceKind.Live => Loc.Get("Main.Status.LiveActive"),
+            SubtitleSourceKind.Live => _preview?.UsingExistingSub == true
+                ? Loc.Get("Main.Status.LiveActive")
+                : Loc.Get("Main.SubSource.LiveActiveTip"),
             _ => Loc.Get("Main.SubSource.Tip"),
         };
     }

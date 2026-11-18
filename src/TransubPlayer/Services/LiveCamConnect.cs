@@ -5,12 +5,12 @@ using System.Net.Sockets;
 namespace TransubPlayer.Services;
 
 /// <summary>
-/// Opens Stripchat TCP connections IPv4-first.
+/// Opens live-cam TCP connections IPv4-first.
 /// On networks without a working IPv6 route, the default client tries AAAA first and
 /// burns the whole connect timeout ("The operation was canceled") even when IPv4 is fine.
 /// A configured HTTP proxy is still honored: the callback then receives the proxy endpoint.
 /// </summary>
-internal static class StripchatConnect
+internal static class LiveCamConnect
 {
     private static readonly TimeSpan PerAddressTimeout = TimeSpan.FromSeconds(4);
 

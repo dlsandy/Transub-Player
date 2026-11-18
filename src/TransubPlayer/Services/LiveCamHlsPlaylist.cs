@@ -12,22 +12,20 @@ internal sealed record StreamQualityOption(
     string Kind,
     int Rank);
 
-/// <summary>Picks the real Stripchat media playlist from a master m3u8 (skips ad variants).</summary>
-internal static class StripchatHlsPlaylist
+/// <summary>Picks the real live-cam media playlist from a master m3u8 (skips ad variants).</summary>
+internal static class LiveCamHlsPlaylist
 {
-    private static readonly HttpClient Http = StripchatStreamResolver.SharedHttp;
+    private static readonly HttpClient Http = LiveCamStreamResolver.SharedHttp;
 
     private static readonly string[] AdMarkers =
     [
         "/ad/", "/ad.", "advert", "promo", "preview", "placeholder", "slate", "countdown",
     ];
 
-    private static readonly HashSet<string> PreferredPkeys = new(StringComparer.Ordinal)
-    {
-        "Zeechoej4aleeshi",
-        "Zokee2OhPh9kugh4",
-        "Ook7quaiNgiyuhai",
-    };
+    private static readonly Lazy<HashSet<string>> PreferredPkeysLazy = new(() =>
+        new HashSet<string>(LiveCamSeal.PreferredPkeys, StringComparer.Ordinal));
+
+    private static HashSet<string> PreferredPkeys => PreferredPkeysLazy.Value;
 
     private static readonly Regex MouflonRe = new(
         @"#EXT-X-MOUFLON:PSCH:(?<psch>v\d+):(?<pkey>\w+)",
@@ -42,7 +40,7 @@ internal static class StripchatHlsPlaylist
         if (!NeedsProxy(playUrl))
             return Task.FromResult(playUrl);
 
-        return Task.FromResult(StripchatHlsProxy.Wrap(playUrl, referer, masterUrl));
+        return Task.FromResult(LiveCamHlsProxy.Wrap(playUrl, referer, masterUrl));
     }
 
     public static async Task<string> ResolveMediaUrlAsync(string masterUrl, string referer, CancellationToken ct)
@@ -51,8 +49,8 @@ internal static class StripchatHlsPlaylist
         var (psch, pkey) = ExtractMouflonKeys(text);
         var variant = PickBestVariant(text, masterUrl);
         if (variant is null)
-            throw new InvalidOperationException("Stripchat master playlist has no playable variant.");
-        return AuthOrSacMirror(variant.Url, psch, pkey);
+            throw new InvalidOperationException("Live master playlist has no playable variant.");
+        return AuthOrPlayable(variant.Url, psch, pkey);
     }
 
     /// <summary>Re-resolve a specific quality variant with fresh master auth (for live proxy polls).</summary>
@@ -66,32 +64,27 @@ internal static class StripchatHlsPlaylist
         var (psch, pkey) = ExtractMouflonKeys(text);
         var variants = ParseVariants(text, masterUrl).Where(v => !IsAdVariant(v)).ToList();
         if (variants.Count == 0)
-            throw new InvalidOperationException("Stripchat master playlist has no playable variant.");
+            throw new InvalidOperationException("Live master playlist has no playable variant.");
 
-        var hintSac = StripchatLiveCdn.PreferPlayableCdn(variantHintUrl);
-        var hintFile = VariantFileKey(hintSac);
+        var hintPlayable = LiveCamCdn.PreferPlayableCdn(variantHintUrl);
+        var hintFile = VariantFileKey(hintPlayable);
 
         var match = variants.FirstOrDefault(v =>
         {
-            var sac = StripchatLiveCdn.TryRewriteDoppioMediaToSacdnssedge(v.Url) ?? v.Url;
-            return string.Equals(VariantFileKey(sac), hintFile, StringComparison.OrdinalIgnoreCase)
-                   || sac.Contains(hintFile, StringComparison.OrdinalIgnoreCase);
+            var playable = LiveCamCdn.PreferPlayableCdn(v.Url);
+            return string.Equals(VariantFileKey(playable), hintFile, StringComparison.OrdinalIgnoreCase)
+                   || playable.Contains(hintFile, StringComparison.OrdinalIgnoreCase);
         });
 
         match ??= PickBestVariant(text, masterUrl);
         if (match is null)
-            throw new InvalidOperationException("Stripchat master playlist has no playable variant.");
+            throw new InvalidOperationException("Live master playlist has no playable variant.");
 
-        return AuthOrSacMirror(match.Url, psch, pkey);
+        return AuthOrPlayable(match.Url, psch, pkey);
     }
 
-    private static string AuthOrSacMirror(string variantUrl, string psch, string pkey)
-    {
-        var sac = StripchatLiveCdn.TryRewriteDoppioMediaToSacdnssedge(variantUrl);
-        if (!string.IsNullOrWhiteSpace(sac))
-            return sac;
-        return AppendAuth(variantUrl, psch, pkey);
-    }
+    private static string AuthOrPlayable(string variantUrl, string psch, string pkey)
+        => AppendAuth(LiveCamCdn.PreferPlayableCdn(variantUrl), psch, pkey);
 
     private static string VariantFileKey(string url)
     {
@@ -127,24 +120,9 @@ internal static class StripchatHlsPlaylist
             if (!seen.Add(id))
                 id = "q:" + v.Bandwidth;
 
-            var sac = StripchatLiveCdn.TryRewriteDoppioMediaToSacdnssedge(v.Url);
-            string url;
-            string kind;
-            int rank;
-            if (!string.IsNullOrWhiteSpace(sac))
-            {
-                url = sac;
-                kind = "sacdnssedge";
-                rank = ResolutionScore(v);
-            }
-            else
-            {
-                url = AppendAuth(v.Url, psch, pkey);
-                kind = "doppio";
-                rank = ResolutionScore(v);
-            }
-
-            list.Add(new StreamQualityOption(id, label, url, kind, rank));
+            var url = AuthOrPlayable(v.Url, psch, pkey);
+            var kind = LiveCamCdn.IsSacdnssedge(url) ? LiveCamSeal.SacToken : "doppio";
+            list.Add(new StreamQualityOption(id, label, url, kind, ResolutionScore(v)));
         }
 
         return list;
@@ -154,10 +132,12 @@ internal static class StripchatHlsPlaylist
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         if (IsMasterPlaylist(url)) return true;
-        // sacdnssedge: mpv polls CDN directly (live). Proxy snapshot was freezing ~2min in.
-        var playable = StripchatLiveCdn.PreferPlayableCdn(url);
-        if (StripchatLiveCdn.IsSacdnssedge(playable)) return false;
-        return playable.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase)
+        // sacdnssedge media: mpv can poll directly when the quality suffix exists.
+        // doppiocdn media needs the local proxy for MOUFLON URI decode on each poll.
+        var playable = LiveCamCdn.PreferPlayableCdn(url);
+        if (LiveCamCdn.IsSacdnssedge(playable) && !IsMasterPlaylist(playable))
+            return false;
+        return LiveCamCdn.IsDoppiocdn(playable)
                || playable.Contains("strpst.com", StringComparison.OrdinalIgnoreCase);
     }
 
@@ -356,11 +336,51 @@ internal static class StripchatHlsPlaylist
         if (string.IsNullOrWhiteSpace(pkey))
             return url;
 
-        var sep = url.Contains('?') ? "&" : "?";
-        return $"{url}{sep}psch={Uri.EscapeDataString(psch)}&pkey={Uri.EscapeDataString(pkey)}&playlistType=lowLatency";
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            var sep = url.Contains('?') ? "&" : "?";
+            return $"{url}{sep}psch={Uri.EscapeDataString(psch)}&pkey={Uri.EscapeDataString(pkey)}";
+        }
+
+        var parts = new List<string>();
+        var hasPsch = false;
+        var hasPkey = false;
+        var hasPlaylistType = false;
+        if (!string.IsNullOrEmpty(uri.Query))
+        {
+            foreach (var raw in uri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var eq = raw.IndexOf('=');
+                var name = eq >= 0 ? raw[..eq] : raw;
+                if (name.Equals("psch", StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add("psch=" + Uri.EscapeDataString(psch));
+                    hasPsch = true;
+                }
+                else if (name.Equals("pkey", StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add("pkey=" + Uri.EscapeDataString(pkey));
+                    hasPkey = true;
+                }
+                else if (name.Equals("playlistType", StringComparison.OrdinalIgnoreCase))
+                {
+                    parts.Add(raw);
+                    hasPlaylistType = true;
+                }
+                else
+                    parts.Add(raw);
+            }
+        }
+
+        if (!hasPsch) parts.Add("psch=" + Uri.EscapeDataString(psch));
+        if (!hasPkey) parts.Add("pkey=" + Uri.EscapeDataString(pkey));
+        if (!hasPlaylistType) parts.Add("playlistType=standard");
+
+        var builder = new UriBuilder(uri) { Query = string.Join('&', parts) };
+        return builder.Uri.ToString();
     }
 
-    internal static string CdnReferer => "https://stripchat.com/";
+    internal static string CdnReferer => LiveCamSeal.OfficialOriginSlash;
 
     private static string ResolveUrl(string baseUrl, string relative)
     {
@@ -386,12 +406,12 @@ internal static class StripchatHlsPlaylist
     }
 
     /// <summary>
-    /// Resolve sacdnssedge entry URL for mpv (Covers Download: fetch playlist, pick ≤720p media variant).
-    /// For rolling media playlists, keep the stable entry URL so mpv re-fetches each poll — not a one-shot redirect.
+    /// Resolve sacdnssedge entry for mpv. Returns null when the CDN answers 404/error —
+    /// callers must fall back to doppiocdn instead of feeding mpv a dead URL (black screen).
     /// </summary>
-    public static async Task<string> ResolveSacdnssedgeForMpvAsync(string entryUrl, CancellationToken ct, int maxHeight = 720)
+    public static async Task<string?> ResolveSacdnssedgeForMpvAsync(string entryUrl, CancellationToken ct, int maxHeight = 720)
     {
-        if (!StripchatLiveCdn.IsSacdnssedge(entryUrl))
+        if (!LiveCamCdn.IsSacdnssedge(entryUrl))
             return entryUrl;
 
         string baseUrl = entryUrl;
@@ -403,22 +423,32 @@ internal static class StripchatHlsPlaylist
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                 + "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
             req.Headers.TryAddWithoutValidation("Accept", "*/*");
-            req.Headers.TryAddWithoutValidation("Referer", StripchatLiveCdn.SacdnssedgePlayReferer);
+            req.Headers.TryAddWithoutValidation("Referer", LiveCamCdn.SacdnssedgePlayReferer);
             using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false);
-            res.EnsureSuccessStatusCode();
+            if (!res.IsSuccessStatusCode)
+            {
+                PlayerLog.Write($"sacdnssedge resolve: {(int)res.StatusCode} {res.ReasonPhrase} · {entryUrl}");
+                return null;
+            }
+
             baseUrl = res.RequestMessage?.RequestUri?.ToString() ?? entryUrl;
             text = await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             PlayerLog.Write("sacdnssedge resolve: " + ex.Message);
-            return entryUrl;
+            return null;
+        }
+
+        if (!text.Contains("#EXTM3U", StringComparison.OrdinalIgnoreCase))
+        {
+            PlayerLog.Write("sacdnssedge resolve: not an HLS playlist · " + entryUrl);
+            return null;
         }
 
         if (!text.Contains("#EXT-X-STREAM-INF", StringComparison.OrdinalIgnoreCase))
         {
-            // Media playlist: give mpv a stable path (no one-shot signed query). Covers also
-            // follows redirects to the active node, then lets mpv re-poll that URL.
+            // Media playlist: stable path so mpv re-polls (drop one-shot query).
             var chosen = baseUrl;
             if (Uri.TryCreate(chosen, UriKind.Absolute, out var u) && !string.IsNullOrEmpty(u.Query))
                 chosen = u.GetLeftPart(UriPartial.Path);
@@ -432,7 +462,7 @@ internal static class StripchatHlsPlaylist
             variants = ParseVariants(text, baseUrl);
 
         if (variants.Count == 0)
-            return entryUrl;
+            return null;
 
         var capped = variants
             .Where(v =>
@@ -447,7 +477,7 @@ internal static class StripchatHlsPlaylist
             .ThenByDescending(v => v.Bandwidth)
             .First();
 
-        return StripchatLiveCdn.PreferPlayableCdn(pick.Url);
+        return LiveCamCdn.PreferPlayableCdn(pick.Url);
     }
 
     public static async Task<string> FetchTextAsync(string url, string referer, CancellationToken ct)
@@ -457,12 +487,12 @@ internal static class StripchatHlsPlaylist
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
             + "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36");
         req.Headers.TryAddWithoutValidation("Accept", "*/*");
-        var playReferer = StripchatLiveCdn.IsSacdnssedge(url)
-            ? StripchatLiveCdn.SacdnssedgePlayReferer
+        var playReferer = LiveCamCdn.IsSacdnssedge(url)
+            ? LiveCamCdn.SacdnssedgePlayReferer
             : CdnReferer;
         req.Headers.TryAddWithoutValidation("Referer", playReferer);
-        if (!StripchatLiveCdn.IsSacdnssedge(url))
-            req.Headers.TryAddWithoutValidation("Origin", "https://stripchat.com");
+        if (!LiveCamCdn.IsSacdnssedge(url))
+            req.Headers.TryAddWithoutValidation("Origin", LiveCamSeal.OfficialOrigin);
         using var res = await Http.SendAsync(req, HttpCompletionOption.ResponseContentRead, ct).ConfigureAwait(false);
         res.EnsureSuccessStatusCode();
         return await res.Content.ReadAsStringAsync(ct).ConfigureAwait(false);

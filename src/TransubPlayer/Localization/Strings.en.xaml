@@ -70,6 +70,9 @@
     <sys:String x:Key="Str.Main.SubSource.OnlineNone">Online search found nothing · no auto ASR</sys:String>
     <sys:String x:Key="Str.Main.SubSource.OffOpen">Subtitles off · no auto ASR/MT/online search</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Live">Live subtitles</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveNoExternal">No sidecar · switched to live recognition</sys:String>
+    <sys:String x:Key="Str.Main.Osd.LiveNoExternal">No sidecar · live recognition</sys:String>
+    <sys:String x:Key="Str.Main.SubSource.LiveActiveTip">Live subtitles · recognize while watching; switch to Local/Online/Off anytime</sys:String>
     <sys:String x:Key="Str.Main.SubSource.Tip">Subtitle source: off / online / local file / live ASR</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Default">Default</sys:String>
     <sys:String x:Key="Str.Main.LocalSub.Tip">Switch sidecar subtitle files</sys:String>
@@ -139,26 +142,26 @@ Open Settings now?</sys:String>
     <sys:String x:Key="Str.Main.Status.StreamPlaybackOnly">Streaming playback · live source extraction unavailable</sys:String>
     <sys:String x:Key="Str.Main.Status.ScreenCapture">Screen capture · live source extraction unavailable</sys:String>
     <sys:String x:Key="Str.OpenUrl.Title">Open stream URL</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Prompt">Enter a URL or Stripchat streamer ID</sys:String>
-    <sys:String x:Key="Str.OpenUrl.Hint">Supports HLS (.m3u8), direct links, Stripchat page URLs or username/numeric ID, and common live streams. Drag or paste.</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Prompt">Enter a URL or live streamer ID</sys:String>
+    <sys:String x:Key="Str.OpenUrl.Hint">Supports HLS (.m3u8), direct links, live page URLs or username/numeric ID, and common live streams. Drag or paste.</sys:String>
     <sys:String x:Key="Str.OpenUrl.Open">Open</sys:String>
     <sys:String x:Key="Str.OpenUrl.AddFavorite">Also add to favorites</sys:String>
     <sys:String x:Key="Str.OpenUrl.Invalid">Unrecognized address. Check the format and try again.</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Desktop">Screen capture (desktop)</sys:String>
     <sys:String x:Key="Str.MediaSource.Screen.Capture">Screen capture</sys:String>
-    <sys:String x:Key="Str.MediaSource.Stripchat.User">Stripchat / {0}</sys:String>
+    <sys:String x:Key="Str.MediaSource.Live.User">Live / {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.ResolvingStream">Resolving stream URL…</sys:String>
-    <sys:String x:Key="Str.Main.Status.StripchatPlaying">Stripchat live · {0}</sys:String>
+    <sys:String x:Key="Str.Main.Status.LivePlaying">Live · {0}</sys:String>
     <sys:String x:Key="Str.StreamResolve.InvalidUrl">Unrecognized address.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.NotFound">No Stripchat stream info found on this page.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Offline">Model {0} is offline.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Blocked">Could not fetch stream info from this mirror. Check your network or try again later.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Private">Model {0} is in a private show and cannot be played.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.GroupShow">Model {0} is in a group show and cannot be played.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Restricted">Model {0} is unavailable in your region (geo-restricted).</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.ModelNotFound">Model {0} was not found. Check the username.</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.Unavailable">Model {0} room is unavailable (camera not ready).</sys:String>
-    <sys:String x:Key="Str.StreamResolve.Stripchat.StatusUnknown">Model {0} status is “{1}” and cannot be played.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.NotFound">No live stream info found on this page.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Offline">Model {0} is offline.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Blocked">Could not fetch stream info from this mirror. Check your network or try again later.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Private">Model {0} is in a private show and cannot be played.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.GroupShow">Model {0} is in a group show and cannot be played.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Restricted">Model {0} is unavailable in your region (geo-restricted).</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.ModelNotFound">Model {0} was not found. Check the username.</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.Unavailable">Model {0} room is unavailable (camera not ready).</sys:String>
+    <sys:String x:Key="Str.StreamResolve.Live.StatusUnknown">Model {0} status is “{1}” and cannot be played.</sys:String>
     <sys:String x:Key="Str.Main.Menu.Recent">Recent</sys:String>
     <sys:String x:Key="Str.Main.Menu.Favorites">Favorites</sys:String>
     <sys:String x:Key="Str.Main.Menu.Playlist">Playlist</sys:String>
@@ -458,7 +461,7 @@ Continue?</sys:String>
     <sys:String x:Key="Str.Settings.ManualInstall.ImportAsr">Import ASR model from folder</sys:String>
     <sys:String x:Key="Str.Settings.ManualInstall.CurrentPreset">Manual install (current settings)</sys:String>
     <sys:String x:Key="Str.Settings.UiLanguage">Interface language</sys:String>
-    <sys:String x:Key="Str.Settings.UiLanguage.Hint">Applies on save. UI packs: Chinese, English, Japanese, and Korean.</sys:String>
+    <sys:String x:Key="Str.Settings.UiLanguage.Hint">Applies on save. UI packs: Chinese, English, Spanish, Japanese, and Korean.</sys:String>
     <sys:String x:Key="Str.Settings.Section.Interface">Interface</sys:String>
     <sys:String x:Key="Str.Settings.Section.SubtitleSource">Subtitle source</sys:String>
     <sys:String x:Key="Str.Settings.Section.Window">Window</sys:String>
@@ -482,7 +485,14 @@ Continue?</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.Vulkan">Vulkan (GPU)</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.VulkanShort">Vulkan</sys:String>
     <sys:String x:Key="Str.Settings.AsrBackend.NotLoaded">Not loaded</sys:String>
-    <sys:String x:Key="Str.Settings.AsrBackend.Hint">Prefer Vulkan to lower CPU use. Recognition threads are capped so the PC stays responsive; GPU mode still uses a little CPU for audio prep. If this process already loaded the CPU library, restart the player to switch to GPU. If another app is encoding with Intel QSV (e.g. HandBrake), switch recognition to CPU or pause that encode first — some Intel drivers can freeze or blue-screen the PC otherwise.</sys:String>
+    <sys:String x:Key="Str.Settings.AsrBackend.Hint">Prefer Vulkan to lower CPU use (on dual GPUs we pin away from Intel Arc onto NVIDIA/AMD). Recognition threads are capped; GPU mode still uses a little CPU for audio prep. If this process already loaded the CPU library, restart the player to switch to GPU. If another app is encoding with Intel QSV (e.g. HandBrake): keep Auto/Vulkan when a discrete NVIDIA/AMD is present; CPU recognition fights the encoder for cores and can freeze the PC — or pause the encode first.</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Label">Recognition GPU</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Auto">Auto (prefer NVIDIA/AMD, avoid Intel)</sys:String>
+    <sys:String x:Key="Str.Settings.AsrGpuDevice.Hint">When multiple GPUs are detected, pick which one Whisper uses. If HandBrake holds Intel Arc QSV, choose NVIDIA — not Arc. If this process already loaded the GPU recognition library, restart the player after changing.</sys:String>
+    <sys:String x:Key="Str.Main.Status.AsrGpuDeviceNeedsRestart">Recognition GPU changed · restart the player to apply</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceNeedsRestart">Recognition GPU saved · restart the player</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceRestart">Recognition GPU changed · re-extracting…</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AsrGpuDeviceSaved">Recognition GPU saved · applies when you open a file</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrRuntimeLoaded">ASR runtime: {0} · threads {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.AsrGpuNeedsRestart">CPU ASR library already loaded · restart the player to use Vulkan (GPU)</sys:String>
     <sys:String x:Key="Str.Settings.Advanced.EmbeddedStatus">Embedded ASR · {0} · models {1}</sys:String>
@@ -657,6 +667,9 @@ Models {2}</sys:String>
     <sys:String x:Key="Str.Main.Lag.JumpReady">Jump back to ready</sys:String>
     <sys:String x:Key="Str.Main.Lag.SwitchSource">Continue in source</sys:String>
     <sys:String x:Key="Str.Main.Lag.ContinueWait">Keep watching</sys:String>
+    <sys:String x:Key="Str.Main.Lag.RestartFromHere">Recognize from here</sys:String>
+    <sys:String x:Key="Str.Main.Status.AutoRestartFromPlayhead">Subtitles far behind · re-recognizing from playhead</sys:String>
+    <sys:String x:Key="Str.Main.Osd.AutoRestartFromPlayhead">Re-recognizing from playhead</sys:String>
     <sys:String x:Key="Str.Main.Menu.Subtitles">Subtitles</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayLater">Delay subtitles 0.5s</sys:String>
     <sys:String x:Key="Str.Main.Menu.SubDelayEarlier">Advance subtitles 0.5s</sys:String>
@@ -673,6 +686,16 @@ Continue?</sys:String>
     <sys:String x:Key="Str.Main.Menu.Presets">Presets</sys:String>
     <sys:String x:Key="Str.Main.Menu.PresetsLoading">(Loading)</sys:String>
     <sys:String x:Key="Str.Main.Menu.Speed">Speed</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance">Picture enhance</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhanceCurrent">Picture: {0}</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Off">Off</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Light">Light</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Enhance">Enhance</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Cycle">Cycle</sys:String>
+    <sys:String x:Key="Str.Main.Menu.VideoEnhance.Tip">Real-time sharpen, deband, and high-quality scaling — visible even at 1:1. Off by default. Press E to cycle. If it stutters, switch back to Off or Light.</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Off">Picture enhance · Off</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Light">Picture enhance · Light (sharpen+deband)</sys:String>
+    <sys:String x:Key="Str.Main.Osd.VideoEnhance.Enhance">Picture enhance · Enhance (strong sharpen+deband)</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGrade">Color grade</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeCurrent">Grade: {0}</sys:String>
     <sys:String x:Key="Str.Main.Menu.ColorGradeAdjust">Adjust…</sys:String>
@@ -951,10 +974,13 @@ Wait for about 1 minute of translation before auto-play next time?
     <sys:String x:Key="Str.Main.Status.Build.PreviewJa">Generating · {0} · Chinese source</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtNotReady">Showing source · translation not ready · {0}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.MtFailed">Showing source · translation failed to start · {0}</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.Generating">Generating · {0} · showing source (lags behind) · gray/blue bars</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.Generating">Recognizing · {0} · showing source (lags behind) · gray/blue bars</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceThenMt">Recognizing · {0} · source through {1} · translation filling in</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.MtCatchingUp">Translating · {0} · translation through {1} · source through {2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.PreviewMt">Generating · {0} · translated {1}/{2}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.StartingMt">Generating subtitles (lags behind) · starting translation model</sys:String>
-    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">Generating · {0} · source only</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnly">Recognizing · {0} · source only</sys:String>
+    <sys:String x:Key="Str.Main.Status.Build.SourceOnlyFrontier">Recognizing · {0} · source only · through {1}</sys:String>
     <sys:String x:Key="Str.Main.Status.Build.TranslateOff">Generating · {0} · translation off · showing source</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailed">Generation failed · video still playing</sys:String>
     <sys:String x:Key="Str.Main.Status.PreviewFailedDetail">Playing · generation failed: {0}</sys:String>
@@ -1005,7 +1031,7 @@ Close anyway?</sys:String>
     <sys:String x:Key="Str.Help.SubSource.Body" xml:space="preserve">Off: play only — no source extraction, MT, or online search.
 Online: search SubtitleCat / Xunlei by title; no auto source extraction on failure.
 Local: sidecar .srt / .ass only; no auto source extraction if missing.
-Live subtitles: optional sidecar first, otherwise auto source extraction (default path).</sys:String>
+Live subtitles: if “prefer sidecar” is on and a file is found, use it; otherwise you are told and live ASR starts. Source appears first; translation fills in near the playhead.</sys:String>
     <sys:String x:Key="Str.Help.Shortcuts.Body" xml:space="preserve">Open Ctrl+O · stream Ctrl+Shift+O · Play/Pause Space · Seek ← →
 Fine Shift+←→ · Large Ctrl+←→ · ±60s PageUp/Down
 Start/End Home/End · Frame , .
@@ -1027,28 +1053,32 @@ speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
     <sys:String x:Key="Str.Settings.AutoPreview">Auto-start ASR when no sidecar exists</sys:String>
     <sys:String x:Key="Str.Settings.Translate">Translation: use local model when available; otherwise source first</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget">Translation language</sys:String>
-    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">Defaults follow the UI language; change anytime. Simplified/Traditional/en/ja/ko share one translation model, not in the default pack.</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Hint">Defaults follow the UI language; change anytime. Simplified/Traditional/en/es/ja/ko share one translation model, not in the default pack.</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Zh">Simplified Chinese</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.ZhHant">Traditional Chinese</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.En">English</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Es">Spanish</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ja">Japanese</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Ko">Korean</sys:String>
     <!-- Control-bar short labels (closed + dropdown) -->
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Zh">SC</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.ZhHant">TC</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.En">EN</sys:String>
+    <sys:String x:Key="Str.Settings.TranslateTarget.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ja">JA</sys:String>
     <sys:String x:Key="Str.Settings.TranslateTarget.Short.Ko">KO</sys:String>
     <sys:String x:Key="Str.SourceLang.Auto">Auto</sys:String>
     <sys:String x:Key="Str.SourceLang.Ja">Japanese</sys:String>
     <sys:String x:Key="Str.SourceLang.Ko">Korean</sys:String>
     <sys:String x:Key="Str.SourceLang.En">English</sys:String>
+    <sys:String x:Key="Str.SourceLang.Es">Spanish</sys:String>
     <sys:String x:Key="Str.SourceLang.Zh">Chinese</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Auto">Auto</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.AutoResolved">Auto·{0}</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ja">JA</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Ko">KO</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.En">EN</sys:String>
+    <sys:String x:Key="Str.SourceLang.Short.Es">ES</sys:String>
     <sys:String x:Key="Str.SourceLang.Short.Zh">ZH</sys:String>
     <sys:String x:Key="Str.AsrQuality.Better">Quality first</sys:String>
     <sys:String x:Key="Str.TranslateModel.TranslateGemma">TranslateGemma 4B</sys:String>
@@ -1067,7 +1097,9 @@ speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
     <sys:String x:Key="Str.Settings.TextSanitize.Hint">Player-side light cleanup; production pipeline stays in Transub.</sys:String>
     <sys:String x:Key="Str.Settings.WaitFirstZh">Wait longer: don't play until translation reaches target duration</sys:String>
     <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen">Play immediately on open (don't wait for translation)</sys:String>
-    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">By default, Translation/Bilingual mode pauses until the first translated cues are ready. Check this to play immediately (source shown while translation catches up).</sys:String>
+    <sys:String x:Key="Str.Settings.PlayImmediatelyOnOpen.Hint">On by default: play immediately; Translation/Bilingual shows source while translation catches up near the playhead. Uncheck to pause until the first translated batch.</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging">Auto re-recognize from playhead when far behind</sys:String>
+    <sys:String x:Key="Str.Settings.AutoRestartAsrWhenLagging.Hint">After seeking into ungenerated territory and staying a few seconds, restart recognition from the playhead instead of waiting for a linear catch-up.</sys:String>
     <sys:String x:Key="Str.Settings.WaitZhMinutes">Translation must reach (minutes)</sys:String>
     <sys:String x:Key="Str.Settings.WaitZh.DepHint">Requires translation, auto source extraction, auto-play on open, and default mode Translation/Bilingual. Unless 「Play immediately」 is checked, open waits for the first translated batch; check the option below to wait longer.</sys:String>
     <sys:String x:Key="Str.Settings.FullscreenQuietOsd">Fewer lag prompts in fullscreen</sys:String>
@@ -1097,7 +1129,9 @@ speed [ / ] · fullscreen F/F11/Enter · top T · help F1</sys:String>
     <sys:String x:Key="Str.Settings.SeekLarge">Large step (Ctrl + ← →)</sys:String>
     <sys:String x:Key="Str.Settings.HwDec">Hardware decode</sys:String>
     <sys:String x:Key="Str.Settings.VideoFit">Video scaling</sys:String>
-    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">Hardware decode writes to mpv immediately; reopen the file if the picture does not switch. 「Fit window to video」 resizes on open (1:1 pixels, clamped to screen; skipped when maximized/fullscreen).</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance">Picture enhance</sys:String>
+    <sys:String x:Key="Str.Settings.VideoEnhance.Tip">Real-time sharpen, deband, and high-quality scaling. Off by default; also from the player menu or E. If it stutters, switch to Off or Light.</sys:String>
+    <sys:String x:Key="Str.Settings.Playback.AdvancedHint">Hardware decode writes to mpv immediately; reopen the file if the picture does not switch. 「Fit window to video」 resizes on open (1:1 pixels, clamped to screen; skipped when maximized/fullscreen). Picture enhance applies immediately.</sys:String>
     <sys:String x:Key="Str.Settings.Subtitle.Hint">Subtitle appearance and sync. Source extraction toggles are under General.</sys:String>
     <sys:String x:Key="Str.Settings.SubDefaultMode">Default display</sys:String>
     <sys:String x:Key="Str.Settings.SubFont">Font (editable)</sys:String>

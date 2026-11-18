@@ -111,6 +111,7 @@ public partial class MainWindow
         SourceLanguages.Ja => Loc.Get("SourceLang.Short.Ja"),
         SourceLanguages.Ko => Loc.Get("SourceLang.Short.Ko"),
         SourceLanguages.En => Loc.Get("SourceLang.Short.En"),
+        SourceLanguages.Es => Loc.Get("SourceLang.Short.Es"),
         SourceLanguages.Zh => Loc.Get("SourceLang.Short.Zh"),
         _ => Loc.Get("SourceLang.Short.Auto"),
     };
@@ -118,6 +119,7 @@ public partial class MainWindow
     private static string TranslateTargetShort(string id) => TranslateTargets.Normalize(id) switch
     {
         TranslateTargets.En => Loc.Get("Settings.TranslateTarget.Short.En"),
+        TranslateTargets.Es => Loc.Get("Settings.TranslateTarget.Short.Es"),
         TranslateTargets.Ja => Loc.Get("Settings.TranslateTarget.Short.Ja"),
         TranslateTargets.Ko => Loc.Get("Settings.TranslateTarget.Short.Ko"),
         TranslateTargets.ZhHant => Loc.Get("Settings.TranslateTarget.Short.ZhHant"),
@@ -127,6 +129,7 @@ public partial class MainWindow
     private static string TranslateTargetFull(string id) => TranslateTargets.Normalize(id) switch
     {
         TranslateTargets.En => Loc.Get("Settings.TranslateTarget.En"),
+        TranslateTargets.Es => Loc.Get("Settings.TranslateTarget.Es"),
         TranslateTargets.Ja => Loc.Get("Settings.TranslateTarget.Ja"),
         TranslateTargets.Ko => Loc.Get("Settings.TranslateTarget.Ko"),
         TranslateTargets.ZhHant => Loc.Get("Settings.TranslateTarget.ZhHant"),

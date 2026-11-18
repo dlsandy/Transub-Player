@@ -28,8 +28,10 @@ internal sealed class PreviewController : IDisposable
     private bool _retranslatingActive;
     private double _nextPreviewStartFrom;
     private IReadOnlyList<Cue>? _nextPreviewSeedCues;
-    private const double AsrChunkStepSec = 88; // AsrPipeline ChunkSec - ChunkOverlapSec
     private bool _resumeAfterModeWait;
+    private DateTime? _lagPastReadySinceUtc;
+    private DateTime _lastAutoRestartUtc;
+    private int _autoRestartBusy;
     private CoverageWaitReason _coverageWaitReason = CoverageWaitReason.None;
     private CancellationTokenSource? _waitZhCts;
     private PlaylistPrefetch? _prefetch;
@@ -152,18 +154,19 @@ internal sealed class PreviewController : IDisposable
         => !string.IsNullOrWhiteSpace(MediaPath)
            && MediaSourceHelper.IsNonLocalMedia(MediaPath);
     /// <summary>
-    /// 直播 HLS（light IPC）或桌面采集：无可靠总时长，不显示进度条。
-    /// 点播/直链等非直播流在拿到 duration 后可 seek。
+    /// 桌面采集，或仍按直播 light-IPC 拉流且尚无可靠总时长：不显示进度条。
+    /// HLS 点播（m3u8 但有 duration）在拿到时长后不再视为直播。
     /// </summary>
     public bool IsLiveStreamPlayback
         => IsStreamPlayback
-           && (MediaSourceHelper.IsScreenCapture(MediaPath) || _mpv.LiveLightIpc);
+           && (MediaSourceHelper.IsScreenCapture(MediaPath)
+               || (_mpv.LiveLightIpc && Duration <= 1));
     /// <summary>
-    /// 进度条 / 快进退：本地文件始终可；非直播网络流在 duration 已知后可。
+    /// 进度条 / 快进退：本地文件始终可；网络点播在 duration 已知后可（含 VOD HLS）。
     /// </summary>
     public bool CanSeek
         => !string.IsNullOrWhiteSpace(MediaPath)
-           && !IsLiveStreamPlayback
+           && !MediaSourceHelper.IsScreenCapture(MediaPath)
            && (!IsStreamPlayback || Duration > 1);
     /// <summary>走 ASR/翻译原文提取路径（非成片外挂、非仅本地字幕来源、非流媒体）。</summary>
     public bool ShowPreviewChrome
@@ -416,6 +419,9 @@ internal sealed class PreviewController : IDisposable
         Seek(at);
         _log($"续播 {MediaTimeFormat.Format(at)}");
         ShowOsd(Loc.Format("Main.Osd.Resumed", MediaTimeFormat.Format(at)), 2200);
+        // Jump mid-file: prefer recognizing near the resume point instead of waiting on a t=0 job.
+        if (ShowPreviewChrome && !UsingExistingSub && !IsStreamPlayback && at >= 20)
+            _ = RestartPreviewFromPlayheadAsync(CancellationToken.None);
         StateChanged?.Invoke();
     }
 
@@ -544,6 +550,7 @@ internal sealed class PreviewController : IDisposable
             _mpv.ApplySubtitleSettings(_settings);
             ReapplyActiveLut();
             ReapplyColorGrade();
+            ReapplyVideoEnhance();
         }
 
         ApplyDisplayVisibility();
@@ -575,8 +582,8 @@ internal sealed class PreviewController : IDisposable
         var needsSpawnWithUrl = MediaSourceHelper.IsRemoteUrl(playPath)
                                 && !MediaSourceHelper.IsScreenCapture(playPath)
                                 && (playPath.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)
-                                    || playPath.Contains("sacdnssedge", StringComparison.OrdinalIgnoreCase)
-                                    || playPath.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase));
+                                    || playPath.Contains(LiveCamSeal.SacToken, StringComparison.OrdinalIgnoreCase)
+                                    || playPath.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase));
 
         if (needsSpawnWithUrl)
         {
@@ -713,14 +720,30 @@ internal sealed class PreviewController : IDisposable
                     _streamHeaders = HeadersForStreamUrl(playPath, streamMeta.Headers);
                 }
 
-                if (StripchatLiveCdn.IsSacdnssedge(playPath))
+                if (LiveCamCdn.IsSacdnssedge(playPath))
                 {
                     try
                     {
-                        playPath = await StripchatHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playPath, ct)
+                        var resolved = await LiveCamHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playPath, ct)
                             .ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(resolved))
+                        {
+                            var fallback = _streamQualities.FirstOrDefault(q =>
+                                !LiveCamCdn.IsSacdnssedge(q.Url)
+                                || !string.Equals(q.Url, playPath, StringComparison.OrdinalIgnoreCase));
+                            if (fallback is not null)
+                            {
+                                _log("sacdnssedge 不可用，回退 · " + fallback.Label);
+                                _streamQualityId = fallback.Id;
+                                playPath = fallback.Url;
+                            }
+                            else
+                                throw new InvalidOperationException(Loc.Get("StreamResolve.Live.Blocked"));
+                        }
+                        else
+                            playPath = resolved;
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (ex is not InvalidOperationException)
                     {
                         _log("sacdnssedge 解析：" + ex.Message);
                     }
@@ -741,7 +764,7 @@ internal sealed class PreviewController : IDisposable
                 StateChanged?.Invoke();
                 EndBootstrap();
                 if (streamMeta is not null)
-                    PublishStreamStatus(Loc.Format("Main.Status.StripchatPlaying", streamMeta.DisplayName));
+                    PublishStreamStatus(Loc.Format("Main.Status.LivePlaying", streamMeta.DisplayName));
                 else
                     PublishStreamStatus(Loc.Get(MediaSourceHelper.IsScreenCapture(path)
                         ? "Main.Status.ScreenCapture"
@@ -757,10 +780,12 @@ internal sealed class PreviewController : IDisposable
                 existing = SubtitleFile.FindExistingSubtitle(path);
             else if (pref == SubtitleSourceKind.Live && _settings.PreferExternalSubtitle)
                 existing = SubtitleFile.FindExistingSubtitle(path);
+            var preferExternalMissed = false;
             if (existing is null
                 && (pref == SubtitleSourceKind.Local
                     || (pref == SubtitleSourceKind.Live && _settings.PreferExternalSubtitle)))
             {
+                preferExternalMissed = pref == SubtitleSourceKind.Live && _settings.PreferExternalSubtitle;
                 _log("同目录未匹配成片字幕 · " + Path.GetFileName(path)
                      + " · 需与片同名（可带 .chs / _chs / -chs 等）或放在 Subs/字幕 子目录");
             }
@@ -775,6 +800,7 @@ internal sealed class PreviewController : IDisposable
                 throw new InvalidOperationException(Loc.Get("Main.Status.MpvLoadFailed"));
             ApplyLutForOpenedMedia(path);
             ReapplyColorGrade();
+            ReapplyVideoEnhance();
             Paused = !autoPlay;
             if (sessionPrefs.HasViewPrefs)
             {
@@ -884,6 +910,12 @@ internal sealed class PreviewController : IDisposable
 
             await MaybeOfferEnglishSourceChoiceAsync(gen, ct).ConfigureAwait(false);
             ThrowIfStaleMedia(gen, ct);
+
+            if (preferExternalMissed)
+            {
+                PublishStatus(Loc.Get("Main.SubSource.LiveNoExternal"));
+                ShowOsd(Loc.Get("Main.Osd.LiveNoExternal"), 2200);
+            }
 
             // Preview start takes a new live-busy epoch; keep open-phase busy until then
             // (do not Release here — that would briefly free the engine for prefetch).
@@ -1368,8 +1400,7 @@ internal sealed class PreviewController : IDisposable
         && !string.IsNullOrWhiteSpace(MediaPath)
         && !UsingExistingSub
         && !IsStreamPlayback
-        && Position >= 30
-        && (CueCount > 0 || SubFrontier > 10);
+        && Position >= 15;
 
     /// <summary>Keep cues before playhead; re-run ASR from the aligned chunk at the current position.</summary>
     public async Task RestartPreviewFromPlayheadAsync(CancellationToken ct = default)
@@ -1377,8 +1408,14 @@ internal sealed class PreviewController : IDisposable
         if (!CanRestartFromPlayhead || string.IsNullOrWhiteSpace(MediaPath))
             return;
 
-        var mediaPath = MediaPath;
-        var pos = Position;
+        ArmPartialAsrFromPlayhead(Position);
+        await StartPreviewInBackgroundAsync(Volatile.Read(ref _mediaGeneration), ct).ConfigureAwait(false);
+    }
+
+    /// <summary>Shared arming for menu / lag bar / resume / language switch from playhead.</summary>
+    private void ArmPartialAsrFromPlayhead(double pos, bool announce = true)
+    {
+        var mediaPath = MediaPath!;
         var startFrom = ComputeAsrChunkStart(pos);
         PreviewPaths.ClearAsrDone(mediaPath);
         _subs.TruncateAfter(pos, PreviewPaths.SourceSrt(mediaPath));
@@ -1390,12 +1427,15 @@ internal sealed class PreviewController : IDisposable
         _announcedFirstSourceCue = _subs.CueCount > 0;
         _announcedFirstZhCue = false;
         _coverage.Reset();
+        _lagPastReadySinceUtc = null;
 
-        PublishStatus(Loc.Format("Main.Status.RestartFromPlayhead", MediaTimeFormat.Format(pos)));
-        ShowOsd(Loc.Format("Main.Osd.RestartFromPlayhead", MediaTimeFormat.Format(pos)), 2800);
+        if (announce)
+        {
+            PublishStatus(Loc.Format("Main.Status.RestartFromPlayhead", MediaTimeFormat.Format(pos)));
+            ShowOsd(Loc.Format("Main.Osd.RestartFromPlayhead", MediaTimeFormat.Format(pos)), 2800);
+        }
+
         _log($"从播放头重新识别 · {MediaTimeFormat.Format(pos)} · chunk {MediaTimeFormat.Format(startFrom)}");
-
-        await StartPreviewInBackgroundAsync(Volatile.Read(ref _mediaGeneration), ct).ConfigureAwait(false);
     }
 
     public Task StartPreviewAsync(CancellationToken ct)
@@ -1632,7 +1672,7 @@ internal sealed class PreviewController : IDisposable
                 }).ConfigureAwait(false);
             jobStarted = true;
 
-            _coverage.OnAsrJobStarted(AsrModel, Duration);
+            _coverage.OnAsrJobStarted(AsrModel, Duration, shortFirstWindow: true);
             SetBootstrapPhase(BootstrapPhase.GeneratingSource);
             if (!_waitingForFirstZh)
                 EndBootstrap();
@@ -1807,15 +1847,7 @@ internal sealed class PreviewController : IDisposable
         if (langChanged && fromPlayhead && CanRestartFromPlayhead)
         {
             var pos = Position;
-            var startFrom = ComputeAsrChunkStart(pos);
-            PreviewPaths.ClearAsrDone(MediaPath!);
-            _subs.TruncateAfter(pos, PreviewPaths.SourceSrt(MediaPath!));
-            _nextPreviewStartFrom = startFrom;
-            _nextPreviewSeedCues = _subs.SnapshotCues();
-            _previewRetryAvailable = false;
-            _announcedFirstSourceCue = _subs.CueCount > 0;
-            _announcedFirstZhCue = false;
-            _coverage.Reset();
+            ArmPartialAsrFromPlayhead(pos, announce: false);
             PublishStatus(Loc.Format("Main.Status.SourceLangFromPlayhead", MediaTimeFormat.Format(pos)));
             ShowOsd(Loc.Format("Main.Osd.SourceLangFromPlayhead", MediaTimeFormat.Format(pos)), 2800);
             _log($"片源语切换 · 从 {MediaTimeFormat.Format(pos)} 重新识别");
@@ -1879,10 +1911,13 @@ internal sealed class PreviewController : IDisposable
         PublishStatus(BuildStatusLine());
     }
 
-    /// <summary>Poll time-pos for live (no observe_property flood).</summary>
+    /// <summary>
+    /// Poll time-pos / duration for light-IPC streams (no observe_property flood).
+    /// Also runs while paused so VOD HLS can discover duration and show the seek bar.
+    /// </summary>
     public void TickLiveClock()
     {
-        if (!_mpv.LiveLightIpc || !_mpv.IsRunning || Paused)
+        if (!_mpv.LiveLightIpc || !_mpv.IsRunning)
             return;
         if (Interlocked.CompareExchange(ref _liveClockPollBusy, 1, 0) != 0)
             return;
@@ -1896,6 +1931,8 @@ internal sealed class PreviewController : IDisposable
     /// </summary>
     public void TickFirstCueEta()
     {
+        MaybeAutoRestartAsrOnLag();
+
         if (!_coverage.AwaitingFirstCue || CueCount > 0)
             return;
 
@@ -1910,13 +1947,81 @@ internal sealed class PreviewController : IDisposable
             _status(BuildStatusLine());
     }
 
+    /// <summary>
+    /// When the playhead stays far ahead of the ASR frontier, jump recognition to the playhead
+    /// instead of waiting for a linear catch-up from earlier media time.
+    /// </summary>
+    private void MaybeAutoRestartAsrOnLag()
+    {
+        if (!_settings.AutoRestartAsrWhenLagging)
+        {
+            _lagPastReadySinceUtc = null;
+            return;
+        }
+
+        if (!CanRestartFromPlayhead || UsingExistingSub || IsStreamPlayback)
+        {
+            _lagPastReadySinceUtc = null;
+            return;
+        }
+
+        if (!IsSeekPastSubtitleReady(Position, out var ready, out var gap))
+        {
+            _lagPastReadySinceUtc = null;
+            return;
+        }
+
+        // Small gaps: let the linear job catch up. Large seeks / mid-file open: jump.
+        var significant = ready <= 0 ? Position >= 45 : gap >= 45;
+        if (!significant)
+        {
+            _lagPastReadySinceUtc = null;
+            return;
+        }
+
+        _lagPastReadySinceUtc ??= DateTime.UtcNow;
+        if ((DateTime.UtcNow - _lagPastReadySinceUtc.Value).TotalSeconds < 5)
+            return;
+        if ((DateTime.UtcNow - _lastAutoRestartUtc).TotalSeconds < 90)
+            return;
+        if (Interlocked.CompareExchange(ref _autoRestartBusy, 1, 0) != 0)
+            return;
+
+        _lagPastReadySinceUtc = null;
+        _lastAutoRestartUtc = DateTime.UtcNow;
+        _log($"自动从播放头识别 · gap={gap:0.#}s · ready={ready:0.#}s");
+        PublishStatus(Loc.Get("Main.Status.AutoRestartFromPlayhead"));
+        ShowOsd(Loc.Get("Main.Osd.AutoRestartFromPlayhead"), 2400);
+        _ = RestartPreviewFromPlayheadAsync(CancellationToken.None)
+            .ContinueWith(_ => Interlocked.Exchange(ref _autoRestartBusy, 0), TaskScheduler.Default);
+    }
+
     private async Task PollLiveClockAsync()
     {
         try
         {
-            var t = await _mpv.GetDoubleAsync("time-pos", 350).ConfigureAwait(false);
-            if (t is double pos && pos >= 0)
-                Position = pos;
+            var changed = false;
+            if (!Paused)
+            {
+                var t = await _mpv.GetDoubleAsync("time-pos", 350).ConfigureAwait(false);
+                if (t is double pos && pos >= 0 && Math.Abs(pos - Position) > 0.05)
+                {
+                    Position = pos;
+                    changed = true;
+                }
+            }
+
+            // VOD HLS often starts under live light-IPC; duration arrives later via get_property.
+            var d = await _mpv.GetDoubleAsync("duration", 350).ConfigureAwait(false);
+            if (d is double dur && dur > 1 && (Duration <= 1 || Math.Abs(dur - Duration) > 0.5))
+            {
+                Duration = dur;
+                _coverage.SetMediaDuration(dur);
+                changed = true;
+            }
+
+            if (changed)
+                StateChanged?.Invoke();
         }
         finally
         {
@@ -1959,10 +2064,12 @@ internal sealed class PreviewController : IDisposable
 
     /// <summary>
     /// After a user seek: apply deferred subtitle reload and re-kick MT so the queue
-    /// prefers cues near the new playhead. ASR remains a whole-file job (engine has no startSec).
+    /// prefers cues near the new playhead. ASR stays on its current job unless the user
+    /// (or auto-lag policy) triggers <see cref="RestartPreviewFromPlayheadAsync"/>.
     /// </summary>
     private void OnUserSeek()
     {
+        _lagPastReadySinceUtc = null;
         _subs.FlushPendingSubReload();
         // Fire-and-forget is safe: TryTranslatePendingAsync is single-flight via _translateBusy.
         _ = _subs.TryTranslatePendingAsync();
@@ -2110,6 +2217,40 @@ internal sealed class PreviewController : IDisposable
         catch (Exception ex) { _log("色调重应用失败 · " + ex.Message); }
     }
 
+    private void ReapplyVideoEnhance()
+    {
+        if (!_mpv.IsRunning) return;
+        try { _mpv.ApplyVideoEnhance(_settings.GetVideoEnhanceMode()); }
+        catch (Exception ex) { _log("画质增强重应用失败 · " + ex.Message); }
+    }
+
+    public VideoEnhanceMode GetVideoEnhanceMode() => _settings.GetVideoEnhanceMode();
+
+    /// <summary>Persist and apply real-time enhance preset; OSD when <paramref name="announce"/>.</summary>
+    public void SetVideoEnhanceMode(VideoEnhanceMode mode, bool persist = true, bool announce = true)
+    {
+        if (persist)
+            _settings.SetVideoEnhanceMode(mode, saveSoon: true);
+        else
+            _settings.VideoEnhance = VideoEnhanceModes.ToSetting(mode);
+
+        if (_mpv.IsRunning)
+        {
+            try { _mpv.ApplyVideoEnhance(mode); }
+            catch (Exception ex) { _log("画质增强应用失败 · " + ex.Message); }
+        }
+
+        if (announce)
+            ShowOsd(Loc.Get(VideoEnhanceModes.OsdKey(mode)), 1600);
+    }
+
+    public VideoEnhanceMode CycleVideoEnhanceMode(bool announce = true)
+    {
+        var next = VideoEnhanceModes.Cycle(GetVideoEnhanceMode());
+        SetVideoEnhanceMode(next, persist: true, announce: announce);
+        return next;
+    }
+
     public ColorGradeParams GetColorGrade() => _settings.GetColorGrade();
 
     /// <summary>Live-apply equalizer knobs; persists to settings unless <paramref name="persist"/> is false.</summary>
@@ -2241,20 +2382,23 @@ internal sealed class PreviewController : IDisposable
         if (opt is null) return;
 
         _streamQualityId = opt.Id;
-        var playUrl = StripchatLiveCdn.PreferPlayableCdn(opt.Url);
+        var playUrl = LiveCamCdn.PreferPlayableCdn(opt.Url);
         var referer = _streamHeaders is not null
                       && _streamHeaders.TryGetValue("Referer", out var pageRef)
                       && !string.IsNullOrWhiteSpace(pageRef)
             ? pageRef
-            : StripchatHlsPlaylist.CdnReferer;
+            : LiveCamHlsPlaylist.CdnReferer;
         try
         {
-            playUrl = await StripchatHlsPlaylist.EnsureProxiedPlayUrlAsync(playUrl, referer, CancellationToken.None, _liveMasterUrl)
+            playUrl = await LiveCamHlsPlaylist.EnsureProxiedPlayUrlAsync(playUrl, referer, CancellationToken.None, _liveMasterUrl)
                 .ConfigureAwait(false);
-            if (StripchatLiveCdn.IsSacdnssedge(playUrl))
+            if (LiveCamCdn.IsSacdnssedge(playUrl))
             {
-                playUrl = await StripchatHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playUrl, CancellationToken.None)
+                var resolved = await LiveCamHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playUrl, CancellationToken.None)
                     .ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(resolved))
+                    throw new InvalidOperationException(Loc.Get("StreamResolve.Live.Blocked"));
+                playUrl = resolved;
             }
             _streamQualities = _streamQualities
                 .Select(q => q.Id == opt.Id ? q with { Url = playUrl } : q)
@@ -2321,18 +2465,18 @@ internal sealed class PreviewController : IDisposable
 
         if (playUrl.Contains("127.0.0.1", StringComparison.Ordinal))
         {
-            headers["Referer"] = StripchatHlsPlaylist.CdnReferer;
-            headers["Origin"] = "https://stripchat.com";
+            headers["Referer"] = LiveCamHlsPlaylist.CdnReferer;
+            headers["Origin"] = LiveCamSeal.OfficialOrigin;
         }
-        else if (StripchatLiveCdn.IsSacdnssedge(playUrl))
+        else if (LiveCamCdn.IsSacdnssedge(playUrl))
         {
-            headers["Referer"] = StripchatLiveCdn.SacdnssedgePlayReferer;
+            headers["Referer"] = LiveCamCdn.SacdnssedgePlayReferer;
             headers.Remove("Origin");
         }
         else
         {
-            headers["Referer"] = StripchatLiveCdn.PlayReferer(playUrl);
-            headers["Origin"] = "https://stripchat.com";
+            headers["Referer"] = LiveCamCdn.PlayReferer(playUrl);
+            headers["Origin"] = LiveCamSeal.OfficialOrigin;
         }
 
         return headers;
@@ -2385,6 +2529,7 @@ internal sealed class PreviewController : IDisposable
     /// </summary>
     public async Task<IReadOnlyList<string>> ApplySettingsSideEffectsAsync(
         string prevAsrBackend,
+        string prevAsrGpuDevice,
         string prevModelsPath,
         string prevAdvancedLlmPath,
         string prevTranslateUrl,
@@ -2398,11 +2543,15 @@ internal sealed class PreviewController : IDisposable
 
         var backendChanged = !string.Equals(
             prevAsrBackend, _settings.AsrBackend, StringComparison.OrdinalIgnoreCase);
+        var gpuDeviceChanged = !string.Equals(
+            AsrGpuDevices.Normalize(prevAsrGpuDevice),
+            AsrGpuDevices.Normalize(_settings.AsrGpuDevice),
+            StringComparison.OrdinalIgnoreCase);
         var modelsPathChanged = !string.Equals(
             prevModelsPath, _settings.ModelsPath, StringComparison.OrdinalIgnoreCase);
         var advancedLlmPathChanged = !string.Equals(
             prevAdvancedLlmPath, _settings.AdvancedLlmPath, StringComparison.OrdinalIgnoreCase);
-        var engineChanged = backendChanged || modelsPathChanged || advancedLlmPathChanged;
+        var engineChanged = backendChanged || gpuDeviceChanged || modelsPathChanged || advancedLlmPathChanged;
 
         if (engineChanged)
         {
@@ -2454,16 +2603,25 @@ internal sealed class PreviewController : IDisposable
         if (translateModelChanged && !asrChanged)
             await ApplyTranslateModelChangeAsync(ct).ConfigureAwait(false);
 
-        if (backendChanged && !asrChanged)
+        if (gpuDeviceChanged && !asrChanged && !backendChanged)
+        {
+            if (AsrRuntime.NeedsRestartForGpuDevice(_settings))
+                osdParts.Add(Loc.Get("Main.Osd.AsrGpuDeviceNeedsRestart"));
+            else if (await TryRestartPreviewForBackendChangeAsync(ct).ConfigureAwait(false))
+                osdParts.Add(Loc.Get("Main.Osd.AsrGpuDeviceRestart"));
+            else
+                osdParts.Add(Loc.Get("Main.Osd.AsrGpuDeviceSaved"));
+        }
+        else if (backendChanged && !asrChanged)
         {
             if (await TryRestartPreviewForBackendChangeAsync(ct).ConfigureAwait(false))
                 osdParts.Add(Loc.Get("Main.Osd.AsrBackendRestart"));
             else
                 osdParts.Add(Loc.Get("Main.Osd.AsrBackendSaved"));
         }
-        else if (modelsPathChanged && !asrChanged && !backendChanged)
+        else if (modelsPathChanged && !asrChanged && !backendChanged && !gpuDeviceChanged)
             osdParts.Add(Loc.Get("Main.Osd.ModelsPathSaved"));
-        else if (advancedLlmPathChanged && !asrChanged && !backendChanged && !modelsPathChanged)
+        else if (advancedLlmPathChanged && !asrChanged && !backendChanged && !gpuDeviceChanged && !modelsPathChanged)
             osdParts.Add(Loc.Get("Main.Osd.AdvancedLlmPathSaved"));
 
         StateChanged?.Invoke();
@@ -2963,10 +3121,11 @@ internal sealed class PreviewController : IDisposable
 
     private static double ComputeAsrChunkStart(double playheadSeconds)
     {
-        if (playheadSeconds <= AsrChunkStepSec)
+        var step = AsrPipeline.ChunkStepSec;
+        if (playheadSeconds <= step)
             return 0;
-        var chunk = (int)Math.Floor(playheadSeconds / AsrChunkStepSec);
-        return Math.Max(0, (chunk - 1) * AsrChunkStepSec);
+        var chunk = (int)Math.Floor(playheadSeconds / step);
+        return Math.Max(0, (chunk - 1) * step);
     }
 
     private string ModeUiLabel(SubtitleDisplayMode mode) => mode switch
@@ -3004,7 +3163,7 @@ internal sealed class PreviewController : IDisposable
         if (string.IsNullOrWhiteSpace(MediaPath)) return;
 
         await StopStreamRecordSilentlyAsync(ct).ConfigureAwait(false);
-        StripchatHlsProxy.StopShared();
+        LiveCamHlsProxy.StopShared();
 
         Interlocked.Increment(ref _mediaGeneration);
         _prefetch?.SetLiveBusy(true);
@@ -3102,7 +3261,7 @@ internal sealed class PreviewController : IDisposable
         try { await StopStreamRecordSilentlyAsync().ConfigureAwait(false); } catch { /* ignore */ }
         // Silence video immediately before GPU/cache teardown (may take up to HttpBudget).
         StopPlaybackImmediate();
-        StripchatHlsProxy.StopShared();
+        LiveCamHlsProxy.StopShared();
         CancelPreviewRun();
         ResetSubtitleWaits();
         try { _finishedSub.Dispose(); } catch { /* ignore */ }
@@ -3738,7 +3897,13 @@ internal sealed class PreviewController : IDisposable
 
             if (!SourceLanguageSense.TryParse(json, MatchedScene, out var lang, out var confidence))
             {
-                _log($"语种探测未采纳 · conf={confidence:0.00}");
+                var need = json.TryGetProperty("language", out var langEl)
+                           && langEl.ValueKind == System.Text.Json.JsonValueKind.String
+                    ? SourceLanguageSense.NeededConfidence(
+                        MatchedScene,
+                        SourceLanguages.Normalize(langEl.GetString()))
+                    : SourceLanguageSense.ApplyConfidence;
+                _log($"语种探测未采纳 · conf={confidence:0.00} need≥{need:0.00}");
                 return;
             }
 
@@ -4319,13 +4484,29 @@ internal sealed class PreviewController : IDisposable
                 ? Loc.Format("Main.Status.Build.MtFailed", mode)
                 : Loc.Format("Main.Status.Build.MtNotReady", mode);
         }
+        if (WantsPreviewMt && TranslatedCount == 0 && CueCount > 0)
+            return Loc.Format(
+                "Main.Status.Build.SourceThenMt",
+                mode,
+                MediaTimeFormat.Format(SubFrontier));
         if (WantsPreviewMt && TranslatedCount == 0)
             return Loc.Format("Main.Status.Build.Generating", mode);
         if (WantsPreviewMt && (_translateReady == true || TranslatedCount > 0))
+        {
+            if (ShowingZhPending && ZhFrontier + 1.5 < Position)
+                return Loc.Format(
+                    "Main.Status.Build.MtCatchingUp",
+                    mode,
+                    MediaTimeFormat.Format(ZhFrontier),
+                    MediaTimeFormat.Format(SubFrontier));
             return Loc.Format("Main.Status.Build.PreviewMt", mode, TranslatedCount, CueCount);
+        }
         if (WantsPreviewMt)
             return Loc.Get("Main.Status.Build.StartingMt");
-        return Loc.Format("Main.Status.Build.SourceOnly", mode);
+        return Loc.Format(
+            "Main.Status.Build.SourceOnlyFrontier",
+            mode,
+            MediaTimeFormat.Format(SubFrontier));
     }
 
     public string ModeTip(SubtitleDisplayMode mode)

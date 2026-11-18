@@ -50,7 +50,7 @@ internal static class MediaSourceHelper
             {
                 trimmed = "https://" + trimmed;
             }
-            else if (StripchatStreamResolver.TryNormalizeBareHandle(trimmed, out var stripchatPage))
+            else if (LiveCamStreamResolver.TryNormalizeBareHandle(trimmed, out var stripchatPage))
             {
                 normalized = stripchatPage;
                 return true;
@@ -73,10 +73,10 @@ internal static class MediaSourceHelper
             return Loc.Get("MediaSource.Screen.Capture");
         }
 
-        if (IsStripchatPage(path))
+        if (IsLiveCamPage(path))
         {
-            if (TryParseStripchatUsername(path, out var user))
-                return Loc.Format("MediaSource.Stripchat.User", user);
+            if (TryParseLiveCamUsername(path, out var user))
+                return Loc.Format("MediaSource.Live.User", user);
         }
 
         if (IsRemoteUrl(path) && Uri.TryCreate(path, UriKind.Absolute, out var uri))
@@ -90,15 +90,15 @@ internal static class MediaSourceHelper
         return Path.GetFileName(path);
     }
 
-    public static bool IsStripchatPage(string? url)
-        => StripchatStreamResolver.IsStripchatPage(url);
+    public static bool IsLiveCamPage(string? url)
+        => LiveCamStreamResolver.IsLiveCamPage(url);
 
-    private static bool TryParseStripchatUsername(string url, out string username)
+    private static bool TryParseLiveCamUsername(string url, out string username)
     {
         username = "";
         var m = System.Text.RegularExpressions.Regex.Match(
             url,
-            @"(?:[\w-]+\.)*stripchat\.[a-z.]+/(?<user>[A-Za-z0-9_-]+)",
+            LiveCamSeal.UserRe,
             System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (!m.Success) return false;
         username = m.Groups["user"].Value;

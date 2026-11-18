@@ -10,9 +10,11 @@ internal static class AsrRuntime
     /// Cap for Whisper CPU worker threads. whisper.cpp CLI defaults to
     /// <c>min(4, hardware_concurrency)</c>; leaving this unset makes Whisper.net
     /// use every logical core and saturates the machine while playing video.
+    /// Keep CPU mode at 2 so concurrent HandBrake / UI / decode stay responsive.
     /// Vulkan still needs a few CPU threads for mel + sampling.
     /// </summary>
-    private const int MaxWhisperThreads = 4;
+    private const int MaxWhisperGpuThreads = 2;
+    private const int MaxWhisperCpuThreads = 2;
 
     public static string ActiveBackend { get; private set; } = AsrBackends.Auto;
 
@@ -31,8 +33,18 @@ internal static class AsrRuntime
             RuntimeOptions.RuntimeLibraryOrder = order.ToList();
         }
 
+        // Before ggml-vulkan loads: pin Vulkan device (auto avoids Intel Arc when NVIDIA/AMD exists).
+        if (pref is not AsrBackends.Cpu)
+            VulkanGpuProbe.ApplyAsrDeviceFilter(settings.AsrGpuDevice);
+
         ActiveBackend = pref;
     }
+
+    /// <summary>
+    /// True when settings ask for a different Vulkan GPU than the one already pinned this process.
+    /// </summary>
+    public static bool NeedsRestartForGpuDevice(AppSettings settings)
+        => PreferGpu(settings) && VulkanGpuProbe.NeedsRestartForDevice(settings.AsrGpuDevice);
 
     /// <summary>Whether the preferred backend wants GPU offload when creating a factory.</summary>
     public static bool PreferGpu(AppSettings settings)
@@ -46,8 +58,8 @@ internal static class AsrRuntime
     {
         var cores = Math.Max(1, Environment.ProcessorCount);
         if (useGpu)
-            return Math.Clamp(Math.Min(2, cores), 1, MaxWhisperThreads);
-        return Math.Clamp(Math.Min(MaxWhisperThreads, cores), 1, MaxWhisperThreads);
+            return Math.Clamp(Math.Min(MaxWhisperGpuThreads, cores), 1, MaxWhisperGpuThreads);
+        return Math.Clamp(Math.Min(MaxWhisperCpuThreads, cores), 1, MaxWhisperCpuThreads);
     }
 
     public static bool IsGpuLibraryLoaded()

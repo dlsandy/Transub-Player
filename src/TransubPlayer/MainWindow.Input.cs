@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -9,6 +10,9 @@ namespace TransubPlayer;
 
 public partial class MainWindow
 {
+    private DateTime _lastVideoClickUtc;
+    private bool _videoDoubleClickArmed;
+
     private void WireMpvHostInput()
     {
         PlayerHost.NativeRightButtonUp += OpenPlayerContextMenu;
@@ -19,22 +23,12 @@ public partial class MainWindow
                     AppMenu.IsOpen = false;
                 RefreshModelMenus();
                 RefreshLutMenu();
+                RefreshVideoEnhanceMenu();
                 RefreshClipUi();
                 RefreshExportSubtitleMenus();
             };
         PlayerHost.NativeLeftButtonDown += clickCount =>
-        {
-            if (!HasMedia) return;
-            if (clickCount >= 2)
-            {
-                _clickTimer.Stop();
-                ToggleFullscreen();
-                return;
-            }
-
-            _clickTimer.Stop();
-            _clickTimer.Start();
-        };
+            HandleVideoSurfaceClick(clickCount >= 2);
         PlayerHost.NativeMouseWheel += delta =>
         {
             if (!HasMedia) return;
@@ -56,8 +50,9 @@ public partial class MainWindow
         };
         PlayerHost.NativeMouseMove += () =>
         {
-            if (_isFullscreen)
-                BumpChrome();
+            if (!_isFullscreen) return;
+            // Only real pointer displacement reveals chrome (ignores SetCursor synthetic moves).
+            OnFullscreenPointerActivity();
         };
         // Keys land on mpv HWND after clicking the video — forward so Space etc. still work.
         PlayerHost.NativeKeyDown += (key, isRepeat) =>
@@ -113,6 +108,10 @@ public partial class MainWindow
     /// <returns>True when the key was consumed as a player shortcut.</returns>
     private bool HandlePlaybackKey(Key key, bool isRepeat = false)
     {
+        // 全屏：任意播放快捷键都唤出控制区（含 Space 暂停后保持显示）。
+        if (_isFullscreen && _settings.HideChromeInFullscreen)
+            RevealFullscreenChrome();
+
         if (!HasMedia)
         {
             switch (key)
@@ -262,6 +261,9 @@ public partial class MainWindow
                     RefreshModeButtons();
                 }
                 return true;
+            case Key.E when !ctrl && !shift:
+                CycleVideoEnhanceFromUi();
+                return true;
             case Key.L:
                 if (!stream) TogglePlaylist_Click(this, new RoutedEventArgs());
                 return true;
@@ -294,18 +296,44 @@ public partial class MainWindow
     private void Video_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (!HasMedia) return;
-        if (e.ClickCount >= 2)
+        HandleVideoSurfaceClick(e.ClickCount >= 2);
+        e.Handled = true;
+    }
+
+    /// <summary>
+    /// 单击：延迟切换播放/暂停；双击：全屏 ↔ 退出全屏（取消挂起的单击暂停）。
+    /// mpv 子窗口未必带 CS_DBLCLKS，故用系统双击间隔做时间判定兜底。
+    /// </summary>
+    private void HandleVideoSurfaceClick(bool systemDoubleClick)
+    {
+        if (!HasMedia) return;
+
+        var now = DateTime.UtcNow;
+        var limitMs = Math.Clamp(GetDoubleClickTime(), 200, 800);
+        var timedDouble = _videoDoubleClickArmed
+                          && (now - _lastVideoClickUtc).TotalMilliseconds <= limitMs;
+
+        if (systemDoubleClick || timedDouble)
         {
+            _videoDoubleClickArmed = false;
+            _lastVideoClickUtc = DateTime.MinValue;
             _clickTimer.Stop();
             ToggleFullscreen();
-            e.Handled = true;
+            if (_isFullscreen)
+                RevealFullscreenChrome();
             return;
         }
 
+        _videoDoubleClickArmed = true;
+        _lastVideoClickUtc = now;
         _clickTimer.Stop();
+        // Wait past system double-click window so a double-click does not also toggle pause.
+        _clickTimer.Interval = TimeSpan.FromMilliseconds(Math.Clamp(limitMs + 40, 300, 850));
         _clickTimer.Start();
-        e.Handled = true;
     }
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
 
     private void Video_MouseWheel(object sender, MouseWheelEventArgs e)
     {

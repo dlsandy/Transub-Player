@@ -538,6 +538,8 @@
                                     <CheckBox x:Name="PlayImmediatelyBox" Content="{loc:Loc Settings.PlayImmediatelyOnOpen}" Margin="0,0,0,4"
                                               Checked="DependencyGate_Changed" Unchecked="DependencyGate_Changed"/>
                                     <TextBlock Style="{StaticResource Hint}" Text="{loc:Loc Settings.PlayImmediatelyOnOpen.Hint}" Margin="0,0,0,8"/>
+                                    <CheckBox x:Name="AutoRestartAsrBox" Content="{loc:Loc Settings.AutoRestartAsrWhenLagging}" Margin="0,0,0,4"/>
+                                    <TextBlock Style="{StaticResource Hint}" Text="{loc:Loc Settings.AutoRestartAsrWhenLagging.Hint}" Margin="0,0,0,8"/>
                                     <CheckBox x:Name="WaitFirstZhBox" Content="{loc:Loc Settings.WaitFirstZh}" Margin="0,0,0,4"
                                               Checked="WaitFirstZhBox_Changed" Unchecked="WaitFirstZhBox_Changed"/>
                                     <StackPanel x:Name="WaitZhMinutesPanel" Style="{StaticResource FieldCell}" Margin="0,0,0,4" MaxWidth="280" HorizontalAlignment="Left">
@@ -644,6 +646,11 @@
                                         <StackPanel Style="{StaticResource FieldCell}">
                                             <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.VideoFit}"/>
                                             <ComboBox x:Name="VideoFitBox"/>
+                                        </StackPanel>
+                                        <StackPanel Style="{StaticResource FieldCell}">
+                                            <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.VideoEnhance}"/>
+                                            <ComboBox x:Name="VideoEnhanceBox"
+                                                      ToolTip="{loc:Loc Settings.VideoEnhance.Tip}"/>
                                         </StackPanel>
                                     </UniformGrid>
                                     <TextBlock Style="{StaticResource Hint}" Margin="0" Text="{loc:Loc Settings.Playback.AdvancedHint}"/>
@@ -900,6 +907,12 @@
                                             <ComboBox x:Name="AsrBackendBox"/>
                                             <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" TextWrapping="Wrap"
                                                        Text="{loc:Loc Settings.AsrBackend.Hint}"/>
+                                            <StackPanel x:Name="AsrGpuDevicePanel" Margin="0,10,0,0" Visibility="Collapsed">
+                                                <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.AsrGpuDevice.Label}"/>
+                                                <ComboBox x:Name="AsrGpuDeviceBox"/>
+                                                <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0" TextWrapping="Wrap"
+                                                           Text="{loc:Loc Settings.AsrGpuDevice.Hint}"/>
+                                            </StackPanel>
                                         </StackPanel>
                                         <StackPanel Style="{StaticResource FieldCell}">
                                             <TextBlock Style="{StaticResource FieldLabel}" Text="{loc:Loc Settings.Advanced.HfMirror}"/>

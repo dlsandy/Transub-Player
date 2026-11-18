@@ -15,20 +15,23 @@ internal sealed record ResolvedNetworkStream(
     string SelectedQualityId,
     string? MasterPlaylistUrl = null);
 
-/// <summary>Resolves Stripchat model pages (and common proxy pages) to HLS URLs.</summary>
-internal static class StripchatStreamResolver
+/// <summary>Resolves live-cam model pages (and common proxy pages) to HLS URLs.</summary>
+internal static class LiveCamStreamResolver
 {
     private static readonly HttpClient Http = CreateClient();
 
     internal static HttpClient SharedHttp => Http;
 
-    private static readonly Regex StripchatPageRe = new(
-        @"https?://(?:[\w-]+\.)*stripchat\.[a-z.]+/(?<user>[A-Za-z0-9_-]+(?:@xh)?)(?:[/?#]|$)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Lazy<Regex> LiveCamPageReLazy = new(() => new Regex(
+        LiveCamSeal.PageRe,
+        RegexOptions.IgnoreCase | RegexOptions.Compiled));
 
-    private static readonly Regex StripchatLinkRe = new(
-        @"https?://(?:[\w-]+\.)*stripchat\.[a-z.]+/(?<user>[A-Za-z0-9_-]+(?:@xh)?)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Lazy<Regex> LiveCamLinkReLazy = new(() => new Regex(
+        LiveCamSeal.LinkRe,
+        RegexOptions.IgnoreCase | RegexOptions.Compiled));
+
+    private static Regex LiveCamPageRe => LiveCamPageReLazy.Value;
+    private static Regex LiveCamLinkRe => LiveCamLinkReLazy.Value;
 
     private static readonly Regex BareHandleRe = new(
         @"^[A-Za-z0-9_-]+(?:@xh)?$",
@@ -49,14 +52,14 @@ internal static class StripchatStreamResolver
         "support", "terms", "privacy", "dmca", "2257", "cookies", "app", "mobile", "vr",
     };
 
-    private const string OfficialOrigin = "https://stripchat.com";
-    /// <summary>Reachability fallback when stripchat.com is blocked or times out.</summary>
-    private const string GlobalMirrorOrigin = "https://zt.stripchat.global";
+    private static string OfficialOrigin => LiveCamSeal.OfficialOrigin;
+    /// <summary>Reachability fallback when the primary origin is blocked or times out.</summary>
+    private static string GlobalMirrorOrigin => LiveCamSeal.GlobalMirrorOrigin;
 
-    public static bool IsStripchatPage(string? url) => TryParsePageUrl(url, out _);
+    public static bool IsLiveCamPage(string? url) => TryParsePageUrl(url, out _);
 
     /// <summary>
-    /// Bare streamer username / model id (no scheme) → canonical Stripchat page URL.
+    /// Bare streamer username / model id (no scheme) → canonical live-cam page URL.
     /// Examples: <c>alice</c>, <c>alice@xh</c>, <c>12345678</c>.
     /// </summary>
     public static bool TryNormalizeBareHandle(string? input, out string pageUrl)
@@ -68,7 +71,7 @@ internal static class StripchatStreamResolver
             return false;
         if (!BareHandleRe.IsMatch(t)) return false;
         if (IsReservedUsername(t)) return false;
-        pageUrl = PrimaryStripchatOrigin() + "/" + t;
+        pageUrl = PrimaryLiveCamOrigin() + "/" + t;
         return true;
     }
 
@@ -77,8 +80,8 @@ internal static class StripchatStreamResolver
         if (string.IsNullOrWhiteSpace(url) || !MediaSourceHelper.IsRemoteUrl(url)) return false;
         if (StreamMediaResolver.IsDirectStreamUrl(url)) return false;
         if (MediaSourceHelper.IsScreenCapture(url)) return false;
-        if (IsStripchatPage(url)) return true;
-        if (url.Contains("stripchat", StringComparison.OrdinalIgnoreCase)) return true;
+        if (IsLiveCamPage(url)) return true;
+        if (url.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase)) return true;
 
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri)) return false;
         var ext = Path.GetExtension(uri.AbsolutePath);
@@ -106,15 +109,15 @@ internal static class StripchatStreamResolver
 
         var html = await FetchTextAsync(pageUrl, referer, ct).ConfigureAwait(false);
 
-        foreach (Match link in StripchatLinkRe.Matches(html))
+        foreach (Match link in LiveCamLinkRe.Matches(html))
         {
             var user = link.Groups["user"].Value;
             if (IsReservedUsername(user)) continue;
             try
             {
-                var scUrl = link.Value.Contains("stripchat", StringComparison.OrdinalIgnoreCase)
+                var scUrl = link.Value.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase)
                     ? link.Value
-                    : $"{PrimaryStripchatOrigin()}/{user}";
+                    : $"{PrimaryLiveCamOrigin()}/{user}";
                 return await ResolveUsernameAsync(user, scUrl, referer, ct, html).ConfigureAwait(false);
             }
             catch (StreamResolveException ex) when (ex.Kind is not StreamResolveKind.Generic)
@@ -130,13 +133,13 @@ internal static class StripchatStreamResolver
         if (TryParsePreloadedState(html, out var preloadUser, out var preloadModelId, out var hosts, out var isLive, out var preloadStatus)
             && (!string.IsNullOrWhiteSpace(preloadModelId) || !string.IsNullOrWhiteSpace(preloadStatus)))
         {
-            if (StripchatRoomStatus.TryUnplayableException(
+            if (LiveCamRoomStatus.TryUnplayableException(
                     preloadUser, preloadStatus, available: isLive, isLive: isLive, camActive: isLive,
                     streamName: preloadModelId) is { } preloadFail)
                 throw preloadFail;
 
             if (!isLive || string.IsNullOrWhiteSpace(preloadModelId))
-                throw StripchatRoomStatus.ToException(StripchatRoomKind.Offline, preloadUser);
+                throw LiveCamRoomStatus.ToException(LiveCamRoomKind.Offline, preloadUser);
 
             var streamUrl = BuildHlsUrl(preloadModelId, hosts);
             return await CreateResultAsync(streamUrl, pageUrl, referer, preloadUser, ct,
@@ -147,7 +150,7 @@ internal static class StripchatStreamResolver
         if (m3u8 is not null)
             return await CreateResultAsync(m3u8, pageUrl, referer, MediaSourceHelper.DisplayName(pageUrl), ct).ConfigureAwait(false);
 
-        throw new StreamResolveException(Loc.Get("StreamResolve.Stripchat.NotFound"));
+        throw new StreamResolveException(Loc.Get("StreamResolve.Live.NotFound"));
     }
 
     private static async Task<ResolvedNetworkStream> ResolveUsernameAsync(
@@ -196,7 +199,7 @@ internal static class StripchatStreamResolver
 
         // Known room state from API — do not invent HLS from stale HTML.
         if (lastCam is { } knownCam
-            && StripchatRoomStatus.TryUnplayableException(
+            && LiveCamRoomStatus.TryUnplayableException(
                 username, knownCam.Status, knownCam.Available, knownCam.IsLive, knownCam.CamActive,
                 knownCam.IsDeleted, knownCam.IsGeoBanned, knownCam.ApiError, knownCam.StreamName) is { } knownFail)
             throw knownFail;
@@ -206,7 +209,7 @@ internal static class StripchatStreamResolver
             htmlSources.Add(prefetchedHtml);
         if (ShouldTryOfficialFallbacks(referer, stripchatUrl))
         {
-            foreach (var origin in PreferredStripchatOrigins())
+            foreach (var origin in PreferredLiveCamOrigins())
                 htmlSources.Add($"{origin}/{Uri.EscapeDataString(apiUser)}");
         }
 
@@ -227,7 +230,7 @@ internal static class StripchatStreamResolver
                     htmlFromUrl = source;
                     break;
                 }
-                catch (Exception ex) { PlayerLog.Write("Stripchat page: " + ex.Message); }
+                catch (Exception ex) { PlayerLog.Write("live page: " + ex.Message); }
             }
             else
             {
@@ -243,13 +246,13 @@ internal static class StripchatStreamResolver
             && TryParsePreloadedState(html, out var preloadUser, out var modelId, out var hosts, out var modelLive, out var preloadStatus))
         {
             var display = string.IsNullOrWhiteSpace(preloadUser) ? username : preloadUser;
-            if (StripchatRoomStatus.TryUnplayableException(
+            if (LiveCamRoomStatus.TryUnplayableException(
                     display, preloadStatus, available: modelLive, isLive: modelLive, camActive: modelLive,
                     streamName: modelId) is { } preloadFail)
                 throw preloadFail;
 
             if (!modelLive)
-                throw StripchatRoomStatus.ToException(StripchatRoomKind.Offline, display);
+                throw LiveCamRoomStatus.ToException(LiveCamRoomKind.Offline, display);
 
             if (!string.IsNullOrWhiteSpace(modelId))
             {
@@ -264,9 +267,9 @@ internal static class StripchatStreamResolver
             return await CreateResultAsync(m3u8, resultPage, resultReferer, username, ct).ConfigureAwait(false);
 
         if (apiBlocked && lastCam is null)
-            throw new StreamResolveException(Loc.Get("StreamResolve.Stripchat.Blocked"));
+            throw new StreamResolveException(Loc.Get("StreamResolve.Live.Blocked"));
 
-        throw StripchatRoomStatus.ToException(StripchatRoomKind.Offline, username);
+        throw LiveCamRoomStatus.ToException(LiveCamRoomKind.Offline, username);
     }
 
     private static Task<ResolvedNetworkStream>? TryTakePlayable(
@@ -281,7 +284,7 @@ internal static class StripchatStreamResolver
     {
         if (cam is null) return null;
         lastCam = PreferRicherCam(lastCam, cam);
-        if (!StripchatRoomStatus.IsPlayable(
+        if (!LiveCamRoomStatus.IsPlayable(
                 cam.StreamName, cam.Status, cam.Available, cam.IsLive, cam.CamActive, cam.IsDeleted, cam.IsGeoBanned))
             return null;
 
@@ -351,7 +354,7 @@ internal static class StripchatStreamResolver
         catch (Exception ex)
         {
             if (!ShouldSuppressApiError(apiBase, referer, stripchatUrl))
-                PlayerLog.Write($"Stripchat API ({apiUrl}): " + ex.Message);
+                PlayerLog.Write($"live API ({apiUrl}): " + ex.Message);
             return default;
         }
     }
@@ -373,7 +376,7 @@ internal static class StripchatStreamResolver
         }
         catch (Exception ex)
         {
-            PlayerLog.Write($"Stripchat user-id ({apiUrl}): " + ex.Message);
+            PlayerLog.Write($"live user-id ({apiUrl}): " + ex.Message);
         }
 
         return null;
@@ -391,10 +394,10 @@ internal static class StripchatStreamResolver
                 bases.Add(root);
         }
 
-        // UI language decides try order: zh → zt.stripchat.global first; en → stripchat.com first.
+        // UI language decides try order: zh → global mirror first; en → official origin first.
         if (ShouldTryOfficialFallbacks(referer, stripchatUrl))
         {
-            foreach (var origin in PreferredStripchatOrigins())
+            foreach (var origin in PreferredLiveCamOrigins())
                 Add(origin);
         }
 
@@ -406,45 +409,45 @@ internal static class StripchatStreamResolver
     /// <summary>
     /// Chinese UI: global mirror then official. English (and other) UI: official then global mirror.
     /// </summary>
-    private static IReadOnlyList<string> PreferredStripchatOrigins()
-        => PrefersChineseStripchatMirror()
+    private static IReadOnlyList<string> PreferredLiveCamOrigins()
+        => PrefersChineseLiveCamMirror()
             ? [GlobalMirrorOrigin, OfficialOrigin]
             : [OfficialOrigin, GlobalMirrorOrigin];
 
-    private static string PrimaryStripchatOrigin()
-        => PreferredStripchatOrigins()[0];
+    private static string PrimaryLiveCamOrigin()
+        => PreferredLiveCamOrigins()[0];
 
-    private static bool PrefersChineseStripchatMirror()
+    private static bool PrefersChineseLiveCamMirror()
         => Loc.CurrentTag.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
 
     private static bool ShouldTryOfficialFallbacks(string referer, string stripchatUrl)
         => UsesOfficialSite(referer, stripchatUrl)
            || IsGlobalMirrorHost(referer)
            || IsGlobalMirrorHost(stripchatUrl)
-           || (IsStripchatFamilyHost(referer) && !IsMirrorSession(referer, stripchatUrl));
+           || (IsLiveCamFamilyHost(referer) && !IsMirrorSession(referer, stripchatUrl));
 
     private static bool UsesOfficialSite(string referer, string stripchatUrl)
-        => IsOfficialStripchatHost(referer) || IsOfficialStripchatHost(stripchatUrl);
+        => IsOfficialLiveCamHost(referer) || IsOfficialLiveCamHost(stripchatUrl);
 
-    private static bool IsOfficialStripchatHost(string? url)
+    private static bool IsOfficialLiveCamHost(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-               && uri.Host.Equals("stripchat.com", StringComparison.OrdinalIgnoreCase);
+               && uri.Host.Equals(LiveCamSeal.OfficialHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsGlobalMirrorHost(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-               && uri.Host.Equals("zt.stripchat.global", StringComparison.OrdinalIgnoreCase);
+               && uri.Host.Equals(LiveCamSeal.GlobalMirrorHost, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool IsStripchatFamilyHost(string? url)
+    private static bool IsLiveCamFamilyHost(string? url)
     {
         if (string.IsNullOrWhiteSpace(url)) return false;
         return Uri.TryCreate(url, UriKind.Absolute, out var uri)
-               && uri.Host.Contains("stripchat", StringComparison.OrdinalIgnoreCase);
+               && uri.Host.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase);
     }
 
     private static string RefererForApiBase(string apiBase, string apiUser, string fallbackReferer)
@@ -453,7 +456,7 @@ internal static class StripchatStreamResolver
             && !IsGlobalMirrorHost(fallbackReferer))
             return $"{GlobalMirrorOrigin}/{Uri.EscapeDataString(apiUser)}";
         if (string.Equals(apiBase, OfficialOrigin, StringComparison.OrdinalIgnoreCase)
-            && !IsOfficialStripchatHost(fallbackReferer)
+            && !IsOfficialLiveCamHost(fallbackReferer)
             && !IsGlobalMirrorHost(fallbackReferer))
             return $"{OfficialOrigin}/{Uri.EscapeDataString(apiUser)}";
         return fallbackReferer;
@@ -464,7 +467,7 @@ internal static class StripchatStreamResolver
         if (string.Equals(apiBase, GlobalMirrorOrigin, StringComparison.OrdinalIgnoreCase))
             return $"{GlobalMirrorOrigin}/{Uri.EscapeDataString(apiUser)}";
         if (string.Equals(apiBase, OfficialOrigin, StringComparison.OrdinalIgnoreCase)
-            && !IsOfficialStripchatHost(fallbackPage))
+            && !IsOfficialLiveCamHost(fallbackPage))
             return $"{OfficialOrigin}/{Uri.EscapeDataString(apiUser)}";
         return fallbackPage;
     }
@@ -473,13 +476,13 @@ internal static class StripchatStreamResolver
         => !UsesOfficialSite(referer, stripchatUrl)
            && !IsGlobalMirrorHost(referer)
            && !IsGlobalMirrorHost(stripchatUrl)
-           && (referer.Contains("stripchat", StringComparison.OrdinalIgnoreCase)
-               || stripchatUrl.Contains("stripchat", StringComparison.OrdinalIgnoreCase));
+           && (referer.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase)
+               || stripchatUrl.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase));
 
     private static bool ShouldSuppressApiError(string apiBase, string referer, string stripchatUrl)
         => IsMirrorSession(referer, stripchatUrl)
-           && (apiBase.Contains("stripchat.com", StringComparison.OrdinalIgnoreCase)
-               || apiBase.Contains("zt.stripchat.global", StringComparison.OrdinalIgnoreCase));
+           && (apiBase.Contains(LiveCamSeal.OfficialHost, StringComparison.OrdinalIgnoreCase)
+               || apiBase.Contains(LiveCamSeal.GlobalMirrorHost, StringComparison.OrdinalIgnoreCase));
 
     private static bool TryParsePageUrl(string? url, out string username)
     {
@@ -487,7 +490,7 @@ internal static class StripchatStreamResolver
         if (string.IsNullOrWhiteSpace(url)) return false;
         var trimmed = url.Trim();
 
-        var m = StripchatPageRe.Match(trimmed);
+        var m = LiveCamPageRe.Match(trimmed);
         if (m.Success)
         {
             username = m.Groups["user"].Value;
@@ -495,7 +498,7 @@ internal static class StripchatStreamResolver
         }
 
         if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)) return false;
-        if (!uri.Host.Contains("stripchat", StringComparison.OrdinalIgnoreCase)) return false;
+        if (!uri.Host.Contains(LiveCamSeal.BrandHost, StringComparison.OrdinalIgnoreCase)) return false;
 
         var segment = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
         if (string.IsNullOrEmpty(segment) || IsReservedUsername(segment)) return false;
@@ -523,7 +526,7 @@ internal static class StripchatStreamResolver
             error = errEl.ValueKind == JsonValueKind.String ? errEl.GetString() : errEl.GetRawText();
         if (string.IsNullOrWhiteSpace(error)) return false;
 
-        var deleted = StripchatRoomStatus.IsNotFoundError(error);
+        var deleted = LiveCamRoomStatus.IsNotFoundError(error);
         result = new CamApiResult(
             StreamName: "",
             ViewServer: null,
@@ -561,7 +564,7 @@ internal static class StripchatStreamResolver
                 camActive = active.GetBoolean();
             if (cam.TryGetProperty("hlsPlaylist", out var pl))
                 hlsPlaylist = pl.GetString();
-            viewServer = StripchatLiveCdn.HlsNodeFromCam(cam);
+            viewServer = LiveCamCdn.HlsNodeFromCam(cam);
         }
 
         JsonElement user = default;
@@ -689,14 +692,14 @@ internal static class StripchatStreamResolver
         foreach (var host in hosts)
         {
             if (!string.IsNullOrWhiteSpace(host))
-                return StripchatLiveCdn.PickPlayUrl(modelId, host);
+                return LiveCamCdn.PickPlayUrl(modelId, host);
         }
 
-        return StripchatLiveCdn.PickPlayUrl(modelId, null);
+        return LiveCamCdn.PickPlayUrl(modelId, null);
     }
 
     private static string PickHlsUrl(CamApiResult cam)
-        => StripchatLiveCdn.PickPlayUrl(cam.StreamName, cam.ViewServer, cam.HlsPlaylist);
+        => LiveCamCdn.PickPlayUrl(cam.StreamName, cam.ViewServer, cam.HlsPlaylist);
 
     private static async Task<ResolvedNetworkStream> CreateResultAsync(
         string streamUrl,
@@ -709,9 +712,9 @@ internal static class StripchatStreamResolver
         string? hlsPlaylist = null)
     {
         var masterPlaylist = !string.IsNullOrWhiteSpace(streamName)
-            ? StripchatLiveCdn.MasterPlaylistUrl(streamName, hlsPlaylist)
+            ? LiveCamCdn.MasterPlaylistUrl(streamName, hlsPlaylist)
             : null;
-        if (string.IsNullOrWhiteSpace(masterPlaylist) && StripchatHlsPlaylist.IsMasterPlaylist(streamUrl))
+        if (string.IsNullOrWhiteSpace(masterPlaylist) && LiveCamHlsPlaylist.IsMasterPlaylist(streamUrl))
             masterPlaylist = streamUrl;
 
         var qualities = await BuildQualitiesAsync(streamUrl, referer, streamName, viewServer, hlsPlaylist, ct)
@@ -725,43 +728,63 @@ internal static class StripchatStreamResolver
 
         try
         {
-            if (StripchatHlsPlaylist.NeedsProxy(streamUrl))
-                streamUrl = await StripchatHlsPlaylist.ResolvePlayUrlAsync(streamUrl, referer, ct, masterPlaylist).ConfigureAwait(false);
+            if (LiveCamHlsPlaylist.NeedsProxy(streamUrl))
+                streamUrl = await LiveCamHlsPlaylist.ResolvePlayUrlAsync(streamUrl, referer, ct, masterPlaylist).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            PlayerLog.Write("Stripchat HLS: " + ex.Message);
+            PlayerLog.Write("live HLS: " + ex.Message);
         }
 
         // Proxied / rewritten play URLs must be reflected on options for later switches.
         var playQualities = new List<StreamQualityOption>();
         foreach (var q in qualities)
         {
-            var playUrl = StripchatLiveCdn.PreferPlayableCdn(q.Url);
-            try
-            {
-                if (StripchatHlsPlaylist.NeedsProxy(playUrl))
-                    playUrl = await StripchatHlsPlaylist.ResolvePlayUrlAsync(playUrl, referer, ct, masterPlaylist).ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                PlayerLog.Write("Stripchat quality proxy: " + ex.Message);
-                continue; // drop unusable doppiocdn qualities instead of offering a black-screen option
-            }
+            var playUrl = LiveCamCdn.PreferPlayableCdn(q.Url);
 
-            if (StripchatLiveCdn.IsSacdnssedge(playUrl))
+            // Resolve sac edge/master to a real media URL before any localhost wrap.
+            if (LiveCamCdn.IsSacdnssedge(playUrl))
             {
+                string? resolved;
                 try
                 {
-                    playUrl = await StripchatHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playUrl, ct).ConfigureAwait(false);
+                    resolved = await LiveCamHlsPlaylist.ResolveSacdnssedgeForMpvAsync(playUrl, ct).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    PlayerLog.Write("Stripchat sacdnssedge resolve: " + ex.Message);
+                    PlayerLog.Write("live secondary CDN resolve: " + ex.Message);
+                    continue;
                 }
+
+                if (string.IsNullOrWhiteSpace(resolved))
+                {
+                    PlayerLog.Write("live skip dead secondary CDN · " + playUrl);
+                    continue;
+                }
+
+                playUrl = resolved;
             }
 
-            playQualities.Add(q with { Url = playUrl, Kind = StripchatLiveCdn.IsSacdnssedge(playUrl) ? "sacdnssedge" : q.Kind });
+            try
+            {
+                if (LiveCamHlsPlaylist.NeedsProxy(playUrl))
+                    playUrl = await LiveCamHlsPlaylist.ResolvePlayUrlAsync(playUrl, referer, ct, masterPlaylist).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                PlayerLog.Write("live quality proxy: " + ex.Message);
+                continue; // drop unusable doppiocdn qualities instead of offering a black-screen option
+            }
+
+            playQualities.Add(q with
+            {
+                Url = playUrl,
+                Kind = LiveCamCdn.IsSacdnssedge(playUrl)
+                    ? LiveCamSeal.SacToken
+                    : (LiveCamCdn.IsDoppiocdn(playUrl) || playUrl.Contains("127.0.0.1", StringComparison.Ordinal)
+                        ? "doppio"
+                        : q.Kind),
+            });
         }
 
         var selectedId = selected?.Id
@@ -798,45 +821,47 @@ internal static class StripchatStreamResolver
 
         if (!string.IsNullOrWhiteSpace(streamName))
         {
-            var mirrors = StripchatLiveCdn.BuildSacdnssedgeCandidates(streamName, viewServer);
-            for (var i = 0; i < mirrors.Count; i++)
-            {
-                var label = i == 0
-                    ? Loc.Get("Main.StreamQuality.Mirror")
-                    : Loc.Format("Main.StreamQuality.MirrorN", i + 1);
-                Add(new StreamQualityOption("mirror:" + i, label, mirrors[i], "sacdnssedge", 1100 - i));
-            }
-
-            var master = StripchatLiveCdn.MasterPlaylistUrl(streamName, hlsPlaylist);
+            // doppiocdn master first (real qualities + MOUFLON). Sac edge mirror is ≤480p fallback.
+            var master = LiveCamCdn.MasterPlaylistUrl(streamName, hlsPlaylist);
             if (!string.IsNullOrWhiteSpace(master))
             {
                 try
                 {
-                    var masterQs = await StripchatHlsPlaylist.ListMasterQualitiesAsync(master, referer, ct)
+                    var masterQs = await LiveCamHlsPlaylist.ListMasterQualitiesAsync(master, referer, ct)
                         .ConfigureAwait(false);
                     foreach (var q in masterQs)
                         Add(q);
                 }
                 catch (Exception ex)
                 {
-                    PlayerLog.Write("Stripchat master qualities: " + ex.Message);
+                    PlayerLog.Write("live master qualities: " + ex.Message);
                     Add(new StreamQualityOption("doppio:auto", Loc.Get("Main.StreamQuality.Auto"), master!, "doppio", 900));
                 }
             }
+
+            var mirrors = LiveCamCdn.BuildSacdnssedgeCandidates(streamName, viewServer);
+            for (var i = 0; i < mirrors.Count; i++)
+            {
+                var label = i == 0
+                    ? Loc.Get("Main.StreamQuality.Mirror")
+                    : Loc.Format("Main.StreamQuality.MirrorN", i + 1);
+                // Rank below doppio source/720p so a dead sac mirror cannot win by default.
+                Add(new StreamQualityOption("mirror:" + i, label, mirrors[i], LiveCamSeal.SacToken, 450 - i));
+            }
         }
-        else if (StripchatHlsPlaylist.IsMasterPlaylist(primaryUrl)
-                 || primaryUrl.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase))
+        else if (LiveCamHlsPlaylist.IsMasterPlaylist(primaryUrl)
+                 || primaryUrl.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase))
         {
             try
             {
-                var masterQs = await StripchatHlsPlaylist.ListMasterQualitiesAsync(primaryUrl, referer, ct)
+                var masterQs = await LiveCamHlsPlaylist.ListMasterQualitiesAsync(primaryUrl, referer, ct)
                     .ConfigureAwait(false);
                 foreach (var q in masterQs)
                     Add(q);
             }
             catch (Exception ex)
             {
-                PlayerLog.Write("Stripchat master qualities: " + ex.Message);
+                PlayerLog.Write("live master qualities: " + ex.Message);
             }
         }
 
@@ -849,14 +874,14 @@ internal static class StripchatStreamResolver
             .ToList();
     }
 
-    private static bool IsMasterPlaylist(string url) => StripchatHlsPlaylist.IsMasterPlaylist(url);
+    private static bool IsMasterPlaylist(string url) => LiveCamHlsPlaylist.IsMasterPlaylist(url);
 
     private static string? FindM3u8(string html)
     {
         foreach (Match m in M3u8Re.Matches(html))
         {
             var url = WebUtility.HtmlDecode(m.Value);
-            if (url.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase)
+            if (url.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase)
                 || url.Contains("m3u8", StringComparison.OrdinalIgnoreCase))
                 return url;
         }
@@ -874,8 +899,8 @@ internal static class StripchatStreamResolver
         string? masterPlaylistUrl = null)
     {
         var playReferer = streamUrl.Contains("127.0.0.1", StringComparison.Ordinal)
-            ? StripchatHlsPlaylist.CdnReferer
-            : StripchatLiveCdn.PlayReferer(streamUrl);
+            ? LiveCamHlsPlaylist.CdnReferer
+            : LiveCamCdn.PlayReferer(streamUrl);
 
         var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -883,7 +908,7 @@ internal static class StripchatStreamResolver
             ["Referer"] = playReferer,
         };
 
-        if (!StripchatLiveCdn.IsSacdnssedge(streamUrl))
+        if (!LiveCamCdn.IsSacdnssedge(streamUrl))
         {
             headers["Origin"] = IsGlobalMirrorHost(pageUrl) || IsGlobalMirrorHost(referer)
                 ? GlobalMirrorOrigin
@@ -894,7 +919,7 @@ internal static class StripchatStreamResolver
         return new ResolvedNetworkStream(
             streamUrl,
             pageUrl,
-            $"Stripchat / {name}",
+            Loc.Format("MediaSource.Live.User", name),
             headers,
             qualities,
             selectedQualityId,
@@ -986,13 +1011,13 @@ internal static class StripchatStreamResolver
         var handler = new SocketsHttpHandler
         {
             AutomaticDecompression = DecompressionMethods.All,
-            // Outer cap for StripchatConnect (several addresses). Default dual-stack
+            // Outer cap for LiveCamConnect (several addresses). Default dual-stack
             // connect spends this whole window on a blackholed IPv6 route.
             ConnectTimeout = TimeSpan.FromSeconds(20),
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             UseProxy = true,
             Proxy = HttpClient.DefaultProxy,
-            ConnectCallback = StripchatConnect.ConnectAsync,
+            ConnectCallback = LiveCamConnect.ConnectAsync,
             SslOptions = new System.Net.Security.SslClientAuthenticationOptions
             {
                 EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12

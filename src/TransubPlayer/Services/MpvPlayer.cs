@@ -19,6 +19,8 @@ internal sealed class MpvPlayer : IDisposable
     private string? _currentSub;
     private string? _activeLutPath;
     private int _shadows;
+    private int _colorSharpness;
+    private double _enhanceSharpenBias;
     private string? _appliedHwDec;
     private bool _vfNeedsRebuild = true;
     private string _hwDecPreference = "auto";
@@ -105,8 +107,8 @@ internal sealed class MpvPlayer : IDisposable
         var hasInitial = !string.IsNullOrWhiteSpace(initialMedia);
         var isLiveHls = hasInitial
                         && (initialMedia!.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)
-                            || initialMedia.Contains("sacdnssedge", StringComparison.OrdinalIgnoreCase)
-                            || initialMedia.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase));
+                            || initialMedia.Contains(LiveCamSeal.SacToken, StringComparison.OrdinalIgnoreCase)
+                            || initialMedia.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase));
 
         _liveLightIpc = isLiveHls;
 
@@ -267,8 +269,8 @@ internal sealed class MpvPlayer : IDisposable
         try
         {
             var isHls = mediaPath.Contains(".m3u8", StringComparison.OrdinalIgnoreCase)
-                        || mediaPath.Contains("sacdnssedge", StringComparison.OrdinalIgnoreCase)
-                        || mediaPath.Contains("doppiocdn", StringComparison.OrdinalIgnoreCase);
+                        || mediaPath.Contains(LiveCamSeal.SacToken, StringComparison.OrdinalIgnoreCase)
+                        || mediaPath.Contains(LiveCamSeal.DoppioToken, StringComparison.OrdinalIgnoreCase);
             if (isHls)
             {
                 SetProperty("cache", "yes");
@@ -600,9 +602,45 @@ internal sealed class MpvPlayer : IDisposable
         ApplyHwDec();
         ApplyVideoFit(settings.VideoFit);
         ApplyColorGrade(settings.GetColorGrade());
+        ApplyVideoEnhance(settings.GetVideoEnhanceMode());
         SetVolume(Math.Clamp(settings.Volume, 0, 130));
         if (settings.Speed > 0)
             SetSpeed(settings.Speed);
+    }
+
+    /// <summary>
+    /// Apply general-purpose real-time enhance: scalers / deband / unsharp GLSL + sharpen bias.
+    /// Color-grade <c>sharpen</c> is preserved and stacked with the enhance bias.
+    /// </summary>
+    public void ApplyVideoEnhance(VideoEnhanceMode mode)
+    {
+        var p = VideoEnhanceProfiles.For(mode);
+        _enhanceSharpenBias = p.SharpenBias;
+        SetProperty("scale", p.Scale);
+        SetProperty("cscale", p.CScale);
+        SetProperty("dscale", p.DScale);
+        SetProperty("deband", p.Deband);
+        SetProperty("deband-iterations", p.DebandIterations);
+        SetProperty("deband-threshold", p.DebandThreshold);
+        SetProperty("deband-range", p.DebandRange);
+        SetProperty("deband-grain", p.DebandGrain);
+        SetProperty("sigmoid-upscaling", p.SigmoidUpscaling);
+        SetProperty("correct-downscaling", p.CorrectDownscaling);
+        SetProperty("linear-downscaling", p.LinearDownscaling);
+        SetProperty("scale-antiring", p.ScaleAntiring);
+        SetProperty("cscale-antiring", p.CScaleAntiring);
+        SetProperty("scale-blur", p.ScaleBlur);
+        SetProperty("dither-depth", p.DitherDepth);
+        ApplyCombinedSharpen();
+
+        var shaders = VideoEnhanceShaders.ShaderPathsFor(mode)
+            .Where(File.Exists)
+            .ToArray();
+        // Absolute paths — mpv resolves relative to cwd, which is the mpv.exe folder.
+        SetProperty("glsl-shaders", shaders);
+        Log?.Invoke(
+            "画质增强 · " + VideoEnhanceModes.ToSetting(mode)
+            + (shaders.Length > 0 ? " · glsl=" + Path.GetFileName(shaders[0]) : " · glsl=off"));
     }
 
     /// <summary>
@@ -612,12 +650,13 @@ internal sealed class MpvPlayer : IDisposable
     public void ApplyColorGrade(ColorGradeParams parameters)
     {
         parameters.Normalize();
+        _colorSharpness = parameters.Sharpness;
         SetProperty("brightness", parameters.Brightness);
         SetProperty("contrast", parameters.Contrast);
         SetProperty("saturation", parameters.Saturation);
         SetProperty("gamma", parameters.Gamma);
         SetProperty("hue", parameters.Hue);
-        SetProperty("sharpen", ColorGradeParams.ToMpvSharpen(parameters.Sharpness));
+        ApplyCombinedSharpen();
 
         // Rebuilding vf / flipping hwdec every slider tick stutters playback badly.
         if (!_vfNeedsRebuild && _shadows == parameters.Shadows)
@@ -626,6 +665,15 @@ internal sealed class MpvPlayer : IDisposable
         _shadows = parameters.Shadows;
         ApplyHwDec();
         RebuildVideoFilters();
+    }
+
+    /// <summary>Stack color-grade sharpen with enhance bias; clamp to mpv's useful range.</summary>
+    private void ApplyCombinedSharpen()
+    {
+        var combined = ColorGradeParams.ToMpvSharpen(_colorSharpness) + _enhanceSharpenBias;
+        if (combined > 2.5) combined = 2.5;
+        if (combined < -2.5) combined = -2.5;
+        SetProperty("sharpen", combined);
     }
 
     /// <summary>

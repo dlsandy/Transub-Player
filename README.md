@@ -1,5 +1,23 @@
 ﻿# Transub Player
 
+<p>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/v/release/dlsandy/Transub-Player?display_name=tag&logo=github" alt="Release"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/downloads/dlsandy/Transub-Player/total?logo=github" alt="Downloads"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/stargazers"><img src="https://img.shields.io/github/stars/dlsandy/Transub-Player" alt="Stars"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/issues"><img src="https://img.shields.io/github/issues/dlsandy/Transub-Player" alt="Issues"></a>
+  <a href="https://github.com/dlsandy/Transub-Player"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" alt="Windows"></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET"></a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/Live%20MT-5%20languages-ff6b35" alt="Live mutual translation">
+  <img src="https://img.shields.io/badge/中文-zh-DE2910" alt="Chinese">
+  <img src="https://img.shields.io/badge/日本語-ja-BC002D" alt="Japanese">
+  <img src="https://img.shields.io/badge/한국어-ko-003478" alt="Korean">
+  <img src="https://img.shields.io/badge/English-en-00247D" alt="English">
+  <img src="https://img.shields.io/badge/Español-es-AA151B" alt="Spanish">
+</p>
+
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
 **Open a video. Subtitles follow.**
@@ -24,8 +42,8 @@ Subtitles are generated on the fly with built-in speech recognition. Progress st
 **Translation · Source · Dual — one click**  
 Casual viewing? Switch to translation. Learning? Switch to dual. If translation isn’t ready yet, source subtitles still play — watching never stops.
 
-**Chinese / Japanese / Korean / English**  
-Change source and target languages while playing; the file name can help guess the source language. Defaults aim for “understand quickly,” with room to upgrade later.  
+**Chinese / Japanese / Korean / English / Spanish**  
+Change source and target languages while playing; Spanish UI is available too. The file name can help guess the source language. Defaults aim for “understand quickly,” with room to upgrade later.  
 More languages are planned.
 
 **Streams play — and record**  
@@ -36,6 +54,12 @@ Control-bar Wi‑Fi entry plus shared folders; pick files in the phone browser. 
 
 **Color grade & LUT**  
 Right-click → Color grade: tweak brightness / contrast / saturation and more with live preview, or save named presets. Built-in 3D LUT looks, browse custom `.cube` / `.3dl`, or auto-apply a same-stem LUT next to the video.
+
+**Picture enhance**  
+Right-click → Picture enhance, or press `E` to cycle Off / Light / Enhance (sharpen, deband, high-quality scale). Default off; turn down if playback stutters.
+
+**Seek thumbnail preview**  
+Hover the progress bar to preview a frame at that time — easier scrubbing.
 
 **Deep match with Transub**  
 Generate high-quality subtitles with the Transub subtitle tool; when they’re ready, the player can prompt you to play them.
@@ -83,6 +107,7 @@ For publish-ready Chinese subtitles, full cleanup, and QC, use the companion pro
 | Translation / Source / Dual | 1 / 2 / 3 |
 | Delay / advance subtitles | Z / X |
 | Show / hide subtitles | V |
+| Picture enhance (Off / Light / Enhance) | E |
 | Playlist | L |
 | Next / Previous | N / P |
 | Fullscreen | F · F11 · Enter · double-click |
@@ -136,13 +161,13 @@ First recognition: Settings → Models → download whisper turbo.
 
 - Windows 10 / 11 (64-bit)
 - Internet required the first time to download recognition / translation models (offline playback afterward for prepared content)
-- Optional GPU acceleration (auto or manual); works without a discrete GPU
+- Optional GPU acceleration (auto or manual; with multiple GPUs, pick the recognition GPU under Settings → Advanced); works without a discrete GPU
 
 ---
 
 ## Tips
 
-- Subtitles appear **slightly behind** the picture — normal for live generation
+- Subtitles appear **slightly behind** the picture — normal for live generation; if they lag far behind, recognition can restart from the playhead (or use **Restart from here**)
 - Goal is “understandable and followable,” not release-grade subtitles
 - Without a translation model, source subtitles still work
 - On quit, processes started by the player exit together — nothing left running in the background

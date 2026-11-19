@@ -1,5 +1,23 @@
 # Transub Player
 
+<p>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/v/release/dlsandy/Transub-Player?display_name=tag&logo=github" alt="Release"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/downloads/dlsandy/Transub-Player/total?logo=github" alt="Downloads"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/stargazers"><img src="https://img.shields.io/github/stars/dlsandy/Transub-Player" alt="Stars"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/issues"><img src="https://img.shields.io/github/issues/dlsandy/Transub-Player" alt="Issues"></a>
+  <a href="https://github.com/dlsandy/Transub-Player"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" alt="Windows"></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET"></a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/%E4%BA%92%E8%AF%91-5%20%E7%A7%8D%E8%AF%AD%E8%A8%80-ff6b35" alt="五种语言互译"> 
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-zh-DE2910" alt="中文"> 
+  <img src="https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-ja-BC002D" alt="日本語"> 
+  <img src="https://img.shields.io/badge/%ED%95%9C%EA%B5%AD%EC%96%B4-ko-003478" alt="한국어"> 
+  <img src="https://img.shields.io/badge/English-en-00247D" alt="English"> 
+  <img src="https://img.shields.io/badge/Espa%C3%B1ol-es-AA151B" alt="Español">
+</p>
+
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
 **打开影片，字幕就来。** 外语片、日剧、韩剧、动漫剧 —— 没有字幕也能先看。打开视频，画面立刻出来；可读字幕随后跟上。不再为看不懂和找字幕而烦恼，追剧就是如此轻松。
@@ -21,8 +39,8 @@
 **原文 · 译文 · 双语，一键切换**  
 轻松看，切译文；对照学，切双语。翻译暂不可用，原文字幕照常播放，观影不中断。
 
-**中 / 日 / 韩 / 英互译**  
-片源语、译文语在播放中随时切换；文件名还能辅助猜测片源语。默认先求「尽快看懂」，需要时再增强。  
+**中 / 日 / 韩 / 英 / 西互译**  
+片源语、译文语在播放中随时切换；界面也支持西班牙语。文件名还能辅助猜测片源语。默认先求「尽快看懂」，需要时再增强。  
 后续还将更新支持更多语言。
 
 **直播也能播，还能录**  
@@ -33,6 +51,12 @@
 
 **画面调色与 LUT**  
 右键「调色」：亮度 / 对比度 / 饱和度等滑块实时预览，可保存命名方案；内置多种 3D LUT，也可浏览自定义 `.cube` / `.3dl`，或自动套用视频同目录同名 LUT。
+
+**画质增强**  
+右键「画质增强」，或按 `E` 在关闭 / 轻量 / 增强间循环（锐化、去色带、高质量缩放）。默认关闭；卡顿时改回关闭或轻量。
+
+**进度条缩略图**  
+鼠标悬停进度条即可预览该时刻画面，拖拽定位更直观。
 
 **深度匹配 Transub 字幕生成器**  
 支持用 Transub 字幕生成器生成高质量字幕，字幕生成后播放器自动回应提示播放。
@@ -80,6 +104,7 @@
 | 译文 / 原文 / 双语 | 1 / 2 / 3 |
 | 字幕延后 / 提前 | Z / X |
 | 显示 / 隐藏字幕 | V |
+| 画质增强（关 / 轻量 / 增强） | E |
 | 播放列表 | L |
 | 下一个 / 上一个 | N / P |
 | 全屏 | F · F11 · Enter · 双击画面 |
@@ -133,13 +158,13 @@ powershell -ExecutionPolicy Bypass -File tools\pack-release.ps1
 
 - Windows 10 / 11（64 位）
 - 首次使用需联网下载识别 / 翻译模型（之后可离线播放已准备好的内容）
-- 可选 GPU 加速（按本机能力自动或手动选择）；无独显也可用
+- 可选 GPU 加速（按本机能力自动或手动选择；多显卡时可在设置 → 高级指定识别用 GPU）；无独显也可用
 
 ---
 
 ## 小贴士
 
-- 字幕会**稍晚于画面**出现，属边看边生成的正常现象
+- 字幕会**稍晚于画面**出现，属边看边生成的正常现象；明显落后时可自动从播放头重新识别（也可手动「从这里识别」）
 - 目标是「能看懂、跟得上」，不是成片发布级字幕
 - 没有翻译模型时，仍可先看原文字幕继续播放
 - 关掉程序后，播放器拉起的相关进程会一起退出，不在后台偷偷占资源

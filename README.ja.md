@@ -1,5 +1,23 @@
 ﻿# Transub Player
 
+<p>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/v/release/dlsandy/Transub-Player?display_name=tag&logo=github" alt="Release"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/releases"><img src="https://img.shields.io/github/downloads/dlsandy/Transub-Player/total?logo=github" alt="Downloads"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/stargazers"><img src="https://img.shields.io/github/stars/dlsandy/Transub-Player" alt="Stars"></a>
+  <a href="https://github.com/dlsandy/Transub-Player/issues"><img src="https://img.shields.io/github/issues/dlsandy/Transub-Player" alt="Issues"></a>
+  <a href="https://github.com/dlsandy/Transub-Player"><img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows&logoColor=white" alt="Windows"></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet&logoColor=white" alt=".NET"></a>
+</p>
+
+<p>
+  <img src="https://img.shields.io/badge/%E7%9B%B8%E4%BA%92%E7%BF%BB%E8%A8%B3-5%20%E8%A8%80%E8%AA%9E-ff6b35" alt="5言語の相互翻訳">
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-zh-DE2910" alt="中文">
+  <img src="https://img.shields.io/badge/%E6%97%A5%E6%9C%AC%E8%AA%9E-ja-BC002D" alt="日本語">
+  <img src="https://img.shields.io/badge/%ED%95%9C%EA%B5%AD%EC%96%B4-ko-003478" alt="한국어">
+  <img src="https://img.shields.io/badge/English-en-00247D" alt="English">
+  <img src="https://img.shields.io/badge/Espa%C3%B1ol-es-AA151B" alt="Español">
+</p>
+
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [한국어](README.ko.md)
 
 **動画を開けば、字幕が続いてきます。**
@@ -24,8 +42,8 @@
 **訳文 · 原文 · 二言語をワンクリック**  
 気軽に見るなら訳文、学習するなら二言語。翻訳がまだ準備できていなくても、原文字幕で再生は続き、視聴は中断しません。
 
-**中 / 日 / 韓 / 英の相互翻訳**  
-再生中にソース言語と訳出言語を切り替え可能。ファイル名からソース言語を推測することもできます。まずは「すぐわかる」を優先し、必要に応じて強化できます。  
+**中 / 日 / 韓 / 英 / 西の相互翻訳**  
+再生中にソース言語と訳出言語を切り替え可能。スペイン語 UI にも対応。ファイル名からソース言語を推測することもできます。まずは「すぐわかる」を優先し、必要に応じて強化できます。  
 今後さらに多くの言語に対応予定です。
 
 **配信も再生、録画もできる**  
@@ -36,6 +54,12 @@
 
 **カラーグレーディング＆LUT**  
 右クリック「調色」：明るさ／コントラスト／彩度などをリアルタイム調整し、名前付きプリセットとして保存。内蔵 3D LUT、カスタム `.cube`／`.3dl`、動画と同名の同フォルダ LUT 自動適用にも対応。
+
+**画質強化**  
+右クリック「画質強化」、または `E` でオフ／軽量／強化を切替（シャープ、デバンド、高品質スケール）。初期はオフ。カクつくときはオフまたは軽量に戻してください。
+
+**シークサムネイル**  
+進捗バーにマウスを合わせるとその時点の画がプレビューされ、位置合わせがしやすいです。
 
 **Transub 字幕ジェネレーターと深く連携**  
 Transub で高品質字幕を生成すると、準備完了後にプレーヤーが再生を案内します。
@@ -83,6 +107,7 @@ Transub で高品質字幕を生成すると、準備完了後にプレーヤー
 | 訳文 / 原文 / 二言語 | 1 / 2 / 3 |
 | 字幕を遅らせる / 進める | Z / X |
 | 字幕の表示 / 非表示 | V |
+| 画質強化（オフ / 軽量 / 強化） | E |
 | プレイリスト | L |
 | 次 / 前 | N / P |
 | フルスクリーン | F · F11 · Enter · ダブルクリック |
@@ -136,13 +161,13 @@ powershell -ExecutionPolicy Bypass -File tools\pack-release.ps1
 
 - Windows 10 / 11（64 ビット）
 - 初回は認識 / 翻訳モデルのダウンロードにインターネットが必要（準備後はオフライン再生可）
-- GPU 加速は任意（自動または手動）。ディスクリート GPU なしでも利用可
+- GPU 加速は任意（自動または手動。複数 GPU 時は設定 → 詳細で認識用 GPU を指定可能）。ディスクリート GPU なしでも利用可
 
 ---
 
 ## ヒント
 
-- 字幕は映像より**少し遅れて**出ます——ライブ生成では普通の挙動です
+- 字幕は映像より**少し遅れて**出ます——ライブ生成では普通の挙動です。大きく遅れているときは再生位置から自動で再認識できます（手動の「ここから認識」も可）
 - 目標は「わかる・追いやすい」であり、公開品質の完成字幕ではありません
 - 翻訳モデルがなくても、原文字幕で視聴を続けられます
 - 終了すると、プレーヤーが起動した関連プロセスも一緒に終了し、裏でリソースを占有しません
